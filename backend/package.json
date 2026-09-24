@@ -1,0 +1,38 @@
+{
+  "name": "logotype-planning-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node scripts/migrate.js up",
+    "db:rollback": "node scripts/migrate.js down",
+    "db:migrate:test": "cross-env NODE_ENV=test node scripts/migrate.js up",
+    "db:rollback:test": "cross-env NODE_ENV=test node scripts/migrate.js down",
+    "db:seed": "node scripts/seed.js",
+    "db:seed:test": "cross-env NODE_ENV=test node scripts/seed.js",
+    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.4",
+    "zod": "^4.1.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "cross-env": "^10.0.0",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.4"
+  }
+}
