@@ -118,12 +118,12 @@ async function loadHistory(connection, definitions) {
 
     const definition = definitionsByName.get(row.migration_name);
 
-    if (!Buffer.from(row.checksum).equals(definition.checksum)) {
-      throw new Error('Migration checksum drift detected');
-    }
-
     if (row.state !== 'applied') {
       throw new Error('Migration history requires deterministic recovery before continuing');
+    }
+
+    if (!Buffer.from(row.checksum).equals(definition.checksum)) {
+      throw new Error('Migration checksum drift detected');
     }
 
     if (!(await tableExists(connection, definition.table))) {
