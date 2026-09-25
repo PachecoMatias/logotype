@@ -98,16 +98,26 @@ async function getLockName(connection) {
 
 async function acquireLock(connection, lockName) {
   const [rows] = await connection.execute('SELECT GET_LOCK(?, 10) AS acquired', [lockName]);
+  const acquired = rows[0]?.acquired;
 
-  if (rows[0].acquired !== 1) {
+  if (acquired !== 1) {
     throw new Error('Migration lock could not be acquired');
   }
 }
 
-async function loadHistory(connection, definitions) {
+async function loadHistoryRows(connection) {
   const [rows] = await connection.query(
-    'SELECT migration_name, checksum, state FROM schema_migrations ORDER BY migration_name ASC',
+    `
+      SELECT migration_name, checksum, state, applied_at
+      FROM schema_migrations
+      ORDER BY migration_name ASC
+    `,
   );
+
+  return rows;
+}
+
+function validateHistory(rows, definitions) {
   const knownNames = new Set(definitions.map((definition) => definition.name));
   const definitionsByName = new Map(definitions.map((definition) => [definition.name, definition]));
 
@@ -118,20 +128,71 @@ async function loadHistory(connection, definitions) {
 
     const definition = definitionsByName.get(row.migration_name);
 
-    if (row.state !== 'applied') {
-      throw new Error('Migration history requires deterministic recovery before continuing');
-    }
-
     if (!Buffer.from(row.checksum).equals(definition.checksum)) {
       throw new Error('Migration checksum drift detected');
     }
-
-    if (!(await tableExists(connection, definition.table))) {
-      throw new Error('Applied migration target table is missing');
-    }
   }
 
-  return new Map(rows.map((row) => [row.migration_name, row]));
+  return definitionsByName;
+}
+
+async function reconcileHistory(connection, rows, definitionsByName) {
+  const history = new Map(rows.map((row) => [row.migration_name, row]));
+
+  for (const row of rows) {
+    const definition = definitionsByName.get(row.migration_name);
+
+    if (row.state === 'applied') {
+      if (!(await tableExists(connection, definition.table))) {
+        throw new Error('Applied migration target table is missing');
+      }
+
+      continue;
+    }
+
+    const targetExists = await tableExists(connection, definition.table);
+
+    if (row.state === 'applying' && targetExists) {
+      await connection.execute(
+        `
+          UPDATE schema_migrations
+          SET state = 'applied', applied_at = CURRENT_TIMESTAMP(6)
+          WHERE migration_name = ?
+        `,
+        [definition.name],
+      );
+      history.set(definition.name, { ...row, state: 'applied' });
+      continue;
+    }
+
+    if (row.state === 'rolling_back' && targetExists) {
+      await connection.execute(
+        "UPDATE schema_migrations SET state = 'applied' WHERE migration_name = ?",
+        [definition.name],
+      );
+      history.set(definition.name, { ...row, state: 'applied' });
+      continue;
+    }
+
+    if (row.state === 'applying' || row.state === 'rolling_back') {
+      await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+        definition.name,
+      ]);
+      history.delete(definition.name);
+      continue;
+    }
+
+    throw new Error('Migration history contains an invalid state');
+  }
+
+  return history;
+}
+
+async function loadHistory(connection, definitions) {
+  const rows = await loadHistoryRows(connection);
+  const definitionsByName = validateHistory(rows, definitions);
+
+  return reconcileHistory(connection, rows, definitionsByName);
 }
 
 async function applyPendingMigrations(connection, definitions, history) {
@@ -192,11 +253,12 @@ async function run(command) {
   }
 
   const configuration = parseEnvironment();
-  const connection = await getPool(configuration).getConnection();
+  let connection;
   let lockName;
   let lockAcquired = false;
 
   try {
+    connection = await getPool(configuration).getConnection();
     lockName = await getLockName(connection);
     await acquireLock(connection, lockName);
     lockAcquired = true;
@@ -211,12 +273,17 @@ async function run(command) {
       await rollbackLatestMigration(connection, definitions, history);
     }
   } finally {
-    if (lockAcquired) {
-      await connection.execute('SELECT RELEASE_LOCK(?)', [lockName]);
+    try {
+      if (lockAcquired) {
+        await connection.execute('SELECT RELEASE_LOCK(?)', [lockName]);
+      }
+    } finally {
+      try {
+        connection?.release();
+      } finally {
+        await closePool();
+      }
     }
-
-    connection.release();
-    await closePool();
   }
 }
 

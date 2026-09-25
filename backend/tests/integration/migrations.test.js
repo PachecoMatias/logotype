@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  closeMigrationTestPool,
   createTestPool,
   getTestConfiguration,
   resetMigrationTestState,
@@ -12,8 +13,7 @@ async function prepareMigratedSchema(t) {
   const pool = createTestPool();
 
   t.after(async () => {
-    await resetMigrationTestState(pool);
-    await pool.end();
+    await closeMigrationTestPool(pool);
   });
 
   await resetMigrationTestState(pool);
@@ -22,13 +22,72 @@ async function prepareMigratedSchema(t) {
   return pool;
 }
 
+const interruptedMigration = {
+  name: '003_create_equipo',
+  table: 'equipo',
+};
+
+async function setInterruptedMigrationState(pool, state, targetExists) {
+  await pool.execute(
+    `
+      UPDATE schema_migrations
+      SET state = ?, applied_at = CASE WHEN ? = 'applying' THEN NULL ELSE applied_at END
+      WHERE migration_name = ?
+    `,
+    [state, state, interruptedMigration.name],
+  );
+
+  if (!targetExists) {
+    await pool.query(`DROP TABLE ${interruptedMigration.table}`);
+  }
+}
+
+async function getMigrationRecord(pool) {
+  const [rows] = await pool.execute(
+    `
+      SELECT migration_name, checksum, state, applied_at
+      FROM schema_migrations
+      WHERE migration_name = ?
+    `,
+    [interruptedMigration.name],
+  );
+
+  return rows[0];
+}
+
+async function targetTableExists(pool) {
+  const [rows] = await pool.execute(
+    `
+      SELECT 1
+      FROM INFORMATION_SCHEMA.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = ?
+        AND TABLE_TYPE = 'BASE TABLE'
+    `,
+    [interruptedMigration.table],
+  );
+
+  return rows.length === 1;
+}
+
+async function assertNoMigrationMutation(pool) {
+  const [tables] = await pool.query(`
+    SELECT TABLE_NAME
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_TYPE = 'BASE TABLE'
+      AND TABLE_NAME IN ('schema_migrations', 'proyectos', 'historias', 'equipo')
+  `);
+
+  assert.deepEqual(tables, []);
+}
+
 test('applies and reverses the guarded planning schema in order', async (t) => {
   const configuration = getTestConfiguration();
   const pool = createTestPool();
 
   t.after(async () => {
-    await resetMigrationTestState(pool);
-    await pool.end();
+    await closeMigrationTestPool(pool);
   });
 
   assert.equal(configuration.database.database, 'logotype_test');
@@ -186,8 +245,7 @@ test('refuses untracked tables and contradictory applied history', async (t) => 
   const pool = createTestPool();
 
   t.after(async () => {
-    await resetMigrationTestState(pool);
-    await pool.end();
+    await closeMigrationTestPool(pool);
   });
 
   await resetMigrationTestState(pool);
@@ -198,4 +256,100 @@ test('refuses untracked tables and contradictory applied history', async (t) => 
   await runMigration('up');
   await pool.query('DROP TABLE equipo');
   await assert.rejects(runMigration('up'), /exit code 1/);
+});
+
+test('finalizes an applying migration when its target table already exists', async (t) => {
+  const pool = await prepareMigratedSchema(t);
+
+  await setInterruptedMigrationState(pool, 'applying', true);
+
+  await runMigration('up');
+
+  const record = await getMigrationRecord(pool);
+  assert.equal(record.state, 'applied');
+  assert.notEqual(record.applied_at, null);
+  assert.equal(await targetTableExists(pool), true);
+});
+
+test('deletes an applying intent when its target table is absent before retrying', async (t) => {
+  const pool = await prepareMigratedSchema(t);
+
+  await setInterruptedMigrationState(pool, 'applying', false);
+
+  await runMigration('up');
+
+  const record = await getMigrationRecord(pool);
+  assert.equal(record.state, 'applied');
+  assert.notEqual(record.applied_at, null);
+  assert.equal(await targetTableExists(pool), true);
+});
+
+test('deletes rolling-back history when its target table is already absent', async (t) => {
+  const pool = await prepareMigratedSchema(t);
+
+  await setInterruptedMigrationState(pool, 'rolling_back', false);
+
+  await runMigration('up');
+
+  const record = await getMigrationRecord(pool);
+  assert.equal(record.state, 'applied');
+  assert.notEqual(record.applied_at, null);
+  assert.equal(await targetTableExists(pool), true);
+});
+
+test('restores an applied migration when rolling back was interrupted before DDL', async (t) => {
+  const pool = await prepareMigratedSchema(t);
+
+  await setInterruptedMigrationState(pool, 'rolling_back', true);
+
+  await runMigration('up');
+
+  const record = await getMigrationRecord(pool);
+  assert.equal(record.state, 'applied');
+  assert.notEqual(record.applied_at, null);
+  assert.equal(await targetTableExists(pool), true);
+});
+
+test('refuses checksum drift before reconciling history in every recorded state', async (t) => {
+  for (const { state, targetExists } of [
+    { state: 'applying', targetExists: true },
+    { state: 'applied', targetExists: true },
+    { state: 'rolling_back', targetExists: false },
+  ]) {
+    await t.test(`refuses drift for ${state}`, async (t) => {
+      const pool = await prepareMigratedSchema(t);
+      const driftedChecksum = Buffer.alloc(32);
+
+      await setInterruptedMigrationState(pool, state, targetExists);
+      await pool.execute('UPDATE schema_migrations SET checksum = ? WHERE migration_name = ?', [
+        driftedChecksum,
+        interruptedMigration.name,
+      ]);
+
+      await assert.rejects(runMigration('up'), /Migration checksum drift detected/);
+
+      const record = await getMigrationRecord(pool);
+      assert.equal(record.state, state);
+      assert.deepEqual(record.checksum, driftedChecksum);
+      assert.equal(await targetTableExists(pool), targetExists);
+    });
+  }
+});
+
+test('refuses every non-acquired advisory-lock result without mutating schema state', async (t) => {
+  const pool = createTestPool();
+
+  t.after(async () => {
+    await closeMigrationTestPool(pool);
+  });
+
+  for (const lockResult of [0, null, 2]) {
+    await t.test(`GET_LOCK result ${String(lockResult)}`, async () => {
+      await resetMigrationTestState(pool);
+
+      await assert.rejects(runMigration('up', { lockResult }), /exit code 1/);
+
+      await assertNoMigrationMutation(pool);
+    });
+  }
 });
