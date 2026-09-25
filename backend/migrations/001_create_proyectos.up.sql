@@ -1,0 +1,16 @@
+CREATE TABLE proyectos (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  payload JSON NOT NULL,
+  estado VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_cs
+    NOT NULL DEFAULT 'nuevo',
+  creado_en DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  actualizado_en DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    ON UPDATE CURRENT_TIMESTAMP(6),
+  CONSTRAINT pk_proyectos PRIMARY KEY (id),
+  CONSTRAINT chk_proyectos_payload_objeto
+    CHECK (JSON_TYPE(payload) = 'OBJECT'),
+  CONSTRAINT chk_proyectos_estado
+    CHECK (estado IN ('nuevo'))
+) ENGINE=InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_ai_ci;
