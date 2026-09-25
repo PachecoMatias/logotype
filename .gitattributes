@@ -1,1 +1,9 @@
 * text=auto
+backend/.prettierrc.json text eol=lf
+backend/eslint.config.js text eol=lf
+backend/package-lock.json text eol=lf
+backend/package.json text eol=lf
+backend/src/config/database.js text eol=lf
+backend/src/config/env.js text eol=lf
+backend/tests/integration/database.connection.test.js text eol=lf
+backend/tests/unit/bootstrap.test.js text eol=lf
