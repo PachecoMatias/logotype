@@ -1,3 +1,5 @@
+import process from 'node:process';
+
 import mysql from 'mysql2/promise';
 
 const forcedLockResult = JSON.parse(process.env.MIGRATION_TEST_GET_LOCK_RESULT);

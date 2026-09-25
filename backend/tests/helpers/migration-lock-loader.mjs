@@ -1,3 +1,5 @@
+import { URL } from 'node:url';
+
 const mysqlShimUrl = new URL('./migration-lock-mysql-shim.mjs', import.meta.url).href;
 
 export async function resolve(specifier, context, nextResolve) {

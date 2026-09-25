@@ -83,11 +83,7 @@ export function runMigration(command, { lockResult } = {}) {
         return;
       }
 
-      reject(
-        new Error(
-          `Migration command failed with exit code ${code}: ${standardError.trim()}`,
-        ),
-      );
+      reject(new Error(`Migration command failed with exit code ${code}: ${standardError.trim()}`));
     });
   });
 }
