@@ -8,6 +8,12 @@ import { parseEnvironment } from '../../src/config/env.js';
 
 const backendDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const migrationScript = path.join(backendDirectory, 'scripts', 'migrate.js');
+const migrationLockRegister = path.join(
+  backendDirectory,
+  'tests',
+  'helpers',
+  'migration-lock-register.mjs',
+);
 
 export function getTestConfiguration() {
   const configuration = parseEnvironment();
@@ -36,22 +42,52 @@ export async function resetMigrationTestState(pool) {
   await pool.query('DROP TABLE IF EXISTS schema_migrations');
 }
 
-export function runMigration(command) {
+export async function closeMigrationTestPool(pool) {
+  try {
+    await resetMigrationTestState(pool);
+  } finally {
+    await pool.end();
+  }
+}
+
+export function runMigration(command, { lockResult } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [migrationScript, command], {
+    const hasForcedLockResult = lockResult !== undefined;
+    const arguments_ = hasForcedLockResult
+      ? ['--import', migrationLockRegister, migrationScript, command]
+      : [migrationScript, command];
+    const environment = {
+      ...process.env,
+      NODE_ENV: 'test',
+    };
+
+    if (hasForcedLockResult) {
+      environment.MIGRATION_TEST_GET_LOCK_RESULT = JSON.stringify(lockResult);
+    }
+
+    const child = spawn(process.execPath, arguments_, {
       cwd: backendDirectory,
-      env: { ...process.env, NODE_ENV: 'test' },
-      stdio: 'ignore',
+      env: environment,
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let standardError = '';
+
+    child.stderr.on('data', (chunk) => {
+      standardError += chunk;
     });
 
     child.once('error', () => reject(new Error('Migration command could not start')));
-    child.once('exit', (code) => {
+    child.once('close', (code) => {
       if (code === 0) {
         resolve();
         return;
       }
 
-      reject(new Error(`Migration command failed with exit code ${code}`));
+      reject(
+        new Error(
+          `Migration command failed with exit code ${code}: ${standardError.trim()}`,
+        ),
+      );
     });
   });
 }
