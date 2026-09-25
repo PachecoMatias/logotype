@@ -27,7 +27,7 @@ The maintainer approved `size:exception` for PR 1's cohesive backend bootstrap d
 | Evidence | Result |
 |----------|--------|
 | Focused test command | Under Node v22.11.0, `npm test` exited 0: 5 passed, 0 failed. It proves fixed package scripts, safe environment example/ignore behavior without reading a local `.env`, namespace guards, deterministic pool helper behavior, and the real MySQL harness. |
-| Quality commands | `npm run lint` and `npm run format:check` exited 0. A temporary applicable lint and format defect was previously verified to exit non-zero and removed. |
+| Quality commands | `npm run lint` exited 0. The focused Prettier check for `backend/tests/integration/database.connection.test.js` exited 0. Full `npm run format:check` exited non-zero solely for seven pre-existing/restored baseline line-ending paths excluded from this corrective commit. A temporary applicable lint and format defect was previously verified to exit non-zero and removed. |
 | Node 22 installation | `node --version` returned v22.11.0 from the authorized NVM runtime, and `npm ci` exited 0 using its matching npm v10.9.0 executable. |
 | Prepared MySQL harness | `backend/tests/integration/database.connection.test.js` passed against `logotype_test`: real `SELECT 1` ping, successful and failing transaction release, one pool close, and `SELECT DATABASE()` confirmed the selected test namespace. The scenario executes read-only `SELECT` statements and does not select or mutate `logotype`. |
 | Rollback boundary | Revert the Unit 1 files named in the forecast row below and the associated task/apply-progress changes in this file. |
