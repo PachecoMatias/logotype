@@ -8,6 +8,7 @@ import { parseEnvironment } from '../../src/config/env.js';
 
 const backendDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const migrationScript = path.join(backendDirectory, 'scripts', 'migrate.js');
+const supportedMigrationCommands = new Set(['up', 'down']);
 const migrationLockRegister = path.join(
   backendDirectory,
   'tests',
@@ -51,6 +52,10 @@ export async function closeMigrationTestPool(pool) {
 }
 
 export function runMigration(command, { lockResult } = {}) {
+  if (!supportedMigrationCommands.has(command)) {
+    return Promise.reject(new Error('Migration command must be exactly up or down'));
+  }
+
   return new Promise((resolve, reject) => {
     const hasForcedLockResult = lockResult !== undefined;
     const arguments_ = hasForcedLockResult

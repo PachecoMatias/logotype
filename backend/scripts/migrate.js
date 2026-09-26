@@ -14,7 +14,23 @@ const migrations = [
   { name: '001_create_proyectos', table: 'proyectos' },
   { name: '002_create_historias', table: 'historias' },
   { name: '003_create_equipo', table: 'equipo' },
+  { name: '004_add_project_ai_analysis', table: 'proyectos', kind: 'project-analysis-alter' },
 ];
+
+const projectAnalysisMigrationKind = 'project-analysis-alter';
+const projectAnalysisColumnName = 'analisis_ia';
+const projectStatusCheckName = 'chk_proyectos_estado';
+const projectAnalysisCheckName = 'chk_proyectos_analisis_ia_objeto';
+const projectPayloadCheckName = 'chk_proyectos_payload_objeto';
+const sourceStatusCheckClause = "estado IN ('nuevo')";
+const sourceStatusEqualityCheckClause = "estado = 'nuevo'";
+const targetStatusCheckClause = "estado IN ('nuevo', 'analizado')";
+const analysisObjectCheckClause = "analisis_ia IS NULL OR JSON_TYPE(analisis_ia) = 'OBJECT'";
+const addAnalysisColumnClause = 'ADD COLUMN analisis_ia JSON NULL AFTER estado';
+const addAnalysisObjectCheckClause = `ADD CONSTRAINT ${projectAnalysisCheckName}
+  CHECK (${analysisObjectCheckClause})`;
+const replaceStatusWithTargetClause = `DROP CHECK ${projectStatusCheckName},
+  ADD CONSTRAINT ${projectStatusCheckName} CHECK (${targetStatusCheckClause})`;
 
 const schemaMigrationsStatement = `
   CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -86,6 +102,283 @@ async function tableExists(connection, tableName) {
   );
 
   return rows.length === 1;
+}
+
+function isProjectAnalysisMigration(definition) {
+  return definition.kind === projectAnalysisMigrationKind;
+}
+
+function canonicalizeCheckClause(clause) {
+  const normalized = clause
+    .replaceAll('`', '')
+    .replace(/_[A-Za-z0-9]+(?=\\?')/g, '')
+    .replaceAll('\\', '')
+    .replace(/[()\s]/g, '');
+
+  return normalized
+    .split("'")
+    .map((segment, index) => (index % 2 === 0 ? segment.toLowerCase() : segment))
+    .join("'");
+}
+
+function matchesCheckClause(actualClause, expectedClause) {
+  const canonicalActualClause = canonicalizeCheckClause(actualClause);
+  const canonicalExpectedClause = canonicalizeCheckClause(expectedClause);
+
+  if (canonicalExpectedClause === canonicalizeCheckClause(sourceStatusCheckClause)) {
+    return [sourceStatusCheckClause, sourceStatusEqualityCheckClause].some(
+      (supportedClause) => canonicalActualClause === canonicalizeCheckClause(supportedClause),
+    );
+  }
+
+  return canonicalActualClause === canonicalExpectedClause;
+}
+
+function isExpectedStatusColumn(column) {
+  return (
+    column?.COLUMN_TYPE === 'varchar(32)' &&
+    column.IS_NULLABLE === 'NO' &&
+    column.COLUMN_DEFAULT === 'nuevo' &&
+    column.COLLATION_NAME === 'utf8mb4_0900_as_cs'
+  );
+}
+
+function isExpectedAnalysisColumn(column) {
+  return column?.COLUMN_TYPE === 'json' && column.IS_NULLABLE === 'YES';
+}
+
+async function inspectProjectAnalysisState(connection) {
+  const [columns] = await connection.query(`
+    SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLLATION_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'proyectos'
+  `);
+  const [checks] = await connection.query(`
+    SELECT tc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+    JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+      ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+      AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+    WHERE tc.TABLE_SCHEMA = DATABASE()
+      AND tc.TABLE_NAME = 'proyectos'
+      AND tc.CONSTRAINT_TYPE = 'CHECK'
+  `);
+  const columnsByName = new Map(columns.map((column) => [column.COLUMN_NAME, column]));
+  const checksByName = new Map(checks.map((check) => [check.CONSTRAINT_NAME, check]));
+  const analysisColumn = columnsByName.get(projectAnalysisColumnName);
+  const analysisCheck = checksByName.get(projectAnalysisCheckName);
+  const statusCheck = checksByName.get(projectStatusCheckName);
+  const allowedCheckNames = new Set([
+    projectPayloadCheckName,
+    projectStatusCheckName,
+    projectAnalysisCheckName,
+  ]);
+  const unexpectedChecks = checks.filter((check) => !allowedCheckNames.has(check.CONSTRAINT_NAME));
+
+  let nonObjectAnalysisCount = 0;
+  if (isExpectedAnalysisColumn(analysisColumn)) {
+    const [rows] = await connection.query(`
+      SELECT COUNT(*) AS non_object_count
+      FROM proyectos
+      WHERE analisis_ia IS NOT NULL AND JSON_TYPE(analisis_ia) <> 'OBJECT'
+    `);
+    nonObjectAnalysisCount = rows[0]?.non_object_count ?? 0;
+  }
+
+  if (!isExpectedStatusColumn(columnsByName.get('estado'))) {
+    return { kind: 'ambiguous', reason: 'Project status column is incompatible' };
+  }
+
+  if (unexpectedChecks.length > 0) {
+    return { kind: 'ambiguous', reason: 'Project schema contains unexpected check constraints' };
+  }
+
+  const columnState = analysisColumn
+    ? isExpectedAnalysisColumn(analysisColumn)
+      ? 'exact'
+      : 'incompatible'
+    : 'absent';
+  const analysisCheckState = analysisCheck
+    ? matchesCheckClause(analysisCheck.CHECK_CLAUSE, analysisObjectCheckClause)
+      ? 'exact'
+      : 'incompatible'
+    : 'absent';
+  const statusCheckState = statusCheck
+    ? matchesCheckClause(statusCheck.CHECK_CLAUSE, sourceStatusCheckClause)
+      ? 'source'
+      : matchesCheckClause(statusCheck.CHECK_CLAUSE, targetStatusCheckClause)
+        ? 'target'
+        : 'incompatible'
+    : 'absent';
+
+  if (
+    columnState === 'incompatible' ||
+    analysisCheckState === 'incompatible' ||
+    statusCheckState === 'incompatible' ||
+    statusCheckState === 'absent' ||
+    nonObjectAnalysisCount > 0
+  ) {
+    return { kind: 'ambiguous', reason: 'Project analysis schema is ambiguous or incompatible' };
+  }
+
+  if (
+    columnState === 'absent' &&
+    analysisCheckState === 'absent' &&
+    statusCheckState === 'source'
+  ) {
+    return { kind: 'source' };
+  }
+
+  if (
+    columnState === 'exact' &&
+    analysisCheckState === 'exact' &&
+    statusCheckState === 'target'
+  ) {
+    return { kind: 'target' };
+  }
+
+  if (
+    (columnState === 'exact' && analysisCheckState === 'absent') ||
+    (columnState === 'exact' && analysisCheckState === 'exact' && statusCheckState === 'source') ||
+    (columnState === 'absent' && analysisCheckState === 'absent' && statusCheckState === 'target')
+  ) {
+    return { kind: 'partial', columnState, analysisCheckState, statusCheckState };
+  }
+
+  return { kind: 'ambiguous', reason: 'Project analysis schema is ambiguous or incompatible' };
+}
+
+async function verifyProjectAnalysisState(connection, expectedKind) {
+  const inspection = await inspectProjectAnalysisState(connection);
+
+  if (inspection.kind !== expectedKind) {
+    throw new Error(`Migration 004 verification failed: expected ${expectedKind} schema state`);
+  }
+
+  return inspection;
+}
+
+async function insertApplyingHistory(connection, definition) {
+  await connection.execute(
+    `
+      INSERT INTO schema_migrations (migration_name, checksum, state, applied_at)
+      VALUES (?, ?, 'applying', NULL)
+    `,
+    [definition.name, definition.checksum],
+  );
+}
+
+async function markProjectAnalysisApplied(connection, definition) {
+  await verifyProjectAnalysisState(connection, 'target');
+  await connection.execute(
+    `
+      UPDATE schema_migrations
+      SET state = 'applied', applied_at = CURRENT_TIMESTAMP(6)
+      WHERE migration_name = ?
+    `,
+    [definition.name],
+  );
+}
+
+async function insertVerifiedProjectAnalysisHistory(connection, definition) {
+  await verifyProjectAnalysisState(connection, 'target');
+  await connection.execute(
+    `
+      INSERT INTO schema_migrations (migration_name, checksum, state, applied_at)
+      VALUES (?, ?, 'applied', CURRENT_TIMESTAMP(6))
+    `,
+    [definition.name, definition.checksum],
+  );
+}
+
+async function repairProjectAnalysisState(connection, inspection) {
+  const clauses = [];
+
+  if (inspection.columnState === 'absent') {
+    clauses.push(addAnalysisColumnClause);
+  }
+
+  if (inspection.analysisCheckState === 'absent') {
+    clauses.push(addAnalysisObjectCheckClause);
+  }
+
+  if (inspection.statusCheckState === 'source') {
+    clauses.push(replaceStatusWithTargetClause);
+  }
+
+  if (clauses.length === 0) {
+    throw new Error('Migration 004 recovery has no deterministic repair clauses');
+  }
+
+  await connection.query(`ALTER TABLE proyectos\n  ${clauses.join(',\n  ')}`);
+}
+
+async function applyProjectAnalysisMigration(connection, definition, history) {
+  let record = history.get(definition.name);
+  let inspection = await inspectProjectAnalysisState(connection);
+
+  if (record?.state === 'applied') {
+    await verifyProjectAnalysisState(connection, 'target');
+    return;
+  }
+
+  if (record?.state === 'rolling_back') {
+    if (inspection.kind === 'source') {
+      await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+        definition.name,
+      ]);
+      history.delete(definition.name);
+      record = undefined;
+    } else if (inspection.kind === 'target') {
+      await markProjectAnalysisApplied(connection, definition);
+      history.set(definition.name, { ...record, state: 'applied' });
+      return;
+    } else {
+      throw new Error('Migration 004 rollback is partial or ambiguous');
+    }
+  }
+
+  if (record?.state === 'applying') {
+    if (inspection.kind === 'target') {
+      await markProjectAnalysisApplied(connection, definition);
+      history.set(definition.name, { ...record, state: 'applied' });
+      return;
+    }
+
+    if (inspection.kind === 'source') {
+      await connection.query(definition.upSql);
+    } else if (inspection.kind === 'partial') {
+      await repairProjectAnalysisState(connection, inspection);
+    } else {
+      throw new Error(`Migration 004 cannot recover: ${inspection.reason}`);
+    }
+
+    await markProjectAnalysisApplied(connection, definition);
+    history.set(definition.name, { ...record, state: 'applied' });
+    return;
+  }
+
+  if (inspection.kind === 'target') {
+    await insertVerifiedProjectAnalysisHistory(connection, definition);
+    history.set(definition.name, { name: definition.name, state: 'applied' });
+    return;
+  }
+
+  if (inspection.kind !== 'source' && inspection.kind !== 'partial') {
+    throw new Error(`Migration 004 cannot recover: ${inspection.reason}`);
+  }
+
+  await insertApplyingHistory(connection, definition);
+  history.set(definition.name, { name: definition.name, state: 'applying' });
+
+  if (inspection.kind === 'source') {
+    await connection.query(definition.upSql);
+  } else {
+    await repairProjectAnalysisState(connection, inspection);
+  }
+
+  await markProjectAnalysisApplied(connection, definition);
+  history.set(definition.name, { name: definition.name, state: 'applied' });
 }
 
 async function getLockName(connection) {
@@ -191,12 +484,32 @@ async function reconcileHistory(connection, rows, definitionsByName) {
 async function loadHistory(connection, definitions) {
   const rows = await loadHistoryRows(connection);
   const definitionsByName = validateHistory(rows, definitions);
+  const standardDefinitions = definitions.filter(
+    (definition) => !isProjectAnalysisMigration(definition),
+  );
+  const standardRows = rows.filter(
+    (row) => definitionsByName.get(row.migration_name)?.kind !== projectAnalysisMigrationKind,
+  );
+  const history = await reconcileHistory(connection, standardRows, new Map(
+    standardDefinitions.map((definition) => [definition.name, definition]),
+  ));
 
-  return reconcileHistory(connection, rows, definitionsByName);
+  for (const row of rows) {
+    if (definitionsByName.get(row.migration_name)?.kind === projectAnalysisMigrationKind) {
+      history.set(row.migration_name, row);
+    }
+  }
+
+  return history;
 }
 
 async function applyPendingMigrations(connection, definitions, history) {
   for (const definition of definitions) {
+    if (isProjectAnalysisMigration(definition)) {
+      await applyProjectAnalysisMigration(connection, definition, history);
+      continue;
+    }
+
     if (history.has(definition.name)) {
       continue;
     }
@@ -224,12 +537,99 @@ async function applyPendingMigrations(connection, definitions, history) {
   }
 }
 
+async function rollbackProjectAnalysisMigration(connection, definition, history) {
+  const record = history.get(definition.name);
+  const inspection = await inspectProjectAnalysisState(connection);
+
+  if (!record) {
+    if (inspection.kind === 'source') {
+      return false;
+    }
+
+    if (inspection.kind === 'target') {
+      await insertVerifiedProjectAnalysisHistory(connection, definition);
+      history.set(definition.name, { name: definition.name, state: 'applied' });
+    } else {
+      throw new Error(`Migration 004 cannot roll back: ${inspection.reason ?? 'partial schema state'}`);
+    }
+  } else if (record.state === 'rolling_back') {
+    if (inspection.kind === 'source') {
+      await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+        definition.name,
+      ]);
+      history.delete(definition.name);
+      return true;
+    }
+
+    if (inspection.kind !== 'target') {
+      throw new Error('Migration 004 rollback is partial or ambiguous');
+    }
+  } else if (record.state === 'applying') {
+    throw new Error('Migration 004 is applying and must be recovered with an up command first');
+  } else if (record.state !== 'applied') {
+    throw new Error('Migration 004 history contains an invalid state');
+  }
+
+  await verifyProjectAnalysisState(connection, 'target');
+  const [rows] = await connection.query(`
+    SELECT COUNT(*) AS blocking_count
+    FROM proyectos
+    WHERE estado <> 'nuevo' OR analisis_ia IS NOT NULL
+  `);
+
+  if ((rows[0]?.blocking_count ?? 0) > 0) {
+    throw new Error('Migration 004 rollback is blocked by retained analysis data');
+  }
+
+  if (history.get(definition.name)?.state !== 'rolling_back') {
+    await connection.execute(
+      "UPDATE schema_migrations SET state = 'rolling_back' WHERE migration_name = ?",
+      [definition.name],
+    );
+    history.set(definition.name, { ...history.get(definition.name), state: 'rolling_back' });
+  }
+
+  await connection.query(definition.downSql);
+  await verifyProjectAnalysisState(connection, 'source');
+  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [definition.name]);
+  history.delete(definition.name);
+
+  return true;
+}
+
 async function rollbackLatestMigration(connection, definitions, history) {
+  const projectAnalysisDefinition = definitions.find(isProjectAnalysisMigration);
+
+  if (projectAnalysisDefinition && !history.has(projectAnalysisDefinition.name)) {
+    const projectsExist = await tableExists(connection, projectAnalysisDefinition.table);
+
+    if (projectsExist) {
+      const inspection = await inspectProjectAnalysisState(connection);
+
+      if (inspection.kind === 'target') {
+        await insertVerifiedProjectAnalysisHistory(connection, projectAnalysisDefinition);
+        history.set(projectAnalysisDefinition.name, {
+          name: projectAnalysisDefinition.name,
+          state: 'applied',
+        });
+      } else if (inspection.kind !== 'source') {
+        throw new Error(
+          `Migration 004 cannot roll back: ${inspection.reason ?? 'partial schema state'}`,
+        );
+      }
+    }
+  }
+
   const latestApplied = [...definitions]
     .reverse()
     .find((definition) => history.has(definition.name));
 
   if (!latestApplied) {
+    return;
+  }
+
+  if (isProjectAnalysisMigration(latestApplied)) {
+    await rollbackProjectAnalysisMigration(connection, latestApplied, history);
     return;
   }
 
