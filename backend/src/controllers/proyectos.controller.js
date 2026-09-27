@@ -1,4 +1,9 @@
-import { createProject, getProjectById, listProjects } from '../services/proyectos.service.js';
+import {
+  analyzeProject,
+  createProject,
+  getProjectById,
+  listProjects,
+} from '../services/proyectos.service.js';
 
 export async function create(request, response) {
   const project = await createProject(request.body);
@@ -16,4 +21,10 @@ export async function getById(request, response) {
   const project = await getProjectById(request.params.id);
 
   response.status(200).json({ success: true, data: project });
+}
+
+export async function analyze(request, response) {
+  const analysis = await analyzeProject(request.params.id);
+
+  response.status(200).json({ success: true, data: analysis });
 }
