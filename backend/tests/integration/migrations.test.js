@@ -33,6 +33,7 @@ const interruptedMigration = {
 
 const backendDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const analysisMigration = '004_add_project_ai_analysis';
+const backlogMigration = '005_enable_backlog_planning';
 const validAnalysis = {
   viable: true,
   completitud: 'completo',
@@ -163,9 +164,10 @@ async function assertAnalysisTarget(pool) {
     canonicalizeCheckClause(objectCheck?.CHECK_CLAUSE ?? ''),
     "analisis_iaisnullorjson_typeanalisis_ia='object'",
   );
-  assert.equal(
-    canonicalizeCheckClause(statusCheck?.CHECK_CLAUSE ?? ''),
-    "estadoin'nuevo','analizado'",
+  assert.ok(
+    ["estadoin'nuevo','analizado'", "estadoin'nuevo','analizado','planificado'"].includes(
+      canonicalizeCheckClause(statusCheck?.CHECK_CLAUSE ?? ''),
+    ),
   );
 }
 
@@ -282,6 +284,7 @@ test('applies and reverses the guarded planning schema in order', async (t) => {
     { migration_name: '002_create_historias', state: 'applied' },
     { migration_name: '003_create_equipo', state: 'applied' },
     { migration_name: '004_add_project_ai_analysis', state: 'applied' },
+    { migration_name: '005_enable_backlog_planning', state: 'applied' },
   ]);
   assert.deepEqual(
     historyColumns.map((column) => column.COLUMN_NAME),
@@ -291,6 +294,7 @@ test('applies and reverses the guarded planning schema in order', async (t) => {
   assert.equal(historyColumns[1].COLUMN_TYPE, 'binary(32)');
   assert.equal(historyColumns[2].COLUMN_TYPE, 'varchar(16)');
 
+  await runMigration('down');
   await runMigration('down');
   await runMigration('down');
   await runMigration('down');
@@ -593,7 +597,7 @@ test('classifies source, target, and recognized migration 004 ALTER recovery sta
   }
 });
 
-test('accepts MySQL singleton equality for the source status while rejecting case and value drift', async (t) => {
+test('recognizes the migration-004 two-state source status while rejecting case and value drift', async (t) => {
   const pool = await preparePreAnalysisSchema(t);
   const [sourceChecks] = await pool.query(`
     SELECT cc.CHECK_CLAUSE
@@ -606,7 +610,10 @@ test('accepts MySQL singleton equality for the source status while rejecting cas
       AND tc.CONSTRAINT_NAME = 'chk_proyectos_estado'
   `);
 
-  assert.equal(canonicalizeCheckClause(sourceChecks[0]?.CHECK_CLAUSE ?? ''), "estado='nuevo'");
+  assert.equal(
+    canonicalizeCheckClause(sourceChecks[0]?.CHECK_CLAUSE ?? ''),
+    "estadoin'nuevo','analizado'",
+  );
   await runMigration('up');
   await assertAnalysisTarget(pool);
 
@@ -717,6 +724,7 @@ test('protects migration 004 rollback data and reconciles only supported interru
     JSON.stringify(validAnalysis),
   ]);
 
+  await runMigration('down');
   await assert.rejects(runMigration('down'), /analysis|data|rollback/i);
   await assertAnalysisTarget(pool);
   assert.equal((await getAnalysisHistory(pool))?.state, 'applied');
@@ -729,6 +737,7 @@ test('protects migration 004 rollback data and reconciles only supported interru
   await runMigration('up');
 
   assert.equal((await getAnalysisHistory(pool))?.state, 'applied');
+  await runMigration('down');
   await runMigration('down');
 
   const [columns] = await pool.query(`
@@ -743,6 +752,7 @@ test('resumes supported source rollback and refuses a partial rolling-back schem
   await t.test('reapplies from an exact source rolling-back state', async (t) => {
     const pool = await prepareMigratedSchema(t);
 
+    await runMigration('down');
     await assertAnalysisTarget(pool);
 
     await pool.execute(
@@ -766,6 +776,7 @@ test('resumes supported source rollback and refuses a partial rolling-back schem
   await t.test('refuses a partial rolling-back state before repair SQL or history deletion', async (t) => {
     const pool = await prepareMigratedSchema(t);
 
+    await runMigration('down');
     await assertAnalysisTarget(pool);
 
     await pool.execute(
@@ -785,6 +796,113 @@ test('resumes supported source rollback and refuses a partial rolling-back schem
       checks.some((check) => check.CONSTRAINT_NAME === 'chk_proyectos_analisis_ia_objeto'),
       false,
     );
+  });
+});
+
+test('applies, recovers, and safely rolls back the bounded migration 005 constraint evolution', async (t) => {
+  const migrationsDirectory = path.join(backendDirectory, 'migrations');
+  const priorMigrationFiles = ['001_create_proyectos', '002_create_historias', '003_create_equipo', analysisMigration]
+    .flatMap((name) => [
+      path.join(migrationsDirectory, `${name}.up.sql`),
+      path.join(migrationsDirectory, `${name}.down.sql`),
+    ]);
+  const priorBytes = await Promise.all(priorMigrationFiles.map((file) => readFile(file)));
+  const pool = await prepareMigratedSchema(t);
+  const [columns] = await pool.query(`
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'historias'
+    ORDER BY ORDINAL_POSITION
+  `);
+  const [checks] = await pool.query(`
+    SELECT tc.TABLE_NAME, tc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+    JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+      ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+      AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+    WHERE tc.TABLE_SCHEMA = DATABASE()
+      AND tc.CONSTRAINT_NAME IN ('chk_proyectos_estado', 'chk_historias_rol')
+  `);
+  const statusCheck = checks.find((check) => check.CONSTRAINT_NAME === 'chk_proyectos_estado');
+  const roleCheck = checks.find((check) => check.CONSTRAINT_NAME === 'chk_historias_rol');
+
+  assert.deepEqual(
+    columns.map((column) => column.COLUMN_NAME),
+    [
+      'id',
+      'proyecto_id',
+      'prioridad',
+      'historia_usuario',
+      'descripcion',
+      'criterios_aceptacion',
+      'alcance_tecnico',
+      'estimacion_fibonacci',
+      'rol_sugerido',
+      'fase',
+      'columna_tablero',
+      'fecha_inicio_estimada',
+      'fecha_fin_estimada',
+      'creado_en',
+      'actualizado_en',
+    ],
+  );
+  assert.equal(
+    canonicalizeCheckClause(statusCheck?.CHECK_CLAUSE ?? ''),
+    "estadoin'nuevo','analizado','planificado'",
+  );
+  assert.equal(
+    canonicalizeCheckClause(roleCheck?.CHECK_CLAUSE ?? ''),
+    "rol_sugeridoin'desarrolladorfrontend','desarrolladorbackend','analistaqa','analistadeciberseguridad','analistaderequerimientos','projectmanager','frontend','backend','qa','ciberseguridad'",
+  );
+  assert.deepEqual(await Promise.all(priorMigrationFiles.map((file) => readFile(file))), priorBytes);
+
+  await runMigration('up');
+
+  const [history] = await pool.execute(
+    'SELECT state FROM schema_migrations WHERE migration_name = ?',
+    [backlogMigration],
+  );
+  assert.equal(history[0]?.state, 'applied');
+
+  await pool.execute("INSERT INTO proyectos (payload, estado) VALUES (CAST(? AS JSON), 'planificado')", [
+    JSON.stringify({ empresa: {} }),
+  ]);
+  await assert.rejects(runMigration('down'), /planning data|rollback/i);
+  assert.equal(history[0]?.state, 'applied');
+
+  await pool.query('DELETE FROM proyectos');
+  await runMigration('down');
+
+  const [sourceStatus] = await pool.query(`
+    SELECT cc.CHECK_CLAUSE
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+    JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+      ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+      AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+    WHERE tc.TABLE_SCHEMA = DATABASE()
+      AND tc.TABLE_NAME = 'proyectos'
+      AND tc.CONSTRAINT_NAME = 'chk_proyectos_estado'
+  `);
+  assert.equal(
+    canonicalizeCheckClause(sourceStatus[0]?.CHECK_CLAUSE ?? ''),
+    "estadoin'nuevo','analizado'",
+  );
+
+  await t.test('repairs one recognized fixed partial target state', async (t) => {
+    const partialPool = await preparePreAnalysisSchema(t);
+
+    await partialPool.query(`
+      ALTER TABLE proyectos
+        DROP CHECK chk_proyectos_estado,
+        ADD CONSTRAINT chk_proyectos_estado CHECK (estado IN ('nuevo', 'analizado', 'planificado'))
+    `);
+    await runMigration('up');
+
+    const [partialHistory] = await partialPool.execute(
+      'SELECT state FROM schema_migrations WHERE migration_name = ?',
+      [backlogMigration],
+    );
+    assert.equal(partialHistory[0]?.state, 'applied');
   });
 });
 
