@@ -13,4 +13,9 @@ proyectosRouter.post(
   validate(projectIdParamsSchema, 'params'),
   proyectosController.analyze,
 );
+proyectosRouter.post(
+  '/:id/backlog',
+  validate(projectIdParamsSchema, 'params'),
+  proyectosController.generateBacklog,
+);
 proyectosRouter.get('/:id', validate(projectIdParamsSchema, 'params'), proyectosController.getById);

@@ -1,6 +1,7 @@
 import {
   analyzeProject,
   createProject,
+  generateProjectBacklog,
   getProjectById,
   listProjects,
 } from '../services/proyectos.service.js';
@@ -27,4 +28,10 @@ export async function analyze(request, response) {
   const analysis = await analyzeProject(request.params.id);
 
   response.status(200).json({ success: true, data: analysis });
+}
+
+export async function generateBacklog(request, response) {
+  const backlog = await generateProjectBacklog(request.params.id);
+
+  response.status(200).json({ success: true, data: backlog });
 }
