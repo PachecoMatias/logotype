@@ -28,6 +28,17 @@ const validAnalysis = {
   mensaje_para_cliente: 'The project can proceed to planning.',
 };
 
+const validBacklog = Array.from({ length: 12 }, (_, index) => ({
+  fase: 'Desarrollo Backend',
+  prioridad: 'Alta',
+  historia_usuario: `As a planner, I need backlog item ${index + 1}.`,
+  descripcion: `Deliver the bounded backlog item ${index + 1}.`,
+  criterios_aceptacion: [`The item ${index + 1} has a verifiable outcome.`],
+  alcance_tecnico: `Implement the server-owned scope for item ${index + 1}.`,
+  estimacion_fibonacci: 3,
+  rol_sugerido: 'Backend',
+}));
+
 async function importGeminiGateway() {
   const moduleUrl = new URL('../../src/integrations/gemini.gateway.js', import.meta.url);
 
@@ -479,6 +490,100 @@ test('concurrent first analysis requests preserve the first stored result withou
     );
     assert.deepEqual(first.body.data, rows[0].analisis_ia);
     assert.deepEqual(second.body.data, rows[0].analisis_ia);
+  } finally {
+    restoreGateway.mock.restore();
+  }
+});
+
+test('backlog persists a strict generated result and returns the stored cache on repeat', async () => {
+  const { geminiGateway } = await importGeminiGateway();
+  const project = await createProjectForAnalysis();
+  let providerCalls = 0;
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
+    [analysisText(), project.id],
+  );
+  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
+    providerCalls += 1;
+    return JSON.stringify(validBacklog);
+  });
+
+  try {
+    const first = await request(app).post(`/api/proyectos/${project.id}/backlog`).send({ ignored: true });
+    const second = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    const [stories] = await pool.execute(
+      'SELECT id FROM historias WHERE proyecto_id = ? ORDER BY id ASC',
+      [project.id],
+    );
+    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [project.id]);
+
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.deepEqual(first.body, { success: true, data: validBacklog });
+    assert.deepEqual(second.body, { success: true, data: validBacklog });
+    assert.equal(providerCalls, 1);
+    assert.equal(stories.length, 12);
+    assert.equal(projects[0].estado, 'planificado');
+  } finally {
+    restoreGateway.mock.restore();
+  }
+});
+
+test('backlog rejects a storyless project that has not been analyzed before provider or persistence work', async () => {
+  const { geminiGateway } = await importGeminiGateway();
+  const project = await createProjectForAnalysis();
+  let providerCalls = 0;
+  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
+    providerCalls += 1;
+    return JSON.stringify(validBacklog);
+  });
+
+  try {
+    const response = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    const [stories] = await pool.execute('SELECT COUNT(*) AS count FROM historias WHERE proyecto_id = ?', [
+      project.id,
+    ]);
+    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [project.id]);
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.body, {
+      success: false,
+      error: {
+        code: 'PROJECT_NOT_ANALYZED',
+        message: 'Project must be analyzed before backlog generation',
+      },
+    });
+    assert.equal(providerCalls, 0);
+    assert.equal(stories[0].count, 0);
+    assert.equal(projects[0].estado, 'nuevo');
+  } finally {
+    restoreGateway.mock.restore();
+  }
+});
+
+test('backlog normalizes malformed provider JSON without a persistence write', async () => {
+  const { geminiGateway } = await importGeminiGateway();
+  const project = await createProjectForAnalysis();
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
+    [analysisText(), project.id],
+  );
+  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => '{not json}');
+
+  try {
+    const response = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    const [stories] = await pool.execute('SELECT COUNT(*) AS count FROM historias WHERE proyecto_id = ?', [
+      project.id,
+    ]);
+    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [project.id]);
+
+    assert.equal(response.status, 502);
+    assert.deepEqual(response.body, {
+      success: false,
+      error: { code: 'AI_ANALYSIS_FAILED', message: 'AI analysis failed' },
+    });
+    assert.equal(stories[0].count, 0);
+    assert.equal(projects[0].estado, 'analizado');
   } finally {
     restoreGateway.mock.restore();
   }

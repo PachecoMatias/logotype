@@ -15,9 +15,11 @@ const migrations = [
   { name: '002_create_historias', table: 'historias' },
   { name: '003_create_equipo', table: 'equipo' },
   { name: '004_add_project_ai_analysis', table: 'proyectos', kind: 'project-analysis-alter' },
+  { name: '005_enable_backlog_planning', table: 'proyectos', kind: 'backlog-planning-alter' },
 ];
 
 const projectAnalysisMigrationKind = 'project-analysis-alter';
+const backlogPlanningMigrationKind = 'backlog-planning-alter';
 const projectAnalysisColumnName = 'analisis_ia';
 const projectStatusCheckName = 'chk_proyectos_estado';
 const projectAnalysisCheckName = 'chk_proyectos_analisis_ia_objeto';
@@ -25,11 +27,30 @@ const projectPayloadCheckName = 'chk_proyectos_payload_objeto';
 const sourceStatusCheckClause = "estado IN ('nuevo')";
 const sourceStatusEqualityCheckClause = "estado = 'nuevo'";
 const targetStatusCheckClause = "estado IN ('nuevo', 'analizado')";
+const backlogTargetStatusCheckClause = "estado IN ('nuevo', 'analizado', 'planificado')";
+const sourceRoleCheckClause = `rol_sugerido IN (
+  'Desarrollador Frontend', 'Desarrollador Backend', 'Analista QA',
+  'Analista de Ciberseguridad', 'Analista de requerimientos', 'Project Manager'
+)`;
+const targetRoleCheckClause = `rol_sugerido IN (
+  'Desarrollador Frontend', 'Desarrollador Backend', 'Analista QA',
+  'Analista de Ciberseguridad', 'Analista de requerimientos', 'Project Manager',
+  'Frontend', 'Backend', 'QA', 'Ciberseguridad'
+)`;
+const storyRoleCheckName = 'chk_historias_rol';
 const analysisObjectCheckClause = "analisis_ia IS NULL OR JSON_TYPE(analisis_ia) = 'OBJECT'";
 const addAnalysisColumnClause = 'ADD COLUMN analisis_ia JSON NULL AFTER estado';
 const addAnalysisObjectCheckClause = `ADD CONSTRAINT ${projectAnalysisCheckName}
   CHECK (${analysisObjectCheckClause})`;
 const replaceStatusWithTargetClause = `DROP CHECK ${projectStatusCheckName},
+  ADD CONSTRAINT ${projectStatusCheckName} CHECK (${targetStatusCheckClause})`;
+const replaceStatusWithBacklogTargetClause = `DROP CHECK ${projectStatusCheckName},
+  ADD CONSTRAINT ${projectStatusCheckName} CHECK (${backlogTargetStatusCheckClause})`;
+const replaceRoleWithBacklogTargetClause = `DROP CHECK ${storyRoleCheckName},
+  ADD CONSTRAINT ${storyRoleCheckName} CHECK (${targetRoleCheckClause})`;
+const replaceRoleWithSourceClause = `DROP CHECK ${storyRoleCheckName},
+  ADD CONSTRAINT ${storyRoleCheckName} CHECK (${sourceRoleCheckClause})`;
+const replaceStatusWithSourceClause = `DROP CHECK ${projectStatusCheckName},
   ADD CONSTRAINT ${projectStatusCheckName} CHECK (${targetStatusCheckClause})`;
 
 const schemaMigrationsStatement = `
@@ -108,10 +129,18 @@ function isProjectAnalysisMigration(definition) {
   return definition.kind === projectAnalysisMigrationKind;
 }
 
+function isBacklogPlanningMigration(definition) {
+  return definition.kind === backlogPlanningMigrationKind;
+}
+
+function isSpecialMigration(definition) {
+  return isProjectAnalysisMigration(definition) || isBacklogPlanningMigration(definition);
+}
+
 function canonicalizeCheckClause(clause) {
   const normalized = clause
     .replaceAll('`', '')
-    .replace(/_[A-Za-z0-9]+(?=\\?')/g, '')
+    .replace(/_utf8mb4(?:_[A-Za-z0-9]+)*(?=\\?')/gi, '')
     .replaceAll('\\', '')
     .replace(/[()\s]/g, '');
 
@@ -206,7 +235,8 @@ async function inspectProjectAnalysisState(connection) {
   const statusCheckState = statusCheck
     ? matchesCheckClause(statusCheck.CHECK_CLAUSE, sourceStatusCheckClause)
       ? 'source'
-      : matchesCheckClause(statusCheck.CHECK_CLAUSE, targetStatusCheckClause)
+      : matchesCheckClause(statusCheck.CHECK_CLAUSE, targetStatusCheckClause) ||
+          matchesCheckClause(statusCheck.CHECK_CLAUSE, backlogTargetStatusCheckClause)
         ? 'target'
         : 'incompatible'
     : 'absent';
@@ -381,6 +411,185 @@ async function applyProjectAnalysisMigration(connection, definition, history) {
   history.set(definition.name, { name: definition.name, state: 'applied' });
 }
 
+async function findCheckClause(connection, tableName, checkName) {
+  const [rows] = await connection.execute(
+    `
+      SELECT cc.CHECK_CLAUSE
+      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+      JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+        ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+        AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+      WHERE tc.TABLE_SCHEMA = DATABASE()
+        AND tc.TABLE_NAME = ?
+        AND tc.CONSTRAINT_NAME = ?
+        AND tc.CONSTRAINT_TYPE = 'CHECK'
+    `,
+    [tableName, checkName],
+  );
+
+  return rows[0]?.CHECK_CLAUSE;
+}
+
+function classifyBacklogCheck(actualClause, sourceClause, targetClause) {
+  if (typeof actualClause !== 'string') {
+    return 'incompatible';
+  }
+
+  if (matchesCheckClause(actualClause, targetClause)) {
+    return 'target';
+  }
+
+  if (matchesCheckClause(actualClause, sourceClause)) {
+    return 'source';
+  }
+
+  return 'incompatible';
+}
+
+async function inspectBacklogPlanningState(connection) {
+  const [statusClause, roleClause] = await Promise.all([
+    findCheckClause(connection, 'proyectos', projectStatusCheckName),
+    findCheckClause(connection, 'historias', storyRoleCheckName),
+  ]);
+  const statusCheckState = classifyBacklogCheck(
+    statusClause,
+    targetStatusCheckClause,
+    backlogTargetStatusCheckClause,
+  );
+  const roleCheckState = classifyBacklogCheck(
+    roleClause,
+    sourceRoleCheckClause,
+    targetRoleCheckClause,
+  );
+
+  if (statusCheckState === 'incompatible' || roleCheckState === 'incompatible') {
+    return { kind: 'ambiguous', reason: 'Backlog planning constraints are incompatible' };
+  }
+
+  if (statusCheckState === 'target' && roleCheckState === 'target') {
+    return { kind: 'target', statusCheckState, roleCheckState };
+  }
+
+  if (statusCheckState === 'source' && roleCheckState === 'source') {
+    return { kind: 'source', statusCheckState, roleCheckState };
+  }
+
+  return { kind: 'partial', statusCheckState, roleCheckState };
+}
+
+async function verifyBacklogPlanningState(connection, expectedKind) {
+  const inspection = await inspectBacklogPlanningState(connection);
+
+  if (inspection.kind !== expectedKind) {
+    throw new Error(`Migration 005 verification failed: expected ${expectedKind} schema state`);
+  }
+
+  return inspection;
+}
+
+async function markBacklogPlanningApplied(connection, definition) {
+  await verifyBacklogPlanningState(connection, 'target');
+  await connection.execute(
+    `
+      UPDATE schema_migrations
+      SET state = 'applied', applied_at = CURRENT_TIMESTAMP(6)
+      WHERE migration_name = ?
+    `,
+    [definition.name],
+  );
+}
+
+async function insertVerifiedBacklogPlanningHistory(connection, definition) {
+  await verifyBacklogPlanningState(connection, 'target');
+  await connection.execute(
+    `
+      INSERT INTO schema_migrations (migration_name, checksum, state, applied_at)
+      VALUES (?, ?, 'applied', CURRENT_TIMESTAMP(6))
+    `,
+    [definition.name, definition.checksum],
+  );
+}
+
+async function repairBacklogPlanningTarget(connection, inspection) {
+  const operations = [];
+
+  if (inspection.statusCheckState === 'source') {
+    operations.push(`ALTER TABLE proyectos\n  ${replaceStatusWithBacklogTargetClause}`);
+  }
+
+  if (inspection.roleCheckState === 'source') {
+    operations.push(`ALTER TABLE historias\n  ${replaceRoleWithBacklogTargetClause}`);
+  }
+
+  if (operations.length === 0) {
+    throw new Error('Migration 005 recovery has no deterministic repair clauses');
+  }
+
+  for (const operation of operations) {
+    await connection.query(operation);
+  }
+}
+
+async function applyBacklogPlanningMigration(connection, definition, history) {
+  let record = history.get(definition.name);
+  let inspection = await inspectBacklogPlanningState(connection);
+
+  if (record?.state === 'applied') {
+    await verifyBacklogPlanningState(connection, 'target');
+    return;
+  }
+
+  if (record?.state === 'rolling_back') {
+    if (inspection.kind === 'source') {
+      await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+        definition.name,
+      ]);
+      history.delete(definition.name);
+      record = undefined;
+    } else if (inspection.kind === 'target') {
+      await markBacklogPlanningApplied(connection, definition);
+      history.set(definition.name, { ...record, state: 'applied' });
+      return;
+    } else {
+      throw new Error('Migration 005 rollback is partial or ambiguous');
+    }
+  }
+
+  if (record?.state === 'applying') {
+    if (inspection.kind === 'target') {
+      await markBacklogPlanningApplied(connection, definition);
+      history.set(definition.name, { ...record, state: 'applied' });
+      return;
+    }
+
+    if (inspection.kind === 'source' || inspection.kind === 'partial') {
+      await repairBacklogPlanningTarget(connection, inspection);
+    } else {
+      throw new Error(`Migration 005 cannot recover: ${inspection.reason}`);
+    }
+
+    await markBacklogPlanningApplied(connection, definition);
+    history.set(definition.name, { ...record, state: 'applied' });
+    return;
+  }
+
+  if (inspection.kind === 'target') {
+    await insertVerifiedBacklogPlanningHistory(connection, definition);
+    history.set(definition.name, { name: definition.name, state: 'applied' });
+    return;
+  }
+
+  if (inspection.kind !== 'source' && inspection.kind !== 'partial') {
+    throw new Error(`Migration 005 cannot recover: ${inspection.reason}`);
+  }
+
+  await insertApplyingHistory(connection, definition);
+  history.set(definition.name, { name: definition.name, state: 'applying' });
+  await repairBacklogPlanningTarget(connection, inspection);
+  await markBacklogPlanningApplied(connection, definition);
+  history.set(definition.name, { name: definition.name, state: 'applied' });
+}
+
 async function getLockName(connection) {
   const [rows] = await connection.query(
     "SELECT CONCAT('logotype:', LEFT(SHA2(DATABASE(), 256), 48)) AS lock_name",
@@ -485,17 +694,17 @@ async function loadHistory(connection, definitions) {
   const rows = await loadHistoryRows(connection);
   const definitionsByName = validateHistory(rows, definitions);
   const standardDefinitions = definitions.filter(
-    (definition) => !isProjectAnalysisMigration(definition),
+    (definition) => !isSpecialMigration(definition),
   );
   const standardRows = rows.filter(
-    (row) => definitionsByName.get(row.migration_name)?.kind !== projectAnalysisMigrationKind,
+    (row) => !isSpecialMigration(definitionsByName.get(row.migration_name)),
   );
   const history = await reconcileHistory(connection, standardRows, new Map(
     standardDefinitions.map((definition) => [definition.name, definition]),
   ));
 
   for (const row of rows) {
-    if (definitionsByName.get(row.migration_name)?.kind === projectAnalysisMigrationKind) {
+    if (isSpecialMigration(definitionsByName.get(row.migration_name))) {
       history.set(row.migration_name, row);
     }
   }
@@ -507,6 +716,11 @@ async function applyPendingMigrations(connection, definitions, history) {
   for (const definition of definitions) {
     if (isProjectAnalysisMigration(definition)) {
       await applyProjectAnalysisMigration(connection, definition, history);
+      continue;
+    }
+
+    if (isBacklogPlanningMigration(definition)) {
+      await applyBacklogPlanningMigration(connection, definition, history);
       continue;
     }
 
@@ -597,8 +811,119 @@ async function rollbackProjectAnalysisMigration(connection, definition, history)
   return true;
 }
 
+async function assertBacklogRollbackSafe(connection) {
+  const [plannedProjects, generatedRoles] = await Promise.all([
+    connection.query("SELECT COUNT(*) AS blocking_count FROM proyectos WHERE estado = 'planificado'"),
+    connection.query(`
+      SELECT COUNT(*) AS blocking_count
+      FROM historias
+      WHERE rol_sugerido IN ('Frontend', 'Backend', 'QA', 'Ciberseguridad')
+    `),
+  ]);
+
+  if (
+    (plannedProjects[0][0]?.blocking_count ?? 0) > 0 ||
+    (generatedRoles[0][0]?.blocking_count ?? 0) > 0
+  ) {
+    throw new Error('Migration 005 rollback is blocked by retained planning data');
+  }
+}
+
+async function restoreBacklogPlanningSource(connection, inspection) {
+  const operations = [];
+
+  if (inspection.roleCheckState === 'target') {
+    operations.push(`ALTER TABLE historias\n  ${replaceRoleWithSourceClause}`);
+  }
+
+  if (inspection.statusCheckState === 'target') {
+    operations.push(`ALTER TABLE proyectos\n  ${replaceStatusWithSourceClause}`);
+  }
+
+  if (operations.length === 0) {
+    throw new Error('Migration 005 rollback has no deterministic restoration clauses');
+  }
+
+  for (const operation of operations) {
+    await connection.query(operation);
+  }
+}
+
+async function rollbackBacklogPlanningMigration(connection, definition, history) {
+  const record = history.get(definition.name);
+  const inspection = await inspectBacklogPlanningState(connection);
+
+  if (!record) {
+    if (inspection.kind === 'source') {
+      return false;
+    }
+
+    if (inspection.kind === 'target') {
+      await insertVerifiedBacklogPlanningHistory(connection, definition);
+      history.set(definition.name, { name: definition.name, state: 'applied' });
+    } else {
+      throw new Error(`Migration 005 cannot roll back: ${inspection.reason ?? 'partial schema state'}`);
+    }
+  } else if (record.state === 'rolling_back') {
+    if (inspection.kind === 'source') {
+      await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+        definition.name,
+      ]);
+      history.delete(definition.name);
+      return true;
+    }
+
+    if (inspection.kind !== 'target' && inspection.kind !== 'partial') {
+      throw new Error('Migration 005 rollback is partial or ambiguous');
+    }
+  } else if (record.state === 'applying') {
+    throw new Error('Migration 005 is applying and must be recovered with an up command first');
+  } else if (record.state !== 'applied') {
+    throw new Error('Migration 005 history contains an invalid state');
+  }
+
+  await assertBacklogRollbackSafe(connection);
+
+  if (history.get(definition.name)?.state !== 'rolling_back') {
+    await connection.execute(
+      "UPDATE schema_migrations SET state = 'rolling_back' WHERE migration_name = ?",
+      [definition.name],
+    );
+    history.set(definition.name, { ...history.get(definition.name), state: 'rolling_back' });
+  }
+
+  await restoreBacklogPlanningSource(connection, inspection);
+  await verifyBacklogPlanningState(connection, 'source');
+  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [definition.name]);
+  history.delete(definition.name);
+
+  return true;
+}
+
 async function rollbackLatestMigration(connection, definitions, history) {
+  const backlogPlanningDefinition = definitions.find(isBacklogPlanningMigration);
   const projectAnalysisDefinition = definitions.find(isProjectAnalysisMigration);
+
+  if (backlogPlanningDefinition && !history.has(backlogPlanningDefinition.name)) {
+    const backlogTablesExist =
+      (await tableExists(connection, 'proyectos')) && (await tableExists(connection, 'historias'));
+
+    if (backlogTablesExist) {
+      const inspection = await inspectBacklogPlanningState(connection);
+
+      if (inspection.kind === 'target') {
+        await insertVerifiedBacklogPlanningHistory(connection, backlogPlanningDefinition);
+        history.set(backlogPlanningDefinition.name, {
+          name: backlogPlanningDefinition.name,
+          state: 'applied',
+        });
+      } else if (inspection.kind !== 'source') {
+        throw new Error(
+          `Migration 005 cannot roll back: ${inspection.reason ?? 'partial schema state'}`,
+        );
+      }
+    }
+  }
 
   if (projectAnalysisDefinition && !history.has(projectAnalysisDefinition.name)) {
     const projectsExist = await tableExists(connection, projectAnalysisDefinition.table);
@@ -630,6 +955,11 @@ async function rollbackLatestMigration(connection, definitions, history) {
 
   if (isProjectAnalysisMigration(latestApplied)) {
     await rollbackProjectAnalysisMigration(connection, latestApplied, history);
+    return;
+  }
+
+  if (isBacklogPlanningMigration(latestApplied)) {
+    await rollbackBacklogPlanningMigration(connection, latestApplied, history);
     return;
   }
 

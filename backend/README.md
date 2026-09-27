@@ -48,6 +48,7 @@ The runner uses an advisory lock so two runners do not change the schema togethe
 | `POST` | `/api/proyectos`     | Persist a validated configurator payload with server-owned `estado: "nuevo"`. |
 | `GET`  | `/api/proyectos`     | Return the project collection.                                                |
 | `GET`  | `/api/proyectos/:id` | Return one project or `PROJECT_NOT_FOUND`.                                    |
+| `POST` | `/api/proyectos/:id/backlog` | Generate or return a stored analyzed-project backlog.                  |
 
 Successful responses use:
 
