@@ -36,6 +36,11 @@ const testDatabaseSchema = z.object({
   }),
 });
 
+const geminiEnvironmentSchema = z.object({
+  GEMINI_API_KEY: requiredStringSchema,
+  GEMINI_MODEL: requiredStringSchema.default('gemini-2.5-flash'),
+});
+
 function formatEnvironmentError(error) {
   return error.issues
     .map((issue) => `${issue.path.join('.') || 'environment'}: ${issue.message}`)
@@ -94,5 +99,14 @@ export function parseEnvironment(environment = process.env) {
       database: applicationDatabase.MYSQL_DATABASE,
       connectionLimit: common.MYSQL_CONNECTION_LIMIT,
     },
+  };
+}
+
+export function parseGeminiEnvironment(environment = process.env) {
+  const gemini = parseSchema(geminiEnvironmentSchema, environment);
+
+  return {
+    apiKey: gemini.GEMINI_API_KEY,
+    model: gemini.GEMINI_MODEL,
   };
 }

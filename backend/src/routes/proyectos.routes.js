@@ -8,4 +8,9 @@ export const proyectosRouter = Router();
 
 proyectosRouter.post('/', validate(projectBodySchema, 'body'), proyectosController.create);
 proyectosRouter.get('/', proyectosController.list);
+proyectosRouter.post(
+  '/:id/analizar',
+  validate(projectIdParamsSchema, 'params'),
+  proyectosController.analyze,
+);
 proyectosRouter.get('/:id', validate(projectIdParamsSchema, 'params'), proyectosController.getById);
