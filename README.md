@@ -281,6 +281,72 @@ logotype/
 │   └── tests/                # Tests unitarios e integración
 └── openspec/                 # Historial técnico de cambios del proyecto
 ```
+## Ejemplo de carga para probar el sistema
+
+Podés usar los siguientes datos para crear una solicitud de prueba y recorrer el flujo completo del sistema.
+
+### Paso 1: Empresa
+
+- **Nombre de la empresa:** Distribuidora Del Norte SRL
+- **Persona de contacto:** María Fernández
+- **Email:** maria@distribuidoradelnorte.com
+- **Teléfono:** 381 555 0142
+- **Rubro:** Comercio
+
+### Paso 2: Proyecto
+
+- **Tipo:** Sistema de gestión
+
+### Paso 3: Problema
+
+- **¿Qué problema tiene actualmente tu empresa?**
+
+  > Gestionamos pedidos, stock y facturación con planillas de Excel y mensajes de WhatsApp. Esto genera errores de carga, pedidos duplicados, faltantes de stock que descubrimos tarde y no tenemos reportes de ventas confiables. Somos una distribuidora con 25 empleados y unos 300 clientes activos.
+
+- **¿Cómo realizan actualmente este proceso?**
+
+  > Los vendedores toman pedidos por WhatsApp, los pasan a una planilla compartida y administración los factura manualmente en otro sistema. El stock se actualiza a mano una vez por día, por lo que la información nunca está al día.
+
+- **Objetivos:**
+  - Reducir tiempos
+  - Automatizar tareas
+  - Centralizar información
+  - Obtener estadísticas
+
+### Paso 4: Funcionalidades
+
+Seleccioná las siguientes funcionalidades:
+
+- Gestión de usuarios
+- Login y autenticación
+- Roles y permisos
+- Gestión de clientes
+- Gestión de productos
+- Gestión de pedidos
+- Gestión de stock
+- Reportes y estadísticas
+- Dashboard
+
+### Paso 5: Alcance
+
+- **Plataformas:** Web
+- **Cantidad de usuarios:** 10 - 50
+- **¿Diferentes tipos de usuarios?:** Sí
+- **Tipos de usuario:**
+  - Administrador
+  - Empleado
+  - Supervisor
+
+### Paso 6: Presupuesto
+
+- **Presupuesto:** Más de USD 10.000
+- **Plazo:** 3 - 6 meses
+- **Información adicional:**
+
+  > Contamos con un responsable interno que puede validar los requerimientos semanalmente. Tenemos los datos actuales en Excel para migrarlos.
+
+> [!TIP]
+> Este ejemplo es útil para probar el flujo completo: crear solicitud → analizar con IA → generar backlog → visualizar historias de usuario → abrir el tablero Kanban.
 
 ## Consideraciones actuales
 
