@@ -16,6 +16,85 @@ function createAnalysisFailure() {
   return new AppError(502, 'AI_ANALYSIS_FAILED', 'AI analysis failed');
 }
 
+const backlogFailureStages = new Set([
+  'configuration',
+  'provider',
+  'response_text',
+  'json_parse',
+  'schema_validation',
+  'prompt_construction',
+]);
+const providerReasons = new Set([
+  'response_schema_too_complex',
+  'invalid_response_schema',
+  'invalid_model',
+  'invalid_api_key',
+  'other_invalid_argument',
+]);
+
+function sanitizeErrorName(name) {
+  return typeof name === 'string' && /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(name) ? name : 'Error';
+}
+
+function sanitizeNetworkCode(code) {
+  return typeof code === 'string' && /^[A-Z][A-Z0-9_]{1,31}$/.test(code) ? code : undefined;
+}
+
+function sanitizeProviderSymbolicStatus(status) {
+  return typeof status === 'string' && /^[A-Z][A-Z0-9_]{1,63}$/.test(status) ? status : undefined;
+}
+
+function sanitizeModel(model) {
+  return typeof model === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$/.test(model)
+    ? model
+    : undefined;
+}
+
+function createBacklogDiagnostic({ stage, error, issues, projectId }) {
+  const diagnostic = {
+    stage: backlogFailureStages.has(stage) ? stage : 'provider',
+    errorName: sanitizeErrorName(error?.name),
+    projectId,
+  };
+  const providerStatus = error?.providerStatus ?? error?.status ?? error?.statusCode;
+  const providerSymbolicStatus = sanitizeProviderSymbolicStatus(error?.providerSymbolicStatus);
+  const providerReason = providerReasons.has(error?.providerReason)
+    ? error.providerReason
+    : undefined;
+  const networkCode = sanitizeNetworkCode(error?.networkCode ?? error?.code);
+  const model = sanitizeModel(error?.configuredModel ?? error?.model);
+
+  if (typeof providerStatus === 'number' && Number.isFinite(providerStatus)) {
+    diagnostic.providerStatus = providerStatus;
+  }
+
+  if (providerSymbolicStatus) {
+    diagnostic.providerSymbolicStatus = providerSymbolicStatus;
+  }
+
+  if (providerReason) {
+    diagnostic.providerReason = providerReason;
+  }
+
+  if (networkCode) {
+    diagnostic.networkCode = networkCode;
+  }
+
+  if (issues) {
+    diagnostic.zodIssues = issues.map((issue) => ({ code: issue.code, path: issue.path }));
+  }
+
+  if (model) {
+    diagnostic.model = model;
+  }
+
+  return diagnostic;
+}
+
+function defaultBacklogFailureLogger(diagnostic) {
+  console.error(JSON.stringify({ event: 'backlog_generation_failed', ...diagnostic }));
+}
+
 export function createProyectosService({
   repository = proyectosRepository,
   historiasRepository: storyRepository = historiasRepository,
@@ -23,6 +102,7 @@ export function createProyectosService({
   getConfiguration = parseEnvironment,
   buildPrompt = buildProjectViabilityPrompt,
   buildBacklogPrompt = buildProjectBacklogPrompt,
+  logBacklogFailure = defaultBacklogFailureLogger,
 } = {}) {
   async function createProject(payload) {
     return repository.insert(getConfiguration(), payload);
@@ -116,26 +196,46 @@ export function createProyectosService({
       );
     }
 
-    let stories;
-
-    try {
-      const prompt = buildBacklogPrompt(project.payload, project.analisisIa);
-      const rawProviderText = await analysisGateway.generateProjectBacklog(prompt);
-
-      if (typeof rawProviderText !== 'string' || !rawProviderText.trim()) {
-        throw new Error('Gemini returned no backlog text');
-      }
-
-      const result = projectBacklogSchema.safeParse(JSON.parse(rawProviderText));
-
-      if (!result.success) {
-        throw new Error('Gemini returned an invalid backlog');
-      }
-
-      stories = result.data;
-    } catch {
+    function failBacklog(stage, error, issues) {
+      logBacklogFailure(createBacklogDiagnostic({ stage, error, issues, projectId: id }));
       throw createAnalysisFailure();
     }
+
+    let prompt;
+
+    try {
+      prompt = buildBacklogPrompt(project.payload, project.analisisIa);
+    } catch (error) {
+      failBacklog('prompt_construction', error);
+    }
+
+    let rawProviderText;
+
+    try {
+      rawProviderText = await analysisGateway.generateProjectBacklog(prompt);
+    } catch (error) {
+      failBacklog(error?.backlogFailureStage, error);
+    }
+
+    if (typeof rawProviderText !== 'string' || !rawProviderText.trim()) {
+      failBacklog('response_text', new TypeError('Invalid provider response text'));
+    }
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(rawProviderText);
+    } catch (error) {
+      failBacklog('json_parse', error);
+    }
+
+    const result = projectBacklogSchema.safeParse(parsed);
+
+    if (!result.success) {
+      failBacklog('schema_validation', result.error, result.error.issues);
+    }
+
+    const stories = result.data;
 
     const persisted = await storyRepository.persistGeneratedBacklog(configuration, id, stories);
 
@@ -159,5 +259,10 @@ export function createProyectosService({
 
 export const proyectosService = createProyectosService();
 
-export const { createProject, listProjects, getProjectById, analyzeProject, generateProjectBacklog } =
-  proyectosService;
+export const {
+  createProject,
+  listProjects,
+  getProjectById,
+  analyzeProject,
+  generateProjectBacklog,
+} = proyectosService;
