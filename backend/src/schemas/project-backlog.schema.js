@@ -46,21 +46,18 @@ export const projectBacklogSchema = z.array(projectBacklogStorySchema).min(12).m
 
 export const projectBacklogJsonSchema = {
   type: 'array',
-  minItems: 12,
-  maxItems: 25,
   items: {
     type: 'object',
-    additionalProperties: false,
     required: projectBacklogStoryFields,
     properties: {
-      fase: { type: 'string', enum: projectBacklogPhases },
-      prioridad: { type: 'string', enum: projectBacklogPriorities },
+      fase: { type: 'string' },
+      prioridad: { type: 'string' },
       historia_usuario: { type: 'string' },
       descripcion: { type: 'string' },
-      criterios_aceptacion: { type: 'array', minItems: 1, items: { type: 'string' } },
+      criterios_aceptacion: { type: 'array', items: { type: 'string' } },
       alcance_tecnico: { type: 'string' },
-      estimacion_fibonacci: { type: 'integer', enum: fibonacciEstimates },
-      rol_sugerido: { type: 'string', enum: projectBacklogRoles },
+      estimacion_fibonacci: { type: 'integer' },
+      rol_sugerido: { type: 'string' },
     },
   },
 };

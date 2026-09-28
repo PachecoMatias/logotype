@@ -11,10 +11,15 @@ import Infrastructure from './components/Infrastructure/Infrastructure.jsx'
 import ProjectConfigurator from './components/ProjectConfigurator/ProjectConfigurator.jsx'
 import Conclusions from './components/Conclusions/Conclusions.jsx'
 import Footer from './components/Footer/Footer.jsx'
+import PanelSolicitudes from './components/Panel/PanelSolicitudes.jsx'
+import PanelDetalle from './components/Panel/PanelDetalle.jsx'
+import PanelTablero from './components/Panel/PanelTablero.jsx'
 
 function App() {
-  // 'home' = página principal | 'configurador' = pantalla dedicada del formulario
+  // 'home' = página principal | 'configurador' = formulario dedicado
+  // 'panel-solicitudes' = listado interno (Pantalla A) | 'panel-detalle' = detalle de un proyecto (Pantalla B)
   const [view, setView] = useState('home')
+  const [selectedProjectId, setSelectedProjectId] = useState(null)
 
   const handleNavigate = (id) => {
     if (id === 'configurador') {
@@ -23,7 +28,7 @@ function App() {
       return
     }
 
-    if (view === 'configurador') {
+    if (view !== 'home') {
       setView('home')
       setTimeout(() => {
         const el = document.getElementById(id)
@@ -43,6 +48,29 @@ function App() {
     window.scrollTo({ top: 0 })
   }
 
+  const handleOpenPanel = () => {
+    setView('panel-solicitudes')
+    window.scrollTo({ top: 0 })
+  }
+
+  const handleSelectProject = (id) => {
+    setSelectedProjectId(id)
+    setView('panel-detalle')
+    window.scrollTo({ top: 0 })
+  }
+
+  const handleBackToPanel = () => {
+    setSelectedProjectId(null)
+    setView('panel-solicitudes')
+    window.scrollTo({ top: 0 })
+  }
+
+  const handleViewBoard = (id) => {
+    setSelectedProjectId(id)
+    setView('panel-tablero')
+    window.scrollTo({ top: 0 })
+  }
+
   if (view === 'configurador') {
     return (
       <div className="configurator-standalone">
@@ -51,14 +79,62 @@ function App() {
             <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
               LOGO<span>TYPE</span>
             </button>
-
             <button className="configurator-close" onClick={handleBackHome}>
               ✕ Cerrar
             </button>
           </div>
         </header>
-
         <ProjectConfigurator onBack={handleBackHome} />
+      </div>
+    )
+  }
+
+  if (view === 'panel-solicitudes') {
+    return (
+      <div className="configurator-standalone">
+        <header className="configurator-topbar">
+          <div className="container configurator-topbar-inner">
+            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
+              LOGO<span>TYPE</span>
+            </button>
+            <button className="configurator-close" onClick={handleBackHome}>
+              ✕ Cerrar
+            </button>
+          </div>
+        </header>
+        <PanelSolicitudes onSelectProject={handleSelectProject} />
+      </div>
+    )
+  }
+
+  if (view === 'panel-detalle') {
+    return (
+      <div className="configurator-standalone">
+        <header className="configurator-topbar">
+          <div className="container configurator-topbar-inner">
+            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
+              LOGO<span>TYPE</span>
+            </button>
+            <button className="configurator-close" onClick={handleBackHome}>
+              ✕ Cerrar
+            </button>
+          </div>
+        </header>
+        <PanelDetalle
+          projectId={selectedProjectId}
+          onBack={handleBackToPanel}
+          onViewBoard={handleViewBoard}
+        />
+      </div>
+    )
+  }
+  if (view === 'panel-tablero') {
+    return (
+      <div className="app-panel-wrapper">
+        <PanelTablero
+          projectId={selectedProjectId}
+          onBack={() => setView('panel-detalle')}
+        />
       </div>
     )
   }
@@ -76,6 +152,14 @@ function App() {
       <Infrastructure />
       <Conclusions />
       <Footer />
+      <button
+        className="panel-fab"
+        onClick={handleOpenPanel}
+        title="Panel interno de solicitudes"
+        aria-label="Abrir panel interno de solicitudes"
+      >
+        ⚙
+      </button>
     </>
   )
 }
