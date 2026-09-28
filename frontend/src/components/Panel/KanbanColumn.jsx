@@ -1,6 +1,6 @@
 import KanbanCard from './KanbanCard.jsx'
 
-function KanbanColumn({ nombre, historias, onMover, esPrimera, esUltima }) {
+function KanbanColumn({ nombre, historias, onMover, onVerDetalle, esPrimera, esUltima }) {
   return (
     <div className="kanban-columna">
       <div className="kanban-columna-header">
@@ -17,6 +17,7 @@ function KanbanColumn({ nombre, historias, onMover, esPrimera, esUltima }) {
             historia={historia}
             columna={nombre}
             onMover={onMover}
+            onVerDetalle={onVerDetalle}
             puedeAtras={!esPrimera}
             puedeAdelante={!esUltima}
           />

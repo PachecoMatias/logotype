@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import KanbanColumn from './KanbanColumn.jsx'
-import { apiRequest } from '../../utils/api.js'
+import HistoriaModal from './HistoriaModal.jsx'
 import { prepararHistoriasTablero } from '../../utils/backlog.js'
 
 const COLUMNAS = ['Backlog', 'To Do', 'In Progress', 'In Code Review', 'In QA', 'Done']
@@ -12,53 +12,23 @@ function fechaHoyString() {
   return `${yyyy}-${mm}-${dd}`
 }
 
-function PanelTablero({ projectId, onBack }) {
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState(null)
+function crearColumnas(historias, projectId) {
+  const preparadas = prepararHistoriasTablero(historias, projectId, fechaHoyString())
+  return {
+    Backlog: preparadas,
+    'To Do': [],
+    'In Progress': [],
+    'In Code Review': [],
+    'In QA': [],
+    Done: [],
+  }
+}
+
+function PanelTablero({ projectId, historias, onBack }) {
   const [historiasPorColumna, setHistoriasPorColumna] = useState(() =>
-    COLUMNAS.reduce((acc, col) => ({ ...acc, [col]: [] }), {})
+    crearColumnas(Array.isArray(historias) ? historias : [], projectId)
   )
-
-  useEffect(() => {
-    let cancelado = false
-
-    async function cargarBacklog() {
-      setCargando(true)
-      setError(null)
-      try {
-        const stories = await apiRequest(`/api/proyectos/${projectId}/backlog`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        })
-
-        if (cancelado) return
-
-        const historias = prepararHistoriasTablero(
-          stories,
-          projectId,
-          fechaHoyString(),
-        )
-        setHistoriasPorColumna({
-          Backlog: historias,
-          'To Do': [],
-          'In Progress': [],
-          'In Code Review': [],
-          'In QA': [],
-          Done: [],
-        })
-      } catch (err) {
-        if (!cancelado) setError(err.message)
-      } finally {
-        if (!cancelado) setCargando(false)
-      }
-    }
-
-    cargarBacklog()
-
-    return () => {
-      cancelado = true
-    }
-  }, [projectId])
+  const [detalleAbierto, setDetalleAbierto] = useState(null)
 
   const moverTarjeta = (historiaId, columnaActual, direccion) => {
     const indiceActual = COLUMNAS.indexOf(columnaActual)
@@ -79,22 +49,18 @@ function PanelTablero({ projectId, onBack }) {
     })
   }
 
-  if (cargando) {
-    return (
-      <div className="tablero-standalone">
-        <div className="container">
-          <p className="tablero-mensaje">Cargando tablero...</p>
-        </div>
-      </div>
-    )
-  }
+  const cerrarDetalle = useCallback(() => {
+    const trigger = detalleAbierto?.trigger
+    setDetalleAbierto(null)
+    window.requestAnimationFrame(() => trigger?.focus())
+  }, [detalleAbierto])
 
-  if (error) {
+  if (!Array.isArray(historias) || historias.length === 0) {
     return (
       <div className="tablero-standalone">
         <div className="container tablero-error-box">
           <p className="tablero-mensaje">
-            No se pudo cargar el tablero: {error || 'respuesta inesperada del servidor.'}
+            No hay historias cargadas para mostrar en el tablero.
           </p>
           <button className="btn btn-primary" onClick={onBack}>
             ← Volver al detalle
@@ -123,12 +89,16 @@ function PanelTablero({ projectId, onBack }) {
               nombre={col}
               historias={historiasPorColumna[col]}
               onMover={moverTarjeta}
+              onVerDetalle={(historia, trigger) => setDetalleAbierto({ historia, trigger })}
               esPrimera={col === COLUMNAS[0]}
               esUltima={col === COLUMNAS[COLUMNAS.length - 1]}
             />
           ))}
         </div>
       </div>
+      {detalleAbierto && (
+        <HistoriaModal historia={detalleAbierto.historia} onClose={cerrarDetalle} />
+      )}
     </div>
   )
 }

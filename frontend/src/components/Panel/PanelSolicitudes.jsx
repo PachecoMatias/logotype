@@ -45,14 +45,14 @@ function PanelSolicitudes({ onSelectProject }) {
           <p>Panel interno — proyectos enviados a través del configurador.</p>
         </div>
 
-        {loading && <p className="panel-state-msg">Cargando solicitudes...</p>}
+        {loading && <p className="panel-state-msg panel-state-msg-on-dark">Cargando solicitudes...</p>}
 
         {!loading && error && (
-          <p className="panel-state-msg panel-state-error">Ocurrió un error: {error}</p>
+          <p className="panel-state-msg panel-state-error panel-state-msg-on-dark">Ocurrió un error: {error}</p>
         )}
 
         {!loading && !error && proyectos.length === 0 && (
-          <p className="panel-state-msg">No hay solicitudes recibidas todavía.</p>
+          <p className="panel-state-msg panel-state-msg-on-dark">No hay solicitudes recibidas todavía.</p>
         )}
 
         {!loading && !error && proyectos.length > 0 && (

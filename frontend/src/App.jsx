@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import Header from './components/Header/Header.jsx'
 import Hero from './components/Hero/Hero.jsx'
 import Company from './components/Company/Company.jsx'
@@ -13,6 +13,7 @@ import Conclusions from './components/Conclusions/Conclusions.jsx'
 import Footer from './components/Footer/Footer.jsx'
 import PanelSolicitudes from './components/Panel/PanelSolicitudes.jsx'
 import PanelDetalle from './components/Panel/PanelDetalle.jsx'
+import PanelHistorias from './components/Panel/PanelHistorias.jsx'
 import PanelTablero from './components/Panel/PanelTablero.jsx'
 
 function App() {
@@ -20,6 +21,18 @@ function App() {
   // 'panel-solicitudes' = listado interno (Pantalla A) | 'panel-detalle' = detalle de un proyecto (Pantalla B)
   const [view, setView] = useState('home')
   const [selectedProjectId, setSelectedProjectId] = useState(null)
+  const [backlogsByProject, setBacklogsByProject] = useState({})
+
+  const selectedBacklog = selectedProjectId
+    ? backlogsByProject[selectedProjectId]
+    : undefined
+
+  const handleBacklogLoaded = useCallback((projectId, stories) => {
+    setBacklogsByProject((current) => ({
+      ...current,
+      [projectId]: stories,
+    }))
+  }, [])
 
   const handleNavigate = (id) => {
     if (id === 'configurador') {
@@ -71,6 +84,12 @@ function App() {
     window.scrollTo({ top: 0 })
   }
 
+  const handleViewStories = (id) => {
+    setSelectedProjectId(id)
+    setView('panel-historias')
+    window.scrollTo({ top: 0 })
+  }
+
   if (view === 'configurador') {
     return (
       <div className="configurator-standalone">
@@ -91,7 +110,7 @@ function App() {
 
   if (view === 'panel-solicitudes') {
     return (
-      <div className="configurator-standalone">
+      <div className="configurator-standalone panel-standalone">
         <header className="configurator-topbar">
           <div className="container configurator-topbar-inner">
             <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
@@ -109,7 +128,7 @@ function App() {
 
   if (view === 'panel-detalle') {
     return (
-      <div className="configurator-standalone">
+      <div className="configurator-standalone panel-standalone">
         <header className="configurator-topbar">
           <div className="container configurator-topbar-inner">
             <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
@@ -122,17 +141,43 @@ function App() {
         </header>
         <PanelDetalle
           projectId={selectedProjectId}
+          historias={selectedBacklog}
           onBack={handleBackToPanel}
+          onBacklogLoaded={handleBacklogLoaded}
           onViewBoard={handleViewBoard}
+          onViewStories={handleViewStories}
         />
       </div>
     )
   }
+
+  if (view === 'panel-historias') {
+    return (
+      <div className="configurator-standalone panel-standalone">
+        <header className="configurator-topbar">
+          <div className="container configurator-topbar-inner">
+            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
+              LOGO<span>TYPE</span>
+            </button>
+            <button className="configurator-close" onClick={handleBackHome}>
+              ✕ Cerrar
+            </button>
+          </div>
+        </header>
+        <PanelHistorias
+          historias={selectedBacklog}
+          onBack={() => setView('panel-detalle')}
+        />
+      </div>
+    )
+  }
+
   if (view === 'panel-tablero') {
     return (
       <div className="app-panel-wrapper">
         <PanelTablero
           projectId={selectedProjectId}
+          historias={selectedBacklog}
           onBack={() => setView('panel-detalle')}
         />
       </div>

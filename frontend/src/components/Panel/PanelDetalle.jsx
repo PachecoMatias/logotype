@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import StatusBadge from './StatusBadge.jsx'
 import { apiRequest } from '../../utils/api.js'
 import { adaptarHistorias } from '../../utils/backlog.js'
@@ -89,51 +89,14 @@ function AnalisisIA({ analisis }) {
   )
 }
 
-function Backlog({ historias }) {
-  if (!historias || historias.length === 0) return null
-
-  const grupos = historias.reduce((acc, h) => {
-    const fase = h.fase || 'Sin fase'
-    if (!acc[fase]) acc[fase] = []
-    acc[fase].push(h)
-    return acc
-  }, {})
-
-  return (
-    <div className="panel-backlog">
-      <h3>Backlog generado</h3>
-      {Object.entries(grupos).map(([fase, items]) => (
-        <div key={fase} className="panel-backlog-fase">
-          <h4>{fase}</h4>
-          <div className="panel-backlog-grid">
-            {items.map((h) => (
-              <div className="card panel-historia-card" key={h.id}>
-                <div className="panel-historia-top">
-                  <span className="panel-chip">{h.prioridad}</span>
-                  <span className="panel-chip panel-chip-fib">Fib: {h.estimacion_fibonacci}</span>
-                </div>
-                <p className="panel-historia-texto">{h.historia_usuario}</p>
-                {h.descripcion && <p className="panel-historia-desc">{h.descripcion}</p>}
-                {h.criterios_aceptacion && h.criterios_aceptacion.length > 0 && (
-                  <div>
-                    <strong>Criterios de aceptación</strong>
-                    <ul className="panel-lista-valores">
-                      {h.criterios_aceptacion.map((c, i) => <li key={i}>{c}</li>)}
-                    </ul>
-                  </div>
-                )}
-                {h.alcance_tecnico && <p><strong>Alcance técnico:</strong> {h.alcance_tecnico}</p>}
-                {h.rol_sugerido && <p className="panel-historia-rol">Rol sugerido: {h.rol_sugerido}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function PanelDetalle({ projectId, onBack, onViewBoard }) {
+function PanelDetalle({
+  projectId,
+  historias,
+  onBack,
+  onBacklogLoaded,
+  onViewBoard,
+  onViewStories,
+}) {
   const [proyecto, setProyecto] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -141,9 +104,9 @@ function PanelDetalle({ projectId, onBack, onViewBoard }) {
   const [analizando, setAnalizando] = useState(false)
   const [errorAnalisis, setErrorAnalisis] = useState(null)
 
-  const [historias, setHistorias] = useState(null)
   const [generandoBacklog, setGenerandoBacklog] = useState(false)
   const [errorBacklog, setErrorBacklog] = useState(null)
+  const cargaPlanificadaIntentada = useRef(null)
 
   useEffect(() => {
     let cancelado = false
@@ -193,7 +156,7 @@ function PanelDetalle({ projectId, onBack, onViewBoard }) {
     }
   }
 
-  const handleGenerarBacklog = async () => {
+  const handleGenerarBacklog = useCallback(async () => {
     setGenerandoBacklog(true)
     setErrorBacklog(null)
     try {
@@ -201,23 +164,29 @@ function PanelDetalle({ projectId, onBack, onViewBoard }) {
         method: 'POST',
       })
 
-      setHistorias(adaptarHistorias(stories, projectId))
+      onBacklogLoaded(projectId, adaptarHistorias(stories, projectId))
       setProyecto((prev) => (prev ? { ...prev, estado: 'planificado' } : prev))
     } catch (err) {
       setErrorBacklog(err.message || 'Error de red al generar el backlog.')
     } finally {
       setGenerandoBacklog(false)
     }
-  }
+  }, [onBacklogLoaded, projectId])
 
   // Si el proyecto ya está planificado (por ejemplo, entrando directo por refresh),
   // pedimos el backlog existente: el endpoint lo devuelve sin regenerar.
   useEffect(() => {
-    if (proyecto && proyecto.estado === 'planificado' && !historias && !generandoBacklog) {
+    if (
+      proyecto?.estado === 'planificado'
+      && historias === undefined
+      && cargaPlanificadaIntentada.current !== projectId
+    ) {
+      cargaPlanificadaIntentada.current = projectId
       handleGenerarBacklog()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proyecto])
+  }, [handleGenerarBacklog, historias, projectId, proyecto?.estado])
+
+  const tieneBacklog = Array.isArray(historias) && historias.length > 0
 
   return (
     <section className="panel-section">
@@ -226,10 +195,10 @@ function PanelDetalle({ projectId, onBack, onViewBoard }) {
           ← Volver
         </button>
 
-        {loading && <p className="panel-state-msg">Cargando solicitud...</p>}
+        {loading && <p className="panel-state-msg panel-state-msg-on-dark">Cargando solicitud...</p>}
 
         {!loading && error && (
-          <p className="panel-state-msg panel-state-error">Ocurrió un error: {error}</p>
+          <p className="panel-state-msg panel-state-error panel-state-msg-on-dark">Ocurrió un error: {error}</p>
         )}
 
         {!loading && !error && proyecto && (
@@ -260,7 +229,7 @@ function PanelDetalle({ projectId, onBack, onViewBoard }) {
               <AnalisisIA analisis={proyecto.analisisIa} />
             )}
 
-            {proyecto.estado === 'analizado' && (
+            {proyecto.estado === 'analizado' && !tieneBacklog && (
               <div className="panel-accion-box">
                 <button className="btn btn-primary" onClick={handleGenerarBacklog} disabled={generandoBacklog}>
                   {generandoBacklog ? 'Generando...' : 'Generar backlog'}
@@ -269,21 +238,23 @@ function PanelDetalle({ projectId, onBack, onViewBoard }) {
               </div>
             )}
 
-            {proyecto.estado === 'planificado' && generandoBacklog && (
+            {proyecto.estado === 'planificado' && !tieneBacklog && generandoBacklog && (
               <p className="panel-state-msg">Cargando backlog...</p>
             )}
 
-            {proyecto.estado === 'planificado' && errorBacklog && (
+            {proyecto.estado === 'planificado' && !tieneBacklog && errorBacklog && (
               <p className="panel-state-msg panel-state-error">{errorBacklog}</p>
             )}
-            {historias && historias.length > 0 && (
-              <div className="panel-accion-box">
+            {tieneBacklog && (
+              <div className="panel-accion-box panel-action-group">
                 <button className="btn btn-primary" onClick={() => onViewBoard(projectId)}>
                   Ver tablero
                 </button>
+                <button className="btn btn-outline" onClick={() => onViewStories(projectId)}>
+                  Ver historias de usuario
+                </button>
               </div>
             )}
-            <Backlog historias={historias} />
           </>
         )}
       </div>
