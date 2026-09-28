@@ -18,6 +18,7 @@ import {
   validateAlcance,
   validatePresupuesto,
 } from './validation.js'
+import { apiRequest } from '../../utils/api.js'
 
 const stepKeys = ['empresa', 'proyecto', 'problema', 'funcionalidades', 'alcance', 'presupuesto']
 const validators = [
@@ -36,6 +37,7 @@ function ProjectConfigurator({onBack}) {
   const [direction, setDirection] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
 
   const isSummaryStep = stepIndex === configuratorSteps.length - 1
 
@@ -76,13 +78,22 @@ function ProjectConfigurator({onBack}) {
     goToStep(index, -1)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSubmitting(true)
-    // Simulación de envío: no se realiza ninguna petición HTTP real.
-    setTimeout(() => {
-      setSubmitting(false)
+    setSubmitError(null)
+
+    try {
+      await apiRequest('/api/proyectos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      }, 201)
       setSubmitted(true)
-    }, 1400)
+    } catch (error) {
+      setSubmitError(error.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleRestart = () => {
@@ -90,6 +101,7 @@ function ProjectConfigurator({onBack}) {
     setStepIndex(0)
     setErrors({})
     setSubmitted(false)
+    setSubmitError(null)
   }
 
   const variants = {
@@ -199,7 +211,11 @@ function ProjectConfigurator({onBack}) {
               </div>
 
               {!submitting && (
-                <div className="step-nav">
+                <>
+                  {submitError && (
+                    <p className="panel-state-msg panel-state-error">{submitError}</p>
+                  )}
+                  <div className="step-nav">
                   <button
                     className="btn btn-outline"
                     onClick={handleBack}
@@ -211,7 +227,8 @@ function ProjectConfigurator({onBack}) {
                   <button className="btn btn-primary" onClick={handleNext}>
                     {isSummaryStep ? 'Enviar solicitud' : 'Continuar →'}
                   </button>
-                </div>
+                  </div>
+                </>
               )}
             </>
           )}
