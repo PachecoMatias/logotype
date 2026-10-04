@@ -31,18 +31,22 @@ Backend story schemas, repository, service/controller/router wiring, focused API
 ## Delivery
 
 - Strategy: `ask-on-risk`
+- Chain strategy: `stacked-to-main` (user-selected).
 - Forecast: approximately 380–420 authored changed lines across two work units.
+- Running count: 379 changed lines through `4fbb24f`.
 - Branch: `feat/edit-user-stories`
 - Reviewed boundary: `890cf4e`
+- Slice 1: `4fbb24f` — backend persisted identity and PATCH contract; target `main`.
+- Slice 2: pending — shared frontend editor; built on Slice 1 and retargeted/rebased after Slice 1 lands.
 
 ## Tasks
 
-- [ ] **STORY-1 — Persisted identity and PATCH contract**
+- [x] **STORY-1 — Persisted identity and PATCH contract**
   - Route: delegated direct; multiple non-trivial backend files and test-first API work trigger one bounded writer.
   - Acceptance: backlog responses include immutable persisted IDs; PATCH accepts a non-empty subset of approved fields, rejects invalid or immutable fields using existing validation conventions, updates JSON criteria correctly, returns `{ success: true, data }`, and returns 404 for an unknown ID.
-  - Checks: observe focused API test RED then GREEN; backend lint; focused integration tests.
-  - Commit: pending.
-  - Review: pending.
+  - Checks: RED observed with 14 expected failures; GREEN 14/14 focused historias tests; backlog contract tests 3/3; ESLint and touched-file Prettier checks passed. Full migration suite has 15 failures independently reproduced at base `890cf4e` (25 pass / 15 fail), so they are pre-existing environmental failures.
+  - Commit: `4fbb24f` (`feat(api): edit persisted user stories`).
+  - Review: medium, `under_budget`; native review deferred in the current slice.
 - [ ] **STORY-2 — Shared editor in backlog and Kanban**
   - Route: delegated direct; shared state integration spans multiple non-trivial frontend files and triggers one bounded writer.
   - Acceptance: both entry points use one editor component; PATCH uses the real story ID; successful saves update the dedicated screen, Kanban card/modal, and canonical App state without reload; loading and API errors are visible; phase remains non-editable.
@@ -54,7 +58,8 @@ Backend story schemas, repository, service/controller/router wiring, focused API
 
 - Exploration completed against the current backend and both current frontend interfaces.
 - User authorized exposing the persisted immutable story ID in the existing backlog response.
+- STORY-1 completed with persisted IDs, validated partial updates, uniform 404 handling, and focused integration coverage.
 
 ## Next Step
 
-Implement STORY-1 with test-first evidence, commit it as one reviewable backend work unit, then assess the committed candidate.
+Create the Slice 2 branch from Slice 1 and implement the shared frontend editor; push and PR creation remain user decisions.

@@ -32,3 +32,11 @@ export async function apiRequest(path, options = {}, expectedStatus) {
 
   return body.data
 }
+
+export function actualizarHistoria(id, cambios) {
+  return apiRequest(`/api/historias/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cambios),
+  })
+}

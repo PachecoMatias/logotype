@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { HistoriaContenido } from './HistoriaModal.jsx'
+import HistoriaEditor from './HistoriaEditor.jsx'
 
 function agruparPorFase(historias) {
   return historias.reduce((grupos, historia) => {
@@ -9,7 +11,8 @@ function agruparPorFase(historias) {
   }, {})
 }
 
-function PanelHistorias({ historias, onBack }) {
+function PanelHistorias({ historias, onHistoriaActualizada, onBack }) {
+  const [historiaEnEdicion, setHistoriaEnEdicion] = useState(null)
   const lista = Array.isArray(historias) ? historias : []
   const grupos = agruparPorFase(lista)
   let numeroHistoria = 0
@@ -43,7 +46,27 @@ function PanelHistorias({ historias, onBack }) {
                     numeroHistoria += 1
                     return (
                       <article className="card panel-historia-card" key={historia.id}>
-                        <HistoriaContenido historia={historia} numero={numeroHistoria} />
+                        {historiaEnEdicion === historia.id ? (
+                          <HistoriaEditor
+                            historia={historia}
+                            onSaved={(actualizada) => {
+                              onHistoriaActualizada(actualizada)
+                              setHistoriaEnEdicion(null)
+                            }}
+                            onCancel={() => setHistoriaEnEdicion(null)}
+                          />
+                        ) : (
+                          <>
+                            <HistoriaContenido historia={historia} numero={numeroHistoria} />
+                            <button
+                              className="btn btn-outline historia-editar-btn"
+                              type="button"
+                              onClick={() => setHistoriaEnEdicion(historia.id)}
+                            >
+                              Editar historia
+                            </button>
+                          </>
+                        )}
                       </article>
                     )
                   })}
