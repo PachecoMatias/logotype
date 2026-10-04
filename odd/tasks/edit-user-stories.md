@@ -33,11 +33,11 @@ Backend story schemas, repository, service/controller/router wiring, focused API
 - Strategy: `ask-on-risk`
 - Chain strategy: `stacked-to-main` (user-selected).
 - Forecast: approximately 380–420 authored changed lines across two work units.
-- Running count: 379 changed lines through `4fbb24f`.
-- Branch: `feat/edit-user-stories`
+- Running count: 379 lines in Slice 1 and 358 lines in Slice 2.
+- Branches: `feat/edit-user-stories` → `feat/edit-user-stories-ui`.
 - Reviewed boundary: `890cf4e`
 - Slice 1: `4fbb24f` — backend persisted identity and PATCH contract; target `main`.
-- Slice 2: pending — shared frontend editor; built on Slice 1 and retargeted/rebased after Slice 1 lands.
+- Slice 2: `4ee3748` — shared frontend editor; built on Slice 1 and retargeted/rebased after Slice 1 lands.
 
 ## Tasks
 
@@ -47,19 +47,20 @@ Backend story schemas, repository, service/controller/router wiring, focused API
   - Checks: RED observed with 14 expected failures; GREEN 14/14 focused historias tests; backlog contract tests 3/3; ESLint and touched-file Prettier checks passed. Full migration suite has 15 failures independently reproduced at base `890cf4e` (25 pass / 15 fail), so they are pre-existing environmental failures.
   - Commit: `4fbb24f` (`feat(api): edit persisted user stories`).
   - Review: medium, `under_budget`; native review deferred in the current slice.
-- [ ] **STORY-2 — Shared editor in backlog and Kanban**
+- [x] **STORY-2 — Shared editor in backlog and Kanban**
   - Route: delegated direct; shared state integration spans multiple non-trivial frontend files and triggers one bounded writer.
   - Acceptance: both entry points use one editor component; PATCH uses the real story ID; successful saves update the dedicated screen, Kanban card/modal, and canonical App state without reload; loading and API errors are visible; phase remains non-editable.
-  - Checks: frontend production build and targeted structural verification of both integrations.
-  - Commit: pending.
-  - Review: pending.
+  - Checks: frontend production build passed with 430 modules transformed; structural checks confirmed one seven-field editor, both entry points, real-ID PATCH calls, canonical and Kanban-local state updates, and removal of fabricated IDs. No frontend test runner exists, so RED was not applicable.
+  - Commit: `4ee3748` (`feat(frontend): edit backlog user stories`).
+  - Review: medium, `under_budget`; native review deferred in the current slice.
 
 ## Progress
 
 - Exploration completed against the current backend and both current frontend interfaces.
 - User authorized exposing the persisted immutable story ID in the existing backlog response.
 - STORY-1 completed with persisted IDs, validated partial updates, uniform 404 handling, and focused integration coverage.
+- STORY-2 completed with one shared editor and immediate synchronized updates in both frontend interfaces.
 
 ## Next Step
 
-Create the Slice 2 branch from Slice 1 and implement the shared frontend editor; push and PR creation remain user decisions.
+Implementation is complete. Push and PR creation remain user decisions; Slice 1 must land before Slice 2 is retargeted or rebased onto `main`.
