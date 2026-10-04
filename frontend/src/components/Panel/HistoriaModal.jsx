@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import HistoriaEditor from './HistoriaEditor.jsx'
 
 export function HistoriaContenido({ historia, numero }) {
   const titulo = historia.titulo || (numero ? `Historia ${numero}` : 'Historia de usuario')
@@ -35,8 +36,10 @@ export function HistoriaContenido({ historia, numero }) {
   )
 }
 
-function HistoriaModal({ historia, onClose }) {
+function HistoriaModal({ historia, onHistoriaActualizada, onClose }) {
+  const [editando, setEditando] = useState(false)
   const closeButtonRef = useRef(null)
+  const editButtonRef = useRef(null)
 
   useEffect(() => {
     closeButtonRef.current?.focus()
@@ -48,6 +51,11 @@ function HistoriaModal({ historia, onClose }) {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
+
+  const volverAlDetalle = () => {
+    setEditando(false)
+    window.requestAnimationFrame(() => editButtonRef.current?.focus())
+  }
 
   return (
     <div
@@ -63,7 +71,9 @@ function HistoriaModal({ historia, onClose }) {
         aria-labelledby="historia-modal-title"
       >
         <div className="historia-modal-header">
-          <h2 id="historia-modal-title">Detalle de historia</h2>
+          <h2 id="historia-modal-title">
+            {editando ? 'Editar historia' : 'Detalle de historia'}
+          </h2>
           <button
             ref={closeButtonRef}
             className="historia-modal-close"
@@ -74,7 +84,28 @@ function HistoriaModal({ historia, onClose }) {
             ×
           </button>
         </div>
-        <HistoriaContenido historia={historia} />
+        {editando ? (
+          <HistoriaEditor
+            historia={historia}
+            onSaved={(actualizada) => {
+              onHistoriaActualizada(actualizada)
+              volverAlDetalle()
+            }}
+            onCancel={volverAlDetalle}
+          />
+        ) : (
+          <>
+            <HistoriaContenido historia={historia} />
+            <button
+              ref={editButtonRef}
+              className="btn btn-primary historia-modal-edit"
+              type="button"
+              onClick={() => setEditando(true)}
+            >
+              Editar historia
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

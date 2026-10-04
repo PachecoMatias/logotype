@@ -12,8 +12,8 @@ function fechaHoyString() {
   return `${yyyy}-${mm}-${dd}`
 }
 
-function crearColumnas(historias, projectId) {
-  const preparadas = prepararHistoriasTablero(historias, projectId, fechaHoyString())
+function crearColumnas(historias) {
+  const preparadas = prepararHistoriasTablero(historias, fechaHoyString())
   return {
     Backlog: preparadas,
     'To Do': [],
@@ -24,9 +24,15 @@ function crearColumnas(historias, projectId) {
   }
 }
 
-function PanelTablero({ projectId, historias, onBack }) {
+function reemplazarHistoria(actual, actualizada) {
+  return actual.id === actualizada.id
+    ? { ...actual, ...actualizada, fase: actual.fase }
+    : actual
+}
+
+function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
   const [historiasPorColumna, setHistoriasPorColumna] = useState(() =>
-    crearColumnas(Array.isArray(historias) ? historias : [], projectId)
+    crearColumnas(Array.isArray(historias) ? historias : [])
   )
   const [detalleAbierto, setDetalleAbierto] = useState(null)
 
@@ -54,6 +60,23 @@ function PanelTablero({ projectId, historias, onBack }) {
     setDetalleAbierto(null)
     window.requestAnimationFrame(() => trigger?.focus())
   }, [detalleAbierto])
+
+  const actualizarHistoria = useCallback((actualizada) => {
+    setHistoriasPorColumna((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).map(([columna, historiasColumna]) => [
+          columna,
+          historiasColumna.map((historia) => reemplazarHistoria(historia, actualizada)),
+        ])
+      )
+    )
+    setDetalleAbierto((prev) =>
+      prev
+        ? { ...prev, historia: reemplazarHistoria(prev.historia, actualizada) }
+        : prev
+    )
+    onHistoriaActualizada(actualizada)
+  }, [onHistoriaActualizada])
 
   if (!Array.isArray(historias) || historias.length === 0) {
     return (
@@ -97,7 +120,11 @@ function PanelTablero({ projectId, historias, onBack }) {
         </div>
       </div>
       {detalleAbierto && (
-        <HistoriaModal historia={detalleAbierto.historia} onClose={cerrarDetalle} />
+        <HistoriaModal
+          historia={detalleAbierto.historia}
+          onHistoriaActualizada={actualizarHistoria}
+          onClose={cerrarDetalle}
+        />
       )}
     </div>
   )

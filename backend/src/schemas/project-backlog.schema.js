@@ -42,6 +42,10 @@ export const projectBacklogStorySchema = z.strictObject({
   rol_sugerido: z.enum(projectBacklogRoles),
 });
 
+export const persistedProjectBacklogStorySchema = projectBacklogStorySchema.extend({
+  id: z.number().int().positive().max(4294967295),
+});
+
 export const projectBacklogSchema = z.array(projectBacklogStorySchema).min(12).max(25);
 
 export const projectBacklogJsonSchema = {

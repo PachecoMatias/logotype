@@ -34,6 +34,17 @@ function App() {
     }))
   }, [])
 
+  const handleHistoriaActualizada = useCallback((projectId, actualizada) => {
+    setBacklogsByProject((current) => ({
+      ...current,
+      [projectId]: current[projectId]?.map((historia) =>
+        historia.id === actualizada.id
+          ? { ...historia, ...actualizada, fase: historia.fase }
+          : historia
+      ),
+    }))
+  }, [])
+
   const handleNavigate = (id) => {
     if (id === 'configurador') {
       setView('configurador')
@@ -166,6 +177,9 @@ function App() {
         </header>
         <PanelHistorias
           historias={selectedBacklog}
+          onHistoriaActualizada={(historia) =>
+            handleHistoriaActualizada(selectedProjectId, historia)
+          }
           onBack={() => setView('panel-detalle')}
         />
       </div>
@@ -178,6 +192,9 @@ function App() {
         <PanelTablero
           projectId={selectedProjectId}
           historias={selectedBacklog}
+          onHistoriaActualizada={(historia) =>
+            handleHistoriaActualizada(selectedProjectId, historia)
+          }
           onBack={() => setView('panel-detalle')}
         />
       </div>

@@ -509,18 +509,26 @@ test('backlog persists a strict generated result and returns the stored cache on
   });
 
   try {
-    const first = await request(app).post(`/api/proyectos/${project.id}/backlog`).send({ ignored: true });
+    const first = await request(app)
+      .post(`/api/proyectos/${project.id}/backlog`)
+      .send({ ignored: true });
     const second = await request(app).post(`/api/proyectos/${project.id}/backlog`);
     const [stories] = await pool.execute(
       'SELECT id FROM historias WHERE proyecto_id = ? ORDER BY id ASC',
       [project.id],
     );
-    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [project.id]);
+    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [
+      project.id,
+    ]);
+    const persistedBacklog = validBacklog.map((story, index) => ({
+      id: stories[index].id,
+      ...story,
+    }));
 
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
-    assert.deepEqual(first.body, { success: true, data: validBacklog });
-    assert.deepEqual(second.body, { success: true, data: validBacklog });
+    assert.deepEqual(first.body, { success: true, data: persistedBacklog });
+    assert.deepEqual(second.body, { success: true, data: persistedBacklog });
     assert.equal(providerCalls, 1);
     assert.equal(stories.length, 12);
     assert.equal(projects[0].estado, 'planificado');
@@ -540,10 +548,13 @@ test('backlog rejects a storyless project that has not been analyzed before prov
 
   try {
     const response = await request(app).post(`/api/proyectos/${project.id}/backlog`);
-    const [stories] = await pool.execute('SELECT COUNT(*) AS count FROM historias WHERE proyecto_id = ?', [
+    const [stories] = await pool.execute(
+      'SELECT COUNT(*) AS count FROM historias WHERE proyecto_id = ?',
+      [project.id],
+    );
+    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [
       project.id,
     ]);
-    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [project.id]);
 
     assert.equal(response.status, 409);
     assert.deepEqual(response.body, {
@@ -568,14 +579,21 @@ test('backlog normalizes malformed provider JSON without a persistence write', a
     "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
     [analysisText(), project.id],
   );
-  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => '{not json}');
+  const restoreGateway = test.mock.method(
+    geminiGateway,
+    'generateProjectBacklog',
+    async () => '{not json}',
+  );
 
   try {
     const response = await request(app).post(`/api/proyectos/${project.id}/backlog`);
-    const [stories] = await pool.execute('SELECT COUNT(*) AS count FROM historias WHERE proyecto_id = ?', [
+    const [stories] = await pool.execute(
+      'SELECT COUNT(*) AS count FROM historias WHERE proyecto_id = ?',
+      [project.id],
+    );
+    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [
       project.id,
     ]);
-    const [projects] = await pool.execute('SELECT estado FROM proyectos WHERE id = ?', [project.id]);
 
     assert.equal(response.status, 502);
     assert.deepEqual(response.body, {

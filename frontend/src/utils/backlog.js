@@ -1,16 +1,13 @@
 import { calcularCronograma } from './calculador.js'
 
-export function adaptarHistorias(historias, projectId) {
+export function adaptarHistorias(historias) {
   if (!Array.isArray(historias)) return []
 
-  return historias.map((historia, index) => ({
-    ...historia,
-    id: historia.id ?? `${projectId}-story-${index + 1}`,
-  }))
+  return historias.map((historia) => ({ ...historia }))
 }
 
-export function prepararHistoriasTablero(historias, projectId, fechaInicio) {
-  const adaptadas = adaptarHistorias(historias, projectId).map((historia) => ({
+export function prepararHistoriasTablero(historias, fechaInicio) {
+  const adaptadas = adaptarHistorias(historias).map((historia) => ({
     ...historia,
     rol_asignado: historia.rol_asignado || historia.rol_sugerido,
   }))
