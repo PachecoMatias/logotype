@@ -1,17 +1,27 @@
 import { getPool, withTransaction } from '../config/database.js';
-import { projectBacklogStorySchema } from '../schemas/project-backlog.schema.js';
+import { persistedProjectBacklogStorySchema } from '../schemas/project-backlog.schema.js';
 
 const storyColumns = `
-  fase, prioridad, historia_usuario, descripcion, criterios_aceptacion,
+  id, fase, prioridad, historia_usuario, descripcion, criterios_aceptacion,
   alcance_tecnico, estimacion_fibonacci, rol_sugerido
 `;
+const editableColumns = new Set([
+  'historia_usuario',
+  'descripcion',
+  'criterios_aceptacion',
+  'alcance_tecnico',
+  'estimacion_fibonacci',
+  'prioridad',
+  'rol_sugerido',
+]);
 
 function parseCriteria(value) {
   return typeof value === 'string' ? JSON.parse(value) : value;
 }
 
 function mapStory(row) {
-  const result = projectBacklogStorySchema.safeParse({
+  const result = persistedProjectBacklogStorySchema.safeParse({
+    id: row.id,
     fase: row.fase,
     prioridad: row.prioridad,
     historia_usuario: row.historia_usuario,
@@ -27,6 +37,19 @@ function mapStory(row) {
   }
 
   return result.data;
+}
+
+async function findByIdWithConnection(connection, id) {
+  const [rows] = await connection.execute(
+    `
+      SELECT ${storyColumns}
+      FROM historias
+      WHERE id = ?
+    `,
+    [id],
+  );
+
+  return rows[0] ? mapStory(rows[0]) : null;
 }
 
 async function findByProjectIdWithConnection(connection, projectId) {
@@ -45,6 +68,20 @@ async function findByProjectIdWithConnection(connection, projectId) {
 
 async function findByProjectId(configuration, projectId) {
   return findByProjectIdWithConnection(getPool(configuration), projectId);
+}
+
+async function updateById(configuration, id, changes) {
+  return withTransaction(configuration, async (connection) => {
+    const entries = Object.entries(changes).filter(([column]) => editableColumns.has(column));
+    const assignments = entries.map(([column]) => `${column} = ?`).join(', ');
+    const values = entries.map(([column, value]) =>
+      column === 'criterios_aceptacion' ? JSON.stringify(value) : value,
+    );
+
+    await connection.execute(`UPDATE historias SET ${assignments} WHERE id = ?`, [...values, id]);
+
+    return findByIdWithConnection(connection, id);
+  });
 }
 
 async function persistGeneratedBacklog(configuration, projectId, stories) {
@@ -68,9 +105,7 @@ async function persistGeneratedBacklog(configuration, projectId, stories) {
       return { outcome: 'ineligible' };
     }
 
-    const placeholders = stories
-      .map(() => "(?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?)")
-      .join(', ');
+    const placeholders = stories.map(() => '(?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?)').join(', ');
     const values = stories.flatMap((story) => [
       projectId,
       story.prioridad,
@@ -112,4 +147,4 @@ async function persistGeneratedBacklog(configuration, projectId, stories) {
   });
 }
 
-export const historiasRepository = { findByProjectId, persistGeneratedBacklog };
+export const historiasRepository = { findByProjectId, persistGeneratedBacklog, updateById };
