@@ -4,31 +4,31 @@ import { orgChart } from '../../data/company.js'
 
 function OrganizationChart() {
   return (
-    <section>
-      <div className="container">
+    <section className="site-section site-organization">
+      <div className="site-shell">
         <AnimatedSection direction="fade">
           <SectionTitle title="Organigrama" description="Estructura organizacional propuesta para Logotype." />
         </AnimatedSection>
 
         <AnimatedSection direction="up">
-          <div className="organigrama">
-            <div className="org-box main">{orgChart.main}</div>
+          <div className="site-org">
+            <div className="site-org__main">{orgChart.main}</div>
 
-            <div className="org-line" />
+            <div className="site-org__connector" aria-hidden="true" />
 
-            <div className="org-grid">
+            <div className="site-org__row site-org__row--lead">
               {orgChart.level1.map((item) => (
-                <div className="org-box" key={item}>
+                <div className="site-org__node" key={item}>
                   {item}
                 </div>
               ))}
             </div>
 
-            <div className="org-line" />
+            <div className="site-org__connector" aria-hidden="true" />
 
-            <div className="org-grid">
+            <div className="site-org__row">
               {orgChart.level2.map((item) => (
-                <div className="org-box" key={item}>
+                <div className="site-org__node site-org__node--team" key={item}>
                   {item}
                 </div>
               ))}

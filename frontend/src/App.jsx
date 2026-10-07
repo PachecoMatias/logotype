@@ -202,27 +202,29 @@ function App() {
   }
 
   return (
-    <>
+    <div className="site-page">
       <Header onNavigate={handleNavigate} />
-      <Hero onNavigate={handleNavigate} />
-      <Company />
-      <Objectives />
-      <OrganizationChart />
-      <Services />
-      <ProblemSolution />
-      <SystemPrototype />
-      <Infrastructure />
-      <Conclusions />
+      <main>
+        <Hero onNavigate={handleNavigate} />
+        <Company />
+        <Objectives />
+        <OrganizationChart />
+        <Services />
+        <ProblemSolution />
+        <SystemPrototype />
+        <Infrastructure />
+        <Conclusions />
+      </main>
       <Footer />
       <button
-        className="panel-fab"
+        className="panel-fab site-panel-access"
         onClick={handleOpenPanel}
         title="Panel interno de solicitudes"
         aria-label="Abrir panel interno de solicitudes"
       >
         ⚙
       </button>
-    </>
+    </div>
   )
 }
 

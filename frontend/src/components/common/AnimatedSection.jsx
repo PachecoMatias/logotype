@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion'
 
 const directions = {
-  up: { y: 40, x: 0 },
-  left: { y: 0, x: -40 },
-  right: { y: 0, x: 40 },
+  up: { y: 28, x: 0 },
+  left: { y: 0, x: -28 },
+  right: { y: 0, x: 28 },
   fade: { y: 0, x: 0 },
 }
 
@@ -20,8 +20,8 @@ function AnimatedSection({ children, direction = 'up', delay = 0, className = ''
       className={className}
       initial={{ opacity: 0, x: offset.x, y: offset.y }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: false, amount: 0.2 }}
-      transition={{ duration: 0.6, delay, ease: 'easeOut' }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: 0.65, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </Component>

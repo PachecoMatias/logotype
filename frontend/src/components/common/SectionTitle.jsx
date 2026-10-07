@@ -1,10 +1,8 @@
-function SectionTitle({ title, description, light = false }) {
+function SectionTitle({ title, description, light = false, align = 'left' }) {
   return (
-    <div className="section-title">
-      <h2 style={light ? { color: 'white' } : undefined}>{title}</h2>
-      {description && (
-        <p style={light ? { color: '#cbd5e1' } : undefined}>{description}</p>
-      )}
+    <div className={`site-section-title site-section-title--${align}${light ? ' site-section-title--light' : ''}`}>
+      <h2>{title}</h2>
+      {description && <p>{description}</p>}
     </div>
   )
 }

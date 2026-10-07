@@ -4,8 +4,8 @@ import { problems, solutions } from '../../data/content.js'
 
 function ProblemSolution() {
   return (
-    <section id="problematica" className="problem-section">
-      <div className="container">
+    <section id="problematica" className="site-section site-problem">
+      <div className="site-shell">
         <AnimatedSection direction="fade">
           <SectionTitle
             title="Problemática y solución"
@@ -14,9 +14,9 @@ function ProblemSolution() {
           />
         </AnimatedSection>
 
-        <div className="problem-grid">
-          <AnimatedSection direction="left">
-            <div className="problem-box">
+        <div className="site-problem__flow">
+          <AnimatedSection direction="left" className="site-problem__column site-problem__column--problem">
+            <div>
               <h3>Problemática identificada</h3>
               <ul>
                 {problems.map((problem) => (
@@ -26,8 +26,8 @@ function ProblemSolution() {
             </div>
           </AnimatedSection>
 
-          <AnimatedSection direction="right">
-            <div className="problem-box">
+          <AnimatedSection direction="right" className="site-problem__column site-problem__column--solution">
+            <div>
               <h3>Solución propuesta</h3>
               <ul>
                 {solutions.map((solution) => (

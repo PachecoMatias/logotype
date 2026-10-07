@@ -4,8 +4,8 @@ import { infrastructure } from '../../data/content.js'
 
 function Infrastructure() {
   return (
-    <section id="infraestructura">
-      <div className="container">
+    <section id="infraestructura" className="site-section site-infrastructure">
+      <div className="site-shell">
         <AnimatedSection direction="fade">
           <SectionTitle
             title="Infraestructura tecnológica"
@@ -13,15 +13,14 @@ function Infrastructure() {
           />
         </AnimatedSection>
 
-        <div className="infra-grid">
+        <div className="site-infrastructure__grid">
           {infrastructure.map((item, index) => (
-            <AnimatedSection key={item.id} direction="up" delay={index * 0.08}>
-              <div className="infra-card">
-                <h3>
-                  {item.icon} {item.title}
-                </h3>
+            <AnimatedSection key={item.id} direction="up" delay={index * 0.08} className="site-infrastructure__item">
+              <div>
+                <span className="site-infrastructure__node" aria-hidden="true" />
+                <h3>{item.title}</h3>
                 <p>{item.description}</p>
-                <div className="price">{item.price}</div>
+                <div className="site-infrastructure__value">{item.price}</div>
               </div>
             </AnimatedSection>
           ))}

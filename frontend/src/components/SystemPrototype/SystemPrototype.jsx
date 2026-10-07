@@ -7,8 +7,8 @@ function SystemPrototype() {
   const [activeLink, setActiveLink] = useState('dashboard')
 
   return (
-    <section id="sistema" className="system-section">
-      <div className="container">
+    <section id="sistema" className="site-section site-system">
+      <div className="site-shell">
         <AnimatedSection direction="fade">
           <SectionTitle
             title="Prototipo funcional"
@@ -17,41 +17,46 @@ function SystemPrototype() {
         </AnimatedSection>
 
         <AnimatedSection direction="up">
-          <div className="system-layout">
-            <aside className="sidebar">
+          <div className="site-system__window">
+            <div className="site-system__bar" aria-hidden="true">
+              <span /> <span /> <span />
+              <small>prototype.logotype.local</small>
+            </div>
+            <div className="site-system__layout">
+            <aside className="site-system__sidebar">
               <h3>LOGOTYPE</h3>
               {sidebarLinks.map((link) => (
                 <button
                   key={link.id}
-                  className={activeLink === link.id ? 'active' : ''}
+                  className={activeLink === link.id ? 'site-system__nav-active' : ''}
                   onClick={() => setActiveLink(link.id)}
                 >
-                  {link.icon} {link.label}
+                  <span aria-hidden="true">{String(sidebarLinks.indexOf(link) + 1).padStart(2, '0')}</span> {link.label}
                 </button>
               ))}
             </aside>
 
-            <main className="dashboard">
-              <div className="dashboard-header">
+            <div className="site-system__dashboard">
+              <div className="site-system__dashboard-header">
                 <div>
                   <h3>Panel de control</h3>
                   <p>Resumen de operaciones</p>
                 </div>
-                <div className="user">Administrador</div>
+                <div className="site-system__user"><span aria-hidden="true" />Administrador</div>
               </div>
 
-              <div className="stats">
+              <div className="site-system__stats">
                 {stats.map((stat) => (
-                  <div className="stat" key={stat.id}>
+                  <div className="site-system__stat" key={stat.id}>
                     <p>{stat.label}</p>
                     <strong>{stat.value}</strong>
                   </div>
                 ))}
               </div>
 
-              <h3 style={{ marginBottom: 15 }}>Últimos tickets</h3>
+              <h3 className="site-system__table-title">Últimos tickets</h3>
 
-              <div className="table-container">
+              <div className="site-system__table-wrap">
                 <table>
                   <thead>
                     <tr>
@@ -70,14 +75,15 @@ function SystemPrototype() {
                         <td>{ticket.problema}</td>
                         <td>{ticket.prioridad}</td>
                         <td>
-                          <span className={`status ${ticket.estado}`}>{ticket.estadoLabel}</span>
+                          <span className={`site-system__status site-system__status--${ticket.estado}`}>{ticket.estadoLabel}</span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </main>
+            </div>
+            </div>
           </div>
         </AnimatedSection>
       </div>
