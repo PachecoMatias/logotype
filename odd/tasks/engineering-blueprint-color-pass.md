@@ -34,7 +34,7 @@ The current warm palette communicates expressive print craft more strongly than 
 ## Delivery Strategy
 
 - Strategy: `single-pr` continuation on `redesign/public-site`; no push or PR is authorized.
-- Forecast: under 400 authored changed lines because the work is a bounded semantic-token and documentation remap.
+- Forecast: bounded semantic-token and documentation remap. The completed work unit contains 669 changed lines because synchronized CSS and design metadata repeat the same semantic roles; no implementation was split or compressed artificially.
 - Route: delegated direct; five coordinated files make one cohesive color-system work unit.
 
 ## Tasks
@@ -46,10 +46,10 @@ The current warm palette communicates expressive print craft more strongly than 
   - Acceptance: hero, navigation, actions, institutional sections, objectives, configurator, focus, selection, completion, errors, and editorial details use stable semantic roles without layout or motion changes.
   - Checks: protected zero-diff audit; contrast-role inspection; Impeccable detector; JSON parse.
   - Evidence: implemented frost canvas `#eef2f5`, drafting paper `#f9fbfc`, graphite `#101923`, slate `#52616d`, structural line `rgba(16, 25, 35, 0.22)`, blueprint blue `#174ea6`, blueprint-on-dark `#8fb7f0`, systems teal `#0f6f7a`, systems-teal-on-dark `#78c6cc`, technical blue tint `#dce8f7`, dark-surface secondary `#d5dde4`, future/inactive `#8b99a5`, error `#a53a32` on `#fff1ef`, and warning `#6d5700` on `#fff3c4`. Actions and focus use blueprint roles; selected/information surfaces use technical blue tint; complete/live/success use systems teal. Completed progress steps also use stronger weight and a one-pixel underline. Impeccable detector returned `[]`; protected source diff against `3ff7af4` was empty; design JSON parsed successfully.
-- [ ] **EBP-3 — Verify and record the work unit**
+- [x] **EBP-3 — Verify and record the work unit**
   - Acceptance: production build passes; no protected source changed; documentation matches CSS; color-only diff is committed on the feature branch.
   - Checks: `npm run build`, `git diff --check`, protected path diff, design JSON parse.
-  - Evidence: `npm run build` passed with 432 modules transformed; `git diff --check` passed; protected source diff against `3ff7af4` was empty; `.impeccable/design.json` parsed successfully; Impeccable detector returned `[]`. Commit identity remains pending the parent commit. Build-generated `frontend/dist` cleanup remains pending because this writer is prohibited from destructive restore/delete commands.
+  - Evidence: `npm run build` passed with 432 modules transformed; `git diff --check` passed; protected source diff against `3ff7af4` was empty; `.impeccable/design.json` parsed successfully; Impeccable detector returned `[]`. Build outputs were restored/cleaned before commit. Work-unit commit: `76569bb` (`feat(frontend): apply engineering blueprint palette`). Native RDD assessed `medium / slice_budget_reached`; preflight could not enter START because pre-existing untracked harness directories require a provider-bound intended-untracked selection unavailable in this runtime, so no native approval is claimed.
 
 ## Allowed Edit Surface
 
@@ -62,9 +62,9 @@ The current warm palette communicates expressive print craft more strongly than 
 
 ## Progress
 
-- Active task: EBP-3, pending parent commit identity and build-output cleanup.
+- Status: implementation and proportional verification complete.
 - Reviewed boundary: `3ff7af4`.
 
 ## Next Step
 
-Parent restores/removes the build-generated `frontend/dist` outputs, then commits the verified color-system work unit and records its identity.
+Review the new palette in the browser during the already-planned Stage 1 visual pass; any later correction must remain color-only unless separately authorized.
