@@ -42,10 +42,10 @@ The current palette is correct, but long runs of frost and drafting-paper surfac
   - Acceptance: named targets gain stronger section identity and scroll rhythm using only existing palette roles and static CSS treatment; no structural or behavioral diff.
   - Checks: protected diff, CSS review, design metadata synchronization, Impeccable detector.
   - Evidence: header and configurator topbar now use drafting paper; the hero adds a static drafting-paper side plane on the existing registration axis; company and organization distinguish frost cells from drafting-paper fields; objectives and conclusions gain inset registered edges; solution and prototype use technical tint; the prototype artifact returns to drafting paper; graphite services and infrastructure use stronger existing rule/state contrast; configurator workspace and action rail use flat inset hierarchy. All treatments use existing palette roles and CSS-only static devices.
-- [ ] **EBB-3 — Verify and record the visual work unit**
+- [x] **EBB-3 — Verify and record the visual work unit**
   - Acceptance: build passes, generated output is cleaned, protected paths remain unchanged, and the work unit is committed on the feature branch.
   - Checks: `npm run build`, `git diff --check`, design JSON parse, protected path diff.
-  - Evidence: `npm run build` passed with 432 modules transformed; `git diff --check` passed with line-ending warnings only; `.impeccable/design.json` parsed successfully; protected paths have zero diff against `180e630`; changed CSS lines contain no motion-declaration matches; the Impeccable detector returned `[]`. Build-generated `frontend/dist` changes require parent cleanup because this worker cannot restore or delete files; commit identity remains pending parent commit.
+  - Evidence: `npm run build` passed with 432 modules transformed; `git diff --check` passed with line-ending warnings only; `.impeccable/design.json` parsed successfully; protected paths have zero diff against `180e630`; changed CSS lines contain no motion-declaration matches; the Impeccable detector returned `[]`; build-generated `frontend/dist` output was restored/cleaned. Work-unit commit: `3d07c9f` (`feat(frontend): amplify blueprint surfaces`). Native RDD assessed `medium / under_budget`, so this commit remains in the pending medium slice without a review transaction.
 
 ## Allowed Edit Surface
 
@@ -58,8 +58,8 @@ The current palette is correct, but long runs of frost and drafting-paper surfac
 
 ## Progress
 
-- Active task: EBB-3 verification; commit identity remains pending parent commit.
+- Status: implementation and proportional verification complete.
 
 ## Next Step
 
-Run the bounded verification contract, record observed evidence, and leave commit identity pending for the parent.
+Review the amplified surface rhythm in the user's browser pass; any correction remains graphical unless separately authorized.
