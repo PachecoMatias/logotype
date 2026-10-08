@@ -65,7 +65,7 @@ The current public experience does not yet communicate the craft expected at a u
 ## Progress
 
 - Active task: PSR-4 manual browser evidence.
-- Running authored line count: public site `652ac8d`; configurator `3f2ad85`; documentation work unit pending parent commit.
+- Running authored line count: public site `652ac8d`; configurator `3f2ad85`; design documentation `b215aaf`.
 - Reviewed boundary: branch point at `3b45b1b`.
 
 ## Next Step
