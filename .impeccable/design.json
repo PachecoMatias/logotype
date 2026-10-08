@@ -4,17 +4,22 @@
   "title": "Design System: Logotype",
   "extensions": {
     "colorMeta": {
-      "bone-ground": { "role": "neutral", "displayName": "Bone Ground", "canonical": "#eee9dc" },
-      "paper-field": { "role": "neutral", "displayName": "Paper Field", "canonical": "#f8f4e8" },
-      "structural-ink": { "role": "neutral", "displayName": "Structural Ink", "canonical": "#171713" },
-      "muted-ink": { "role": "neutral", "displayName": "Muted Ink", "canonical": "#625f55" },
-      "structural-line": { "role": "neutral", "displayName": "Structural Line", "canonical": "rgba(23, 23, 19, 0.24)" },
-      "signal-vermilion": { "role": "primary", "displayName": "Signal Vermilion", "canonical": "#f04424" },
-      "live-chartreuse": { "role": "secondary", "displayName": "Live Chartreuse", "canonical": "#c8ff31" },
-      "subdued-on-dark": { "role": "neutral", "displayName": "Subdued on Dark", "canonical": "#d7d2c6" },
-      "future-step": { "role": "neutral", "displayName": "Future Step", "canonical": "#8f8c84" },
-      "error-ink": { "role": "error", "displayName": "Error Ink", "canonical": "#a82410" },
-      "error-field": { "role": "error", "displayName": "Error Field", "canonical": "#fff0ec" }
+      "frost-canvas": { "role": "neutral", "displayName": "Frost Canvas", "canonical": "#eef2f5" },
+      "drafting-paper": { "role": "neutral", "displayName": "Drafting Paper", "canonical": "#f9fbfc" },
+      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "#101923" },
+      "slate": { "role": "neutral", "displayName": "Slate", "canonical": "#52616d" },
+      "structural-line": { "role": "neutral", "displayName": "Structural Line", "canonical": "rgba(16, 25, 35, 0.22)" },
+      "blueprint-blue": { "role": "primary", "displayName": "Blueprint Blue", "canonical": "#174ea6" },
+      "blueprint-blue-on-dark": { "role": "primary", "displayName": "Blueprint Blue on Dark", "canonical": "#8fb7f0" },
+      "systems-teal": { "role": "secondary", "displayName": "Systems Teal", "canonical": "#0f6f7a" },
+      "systems-teal-on-dark": { "role": "secondary", "displayName": "Systems Teal on Dark", "canonical": "#78c6cc" },
+      "technical-blue-tint": { "role": "information", "displayName": "Technical Blue Tint", "canonical": "#dce8f7" },
+      "dark-surface-secondary": { "role": "neutral", "displayName": "Dark Surface Secondary", "canonical": "#d5dde4" },
+      "future-inactive": { "role": "neutral", "displayName": "Future / Inactive", "canonical": "#8b99a5" },
+      "error-ink": { "role": "error", "displayName": "Error Ink", "canonical": "#a53a32" },
+      "error-field": { "role": "error", "displayName": "Error Field", "canonical": "#fff1ef" },
+      "warning-ink": { "role": "warning", "displayName": "Warning Ink", "canonical": "#6d5700" },
+      "warning-field": { "role": "warning", "displayName": "Warning Field", "canonical": "#fff3c4" }
     },
     "typographyMeta": {
       "display": { "displayName": "Display", "purpose": "Public section headings and major editorial statements." },
@@ -24,10 +29,10 @@
       "label": { "displayName": "Label", "purpose": "Uppercase controls, progress, codes, and metadata." }
     },
     "shadows": [
-      { "name": "live-status-public", "value": "0 3px 10px rgba(94, 125, 0, 0.28)", "purpose": "Small live-status dot in the public prototype." },
-      { "name": "live-status-infrastructure", "value": "0 3px 10px rgba(130, 180, 0, 0.22)", "purpose": "Infrastructure registration node." },
-      { "name": "live-status-configurator", "value": "0 3px 10px rgba(83, 112, 0, 0.28)", "purpose": "Configurator brief-in-progress indicator." },
-      { "name": "protected-panel-access", "value": "0 8px 24px rgba(23, 23, 19, 0.24)", "purpose": "Keeps the protected floating panel-access control above the public sheet." }
+      { "name": "live-status-public", "value": "0 3px 10px rgba(15, 111, 122, 0.28)", "purpose": "Small live-status dot in the public prototype." },
+      { "name": "live-status-infrastructure", "value": "0 3px 10px rgba(15, 111, 122, 0.22)", "purpose": "Infrastructure registration node." },
+      { "name": "live-status-configurator", "value": "0 3px 10px rgba(15, 111, 122, 0.28)", "purpose": "Configurator brief-in-progress indicator." },
+      { "name": "protected-panel-access", "value": "0 8px 24px rgba(16, 25, 35, 0.24)", "purpose": "Keeps the protected floating panel-access control above the public sheet." }
     ],
     "motion": [
       { "name": "ease-release", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default root, reveal, step, and progress easing." },
@@ -50,17 +55,17 @@
       "name": "Public Primary Button",
       "kind": "button",
       "refersTo": "button-public-primary",
-      "description": "Chartreuse public action used inside saturated narrative fields.",
+      "description": "Blueprint-blue public action used inside saturated narrative fields.",
       "html": "<button class=\"ds-public-primary\">CONTANOS TU PROYECTO <span aria-hidden=\"true\">↗</span></button>",
-      "css": ".ds-public-primary { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 11px 16px; border: 1px solid #c8ff31; border-radius: 0; background: #c8ff31; color: #171713; font: 800 0.75rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: transform 180ms ease-out; } .ds-public-primary:hover { transform: translateY(-2px); } .ds-public-primary:active { transform: scale(0.98); } .ds-public-primary:focus-visible { outline: 3px solid #c8ff31; outline-offset: 4px; }"
+      "css": ".ds-public-primary { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 11px 16px; border: 1px solid #174ea6; border-radius: 0; background: #174ea6; color: #f9fbfc; font: 800 0.75rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: transform 180ms ease-out; } .ds-public-primary:hover { transform: translateY(-2px); } .ds-public-primary:active { transform: scale(0.98); } .ds-public-primary:focus-visible { outline: 3px solid #174ea6; outline-offset: 4px; }"
     },
     {
       "name": "Configurator Primary Button",
       "kind": "button",
       "refersTo": "button-configurator-primary",
-      "description": "Vermilion decision action for continuing or submitting the brief.",
+      "description": "Blueprint-blue decision action for continuing or submitting the brief.",
       "html": "<button class=\"ds-config-primary\">CONTINUAR <span aria-hidden=\"true\">→</span></button>",
-      "css": ".ds-config-primary { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 14px; padding: 12px 18px; border: 1px solid #171713; border-radius: 0; background: #f04424; color: #f8f4e8; font: 800 0.78rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: transform 180ms ease-out; } .ds-config-primary:hover { transform: translateX(2px); } .ds-config-primary:active { transform: scale(0.98); } .ds-config-primary:focus-visible { outline: 3px solid #f04424; outline-offset: 3px; }"
+      "css": ".ds-config-primary { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 14px; padding: 12px 18px; border: 1px solid #101923; border-radius: 0; background: #174ea6; color: #f9fbfc; font: 800 0.78rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: transform 180ms ease-out; } .ds-config-primary:hover { transform: translateX(2px); } .ds-config-primary:active { transform: scale(0.98); } .ds-config-primary:focus-visible { outline: 3px solid #174ea6; outline-offset: 3px; }"
     },
     {
       "name": "Line Button",
@@ -68,7 +73,7 @@
       "refersTo": "button-line",
       "description": "Transparent secondary action with the system's square ruled construction.",
       "html": "<button class=\"ds-line-button\">VER PROTOTIPO</button>",
-      "css": ".ds-line-button { min-height: 46px; padding: 11px 16px; border: 1px solid #171713; border-radius: 0; background: transparent; color: #171713; font: 800 0.75rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: transform 180ms ease-out, background-color 180ms ease-out; } .ds-line-button:hover { background: #eee9dc; transform: translateY(-2px); } .ds-line-button:active { transform: scale(0.98); } .ds-line-button:focus-visible { outline: 3px solid #f04424; outline-offset: 3px; }"
+      "css": ".ds-line-button { min-height: 46px; padding: 11px 16px; border: 1px solid #101923; border-radius: 0; background: transparent; color: #101923; font: 800 0.75rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: transform 180ms ease-out, background-color 180ms ease-out; } .ds-line-button:hover { background: #eef2f5; transform: translateY(-2px); } .ds-line-button:active { transform: scale(0.98); } .ds-line-button:focus-visible { outline: 3px solid #174ea6; outline-offset: 3px; }"
     },
     {
       "name": "Baseline Input",
@@ -76,23 +81,23 @@
       "refersTo": "input",
       "description": "Transparent form field registered by a single structural baseline.",
       "html": "<label class=\"ds-field\">NOMBRE DE LA EMPRESA<input class=\"ds-input\" placeholder=\"Ej: Comercio Norte\"></label>",
-      "css": ".ds-field { display: grid; gap: 10px; color: #171713; font: 800 0.78rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.025em; } .ds-input { min-height: 52px; padding: 13px 14px; border: 0; border-bottom: 1px solid #171713; border-radius: 0; outline: 0; background: transparent; color: #171713; caret-color: #f04424; font: 400 1rem/1.55 \"Trebuchet MS\", \"Segoe UI\", sans-serif; transition: border-color 160ms ease-out, background-color 160ms ease-out; } .ds-input:hover { background: rgba(23, 23, 19, 0.035); } .ds-input:focus { border-bottom-color: #f04424; background: #eee9dc; } .ds-input:focus-visible { outline: 3px solid #f04424; outline-offset: 3px; }"
+      "css": ".ds-field { display: grid; gap: 10px; color: #101923; font: 800 0.78rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.025em; } .ds-input { min-height: 52px; padding: 13px 14px; border: 0; border-bottom: 1px solid #101923; border-radius: 0; outline: 0; background: transparent; color: #101923; caret-color: #174ea6; font: 400 1rem/1.55 \"Trebuchet MS\", \"Segoe UI\", sans-serif; transition: border-color 160ms ease-out, background-color 160ms ease-out; } .ds-input:hover { background: rgba(16, 25, 35, 0.035); } .ds-input:focus { border-bottom-color: #174ea6; background: #eef2f5; } .ds-input:focus-visible { outline: 3px solid #174ea6; outline-offset: 3px; }"
     },
     {
       "name": "Selection Chip",
       "kind": "chip",
       "refersTo": "chip-selected",
-      "description": "Binary selection marker; chartreuse means the value is registered.",
+      "description": "Binary selection marker; technical blue tint means the value is registered.",
       "html": "<button class=\"ds-chip\" aria-pressed=\"true\"><span aria-hidden=\"true\">✓</span>AUTOMATIZAR TAREAS</button>",
-      "css": ".ds-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px; border: 1px solid #171713; border-radius: 0; background: #c8ff31; color: #171713; font: 700 0.85rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; cursor: pointer; transition: transform 180ms ease-out; } .ds-chip span { color: #f04424; font-weight: 900; } .ds-chip:hover { transform: translateY(-2px); } .ds-chip:active { transform: scale(0.97); } .ds-chip:focus-visible { outline: 3px solid #f04424; outline-offset: 3px; }"
+      "css": ".ds-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px; border: 1px solid #101923; border-radius: 0; background: #dce8f7; color: #101923; font: 700 0.85rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; cursor: pointer; transition: transform 180ms ease-out; } .ds-chip span { color: #0f6f7a; font-weight: 900; } .ds-chip:hover { transform: translateY(-2px); } .ds-chip:active { transform: scale(0.97); } .ds-chip:focus-visible { outline: 3px solid #174ea6; outline-offset: 3px; }"
     },
     {
       "name": "Editorial Navigation Action",
       "kind": "nav",
       "refersTo": "button-configurator-primary",
-      "description": "Compact vermilion navigation action that opens the project configurator.",
+      "description": "Compact blueprint-blue navigation action that opens the project configurator.",
       "html": "<nav class=\"ds-nav\"><strong>LOGO<span>/TYPE</span></strong><button>REGISTRAR PROYECTO ↗</button></nav>",
-      "css": ".ds-nav { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 24px; border-bottom: 1px solid #171713; background: #eee9dc; color: #171713; } .ds-nav strong { font: 800 1.45rem/1 \"Franklin Gothic Medium\", \"Arial Narrow\", sans-serif; letter-spacing: -0.04em; } .ds-nav strong span { color: #f04424; } .ds-nav button { padding: 13px 16px; border: 0; border-radius: 0; background: #f04424; color: #f8f4e8; font: 800 0.76rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; cursor: pointer; } .ds-nav button:hover { text-decoration: underline; text-underline-offset: 4px; } .ds-nav button:focus-visible { outline: 3px solid #c8ff31; outline-offset: 3px; }"
+      "css": ".ds-nav { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 24px; border-bottom: 1px solid #101923; background: #eef2f5; color: #101923; } .ds-nav strong { font: 800 1.45rem/1 \"Franklin Gothic Medium\", \"Arial Narrow\", sans-serif; letter-spacing: -0.04em; } .ds-nav strong span { color: #174ea6; } .ds-nav button { padding: 13px 16px; border: 0; border-radius: 0; background: #174ea6; color: #f9fbfc; font: 800 0.76rem/1.2 \"Trebuchet MS\", \"Segoe UI\", sans-serif; letter-spacing: 0.04em; cursor: pointer; } .ds-nav button:hover { text-decoration: underline; text-underline-offset: 4px; } .ds-nav button:focus-visible { outline: 3px solid #174ea6; outline-offset: 3px; }"
     },
     {
       "name": "Registration Progress",
@@ -100,21 +105,21 @@
       "refersTo": "progress-register",
       "description": "Configurator state rail showing complete, current, and future layers.",
       "html": "<div class=\"ds-progress\"><div class=\"ds-progress-line\"><span></span></div><ol><li class=\"done\">01<br><strong>EMPRESA</strong></li><li class=\"current\">02<br><strong>PROYECTO</strong></li><li>03<br><strong>PROBLEMA</strong></li></ol></div>",
-      "css": ".ds-progress { padding: 24px 32px 20px; background: #171713; color: #f8f4e8; font: 800 0.68rem/1.4 \"Trebuchet MS\", \"Segoe UI\", sans-serif; text-transform: uppercase; } .ds-progress-line { height: 3px; background: rgba(248, 244, 232, 0.22); overflow: hidden; } .ds-progress-line span { display: block; width: 43%; height: 100%; background: #c8ff31; } .ds-progress ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 0; padding: 0; list-style: none; } .ds-progress li { color: #8f8c84; } .ds-progress .done { color: #c8ff31; } .ds-progress .current { color: #f8f4e8; } .ds-progress .current strong { text-decoration: underline 2px #f04424; text-underline-offset: 6px; }"
+      "css": ".ds-progress { padding: 24px 32px 20px; background: #101923; color: #f9fbfc; font: 800 0.68rem/1.4 \"Trebuchet MS\", \"Segoe UI\", sans-serif; text-transform: uppercase; } .ds-progress-line { height: 3px; background: rgba(249, 251, 252, 0.22); overflow: hidden; } .ds-progress-line span { display: block; width: 43%; height: 100%; background: #0f6f7a; } .ds-progress ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 0; padding: 0; list-style: none; } .ds-progress li { color: #8b99a5; } .ds-progress .done { color: #78c6cc; font-weight: 900; } .ds-progress .done strong { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; } .ds-progress .current { color: #f9fbfc; } .ds-progress .current strong { text-decoration: underline 2px #8fb7f0; text-underline-offset: 6px; }"
     }
   ],
   "narrative": {
-    "northStar": "The Living Release Sheet",
-    "overview": "Logotype treats a software proposal as a release proof in motion: information is registered, aligned, connected, and marked complete. The visual world combines the structural honesty of prepress artifacts with software architecture diagrams, using typography, rules, connectors, registration marks, and state color instead of stock imagery or decorative chrome. The public site is the expressive Persuade surface. It uses architectural typography, full-width color fields, asymmetric composition, and varied editorial pacing to make the academic narrative memorable. The configurator is the calmer Operate expression of the same system: each answer becomes another registered layer of the project brief, while the progress rail and final summary make state explicit.",
+    "northStar": "Engineering Blueprint",
+    "overview": "Logotype treats a software proposal as an engineering blueprint in motion: information is registered, aligned, connected, and marked complete. The living release sheet remains the editorial and compositional method, while cool drafting surfaces, blueprint hierarchy, and systems-state color establish the software-engineering identity. The public site is the expressive Persuade surface. It uses architectural typography, full-width color fields, asymmetric composition, and varied editorial pacing to make the academic narrative memorable. The configurator is the calmer Operate expression of the same system: each answer becomes another registered layer of the project brief, while the progress rail and final summary make state explicit.",
     "keyCharacteristics": [
-      "Bone and paper reading fields interrupted by committed near-black, vermilion, or chartreuse regions.",
+      "Frost and drafting-paper reading fields interrupted by committed graphite or blueprint-blue regions.",
       "Oversized compressed uppercase display type paired with a humanist system reading stack.",
       "One-pixel structural rules, square controls, registration axes, nodes, and connectors.",
-      "Signal vermilion for decisions and acid chartreuse for live, selected, complete, or successful states.",
+      "Blueprint blue for hierarchy and action, systems teal for verified states, and technical blue tint for selection.",
       "Purposeful transform-and-opacity motion with reduced-motion handling at the application root."
     ],
     "rules": [
-      { "name": "The State Color Rule", "body": "Vermilion means decide or attend; chartreuse means selected, live, complete, or successful. Do not swap those meanings for decoration.", "section": "colors" },
+      { "name": "The State Color Rule", "body": "Blueprint blue means act, focus, or attend; systems teal means verified, live, complete, or successful; technical blue tint means selected or informational. Do not swap those meanings for decoration.", "section": "colors" },
       { "name": "The Full-Field Rule", "body": "Saturated colors may own whole sections or controls. Do not dilute them into scattered ornamental accents.", "section": "colors" },
       { "name": "The Compression Rule", "body": "Display text may be tight and uppercase; body text must remain conventionally spaced and readable. Never apply display compression to paragraphs or form values.", "section": "typography" },
       { "name": "The Continuous Sheet Rule", "body": "Adjacent material should read as one evolving document. Use shared edges, rules, and field changes instead of isolated floating panels.", "section": "layout" },
@@ -131,7 +136,7 @@
       "Don't use gradients, glass, decorative blur, stock imagery, or generic icon tiles.",
       "Don't build the page from repeated equal cards or nest cards inside cards.",
       "Don't add rounded SaaS controls or ambient shadows to soften the structural language.",
-      "Don't use vermilion and chartreuse interchangeably; their decision/live meanings are fixed.",
+      "Don't scatter blueprint blue, systems teal, or technical blue tint outside their hierarchy and state roles.",
       "Don't restyle the internal panel through public or configurator selectors."
     ]
   }

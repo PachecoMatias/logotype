@@ -1,18 +1,23 @@
 ---
 name: Logotype
-description: A living release sheet that registers project intent into working software.
+description: An Engineering Blueprint expressed through a living release-sheet composition.
 colors:
-  bone-ground: "#eee9dc"
-  paper-field: "#f8f4e8"
-  structural-ink: "#171713"
-  muted-ink: "#625f55"
-  structural-line: "rgba(23, 23, 19, 0.24)"
-  signal-vermilion: "#f04424"
-  live-chartreuse: "#c8ff31"
-  subdued-on-dark: "#d7d2c6"
-  future-step: "#8f8c84"
-  error-ink: "#a82410"
-  error-field: "#fff0ec"
+  frost-canvas: "#eef2f5"
+  drafting-paper: "#f9fbfc"
+  graphite: "#101923"
+  slate: "#52616d"
+  structural-line: "rgba(16, 25, 35, 0.22)"
+  blueprint-blue: "#174ea6"
+  blueprint-blue-on-dark: "#8fb7f0"
+  systems-teal: "#0f6f7a"
+  systems-teal-on-dark: "#78c6cc"
+  technical-blue-tint: "#dce8f7"
+  dark-surface-secondary: "#d5dde4"
+  future-inactive: "#8b99a5"
+  error-ink: "#a53a32"
+  error-field: "#fff1ef"
+  warning-ink: "#6d5700"
+  warning-field: "#fff3c4"
 typography:
   display:
     fontFamily: '"Franklin Gothic Medium", "Arial Narrow", sans-serif'
@@ -52,50 +57,50 @@ spacing:
   field: "48px"
 components:
   button-public-primary:
-    backgroundColor: "{colors.live-chartreuse}"
-    textColor: "{colors.structural-ink}"
+    backgroundColor: "{colors.blueprint-blue}"
+    textColor: "{colors.drafting-paper}"
     typography: "{typography.label}"
     rounded: "{rounded.structural}"
     padding: "11px 16px"
     height: "46px"
   button-configurator-primary:
-    backgroundColor: "{colors.signal-vermilion}"
-    textColor: "{colors.paper-field}"
+    backgroundColor: "{colors.blueprint-blue}"
+    textColor: "{colors.drafting-paper}"
     typography: "{typography.label}"
     rounded: "{rounded.structural}"
     padding: "12px 18px"
     height: "50px"
   button-line:
     backgroundColor: "transparent"
-    textColor: "{colors.structural-ink}"
+    textColor: "{colors.graphite}"
     typography: "{typography.label}"
     rounded: "{rounded.structural}"
     padding: "11px 16px"
     height: "46px"
   input:
     backgroundColor: "transparent"
-    textColor: "{colors.structural-ink}"
+    textColor: "{colors.graphite}"
     typography: "{typography.body}"
     rounded: "{rounded.structural}"
     padding: "13px 14px"
     height: "52px"
   chip:
     backgroundColor: "transparent"
-    textColor: "{colors.structural-ink}"
+    textColor: "{colors.graphite}"
     typography: "{typography.body}"
     rounded: "{rounded.structural}"
     padding: "9px 14px"
     height: "44px"
   chip-selected:
-    backgroundColor: "{colors.live-chartreuse}"
-    textColor: "{colors.structural-ink}"
+    backgroundColor: "{colors.technical-blue-tint}"
+    textColor: "{colors.graphite}"
     typography: "{typography.body}"
     rounded: "{rounded.structural}"
     padding: "9px 14px"
     height: "44px"
   progress-register:
-    backgroundColor: "{colors.structural-ink}"
-    textColor: "{colors.paper-field}"
+    backgroundColor: "{colors.graphite}"
+    textColor: "{colors.drafting-paper}"
     typography: "{typography.label}"
     rounded: "{rounded.structural}"
     padding: "24px 32px 20px"
@@ -106,44 +111,46 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Living Release Sheet"**
+**Creative North Star: "Engineering Blueprint"**
 
-Logotype treats a software proposal as a release proof in motion: information is registered, aligned, connected, and marked complete. The visual world combines the structural honesty of prepress artifacts with software architecture diagrams, using typography, rules, connectors, registration marks, and state color instead of stock imagery or decorative chrome.
+Logotype treats a software proposal as an engineering blueprint in motion: information is registered, aligned, connected, and marked complete. The living release sheet remains the editorial and compositional method, while cool drafting surfaces, blueprint hierarchy, and systems-state color establish the software-engineering identity.
 
 The public site is the expressive Persuade surface. It uses architectural typography, full-width color fields, asymmetric composition, and varied editorial pacing to make the academic narrative memorable. The configurator is the calmer Operate expression of the same system: each answer becomes another registered layer of the project brief, while the progress rail and final summary make state explicit.
 
 **Key Characteristics:**
 
-- Bone and paper reading fields interrupted by committed near-black, vermilion, or chartreuse regions.
+- Frost and drafting-paper reading fields interrupted by committed graphite or blueprint-blue regions.
 - Oversized compressed uppercase display type paired with a humanist system reading stack.
 - One-pixel structural rules, square controls, registration axes, nodes, and connectors.
-- Signal vermilion for decisions and acid chartreuse for live, selected, complete, or successful states.
+- Blueprint blue for hierarchy and action, systems teal for verified states, and technical blue tint for selection.
 - Purposeful transform-and-opacity motion with reduced-motion handling at the application root.
 
 ## Colors
 
-The palette behaves like a proofing system: neutrals carry content, vermilion records decisions, and chartreuse confirms live state.
+The palette behaves like an engineering notation system: cool neutrals carry content, blueprint blue establishes decisive hierarchy, systems teal confirms verified state, and pale technical blue identifies selection.
 
 ### Primary
 
-- **Signal Vermilion** (`signal-vermilion`): decisive actions, registration axes, active annotations, required marks, and saturated narrative fields.
+- **Blueprint Blue** (`blueprint-blue`): decisive actions, registration axes, active annotations, focus, and saturated narrative fields. **Blueprint Blue on Dark** (`blueprint-blue-on-dark`) preserves the role for dark-surface annotations.
 
 ### Secondary
 
-- **Live Chartreuse** (`live-chartreuse`): selected options, completed progress, success marks, live indicators, and the public primary action.
+- **Systems Teal** (`systems-teal`): completed progress, success marks, verified statuses, and live indicators. **Systems Teal on Dark** (`systems-teal-on-dark`) is the contrast-safe text variant over graphite.
+- **Technical Blue Tint** (`technical-blue-tint`): selected options, selected navigation, information fields, and the Objectives region.
 
 ### Neutral
 
-- **Bone Ground** (`bone-ground`): primary page ground and neutral hover field.
-- **Paper Field** (`paper-field`): quieter reading surfaces, form workspace, and light text over dark or vermilion fields.
-- **Structural Ink** (`structural-ink`): primary text, dark fields, borders, and architectural lines.
-- **Muted Ink** (`muted-ink`): secondary explanatory copy on light fields.
+- **Frost Canvas** (`frost-canvas`): primary page ground and neutral hover field.
+- **Drafting Paper** (`drafting-paper`): quieter reading surfaces, form workspace, and light text over dark or blueprint fields.
+- **Graphite** (`graphite`): primary text, dark fields, borders, and architectural lines.
+- **Slate** (`slate`): secondary explanatory and placeholder copy on light fields.
 - **Structural Line** (`structural-line`): lower-emphasis dividers where a full ink rule would be too strong.
-- **Subdued on Dark** (`subdued-on-dark`): secondary copy over near-black fields.
-- **Future Step** (`future-step`): inactive configurator progress labels.
+- **Dark Surface Secondary** (`dark-surface-secondary`): secondary copy over graphite fields.
+- **Future / Inactive** (`future-inactive`): inactive configurator progress labels.
 - **Error Ink / Error Field** (`error-ink`, `error-field`): recoverable form and submission error treatment.
+- **Warning Ink / Warning Field** (`warning-ink`, `warning-field`): pending prototype status treatment.
 
-**The State Color Rule.** Vermilion means decide or attend; chartreuse means selected, live, complete, or successful. Do not swap those meanings for decoration.
+**The State Color Rule.** Blueprint blue means act, focus, or attend; systems teal means verified, live, complete, or successful; technical blue tint means selected or informational. Do not swap those meanings for decoration.
 
 **The Full-Field Rule.** Saturated colors may own whole sections or controls. Do not dilute them into scattered ornamental accents.
 
@@ -177,7 +184,7 @@ Public breakpoints are 1080px, 760px, and 480px. Configurator breakpoints are 82
 
 ## Elevation & Depth
 
-The system is flat by default. Hierarchy comes from field color, overlap, line weight, and spatial scale—not stacked shadows. Shadows are restricted to small status nodes and the protected floating panel-access control: `0 3px 10px rgba(94, 125, 0, 0.28)`, `0 3px 10px rgba(130, 180, 0, 0.22)`, `0 3px 10px rgba(83, 112, 0, 0.28)`, and `0 8px 24px rgba(23, 23, 19, 0.24)`.
+The system is flat by default. Hierarchy comes from field color, overlap, line weight, and spatial scale—not stacked shadows. Shadows are restricted to small status nodes and the protected floating panel-access control: `0 3px 10px rgba(15, 111, 122, 0.28)`, `0 3px 10px rgba(15, 111, 122, 0.22)`, and `0 8px 24px rgba(16, 25, 35, 0.24)`.
 
 **The Flat-by-Default Rule.** Do not add ambient card shadows. A shadow is reserved for a live/status point or a control that must remain visibly above the document.
 
@@ -192,21 +199,21 @@ Outlined and filled states share the same geometry so state changes feel like pr
 ### Buttons
 
 - **Shape:** square, one-pixel border, uppercase compact label, minimum height of 46px publicly and 50px in the configurator.
-- **Public primary:** chartreuse field with structural-ink text and `11px 16px` padding.
-- **Configurator primary:** vermilion field with paper text and `12px 18px` padding.
+- **Public primary:** blueprint-blue field with drafting-paper text and `11px 16px` padding; inside a blueprint-blue region it inverts to drafting paper with blueprint-blue text.
+- **Configurator primary:** blueprint-blue field with drafting-paper text and `12px 18px` padding.
 - **Secondary / line:** transparent field with a one-pixel current-color border.
 - **Hover / tap:** restrained two-pixel translation and 0.98 tap scale through Framer Motion; focus uses a three-pixel visible outline.
 - **Disabled:** remains legible at 0.4 opacity and does not animate.
 
 ### Chips
 
-- **Style:** square, one-pixel structural-ink border, `9px 14px` padding, and a minimum 44px touch height.
-- **State:** transparent at rest; chartreuse when selected. The leading plus/check state marker uses vermilion.
+- **Style:** square, one-pixel graphite border, `9px 14px` padding, and a minimum 44px touch height.
+- **State:** transparent at rest; technical blue tint when selected. The leading marker uses blueprint blue at rest and systems teal when selected.
 
 ### Cards / Containers
 
 - **Corner Style:** square; do not introduce rounded card shells.
-- **Background:** bone, paper, near-black, vermilion, or chartreuse according to narrative/state role.
+- **Background:** frost, drafting paper, graphite, blueprint blue, or technical blue tint according to narrative/state role.
 - **Shadow Strategy:** flat by default; use the documented exceptions only.
 - **Border:** one-pixel structural rules create tables, organization nodes, option matrices, and summaries.
 - **Internal Padding:** typically 24px–34px, expanding responsively in major narrative fields.
@@ -214,16 +221,16 @@ Outlined and filled states share the same geometry so state changes feel like pr
 ### Inputs / Fields
 
 - **Style:** transparent field, no side or top border, one-pixel ink baseline, square corners, `13px 14px` padding, and 52px minimum height.
-- **Focus:** baseline changes to vermilion and the field receives the bone ground; the global focus-visible outline remains available for keyboard navigation.
+- **Focus:** baseline changes to blueprint blue and the field receives the frost canvas; the global focus-visible outline remains available for keyboard navigation.
 - **Error:** error-ink text below the field; submission-level errors use the error field with a one-pixel current-color border.
 
 ### Navigation
 
-Public and configurator headers are sticky 72px ruled bars, reducing to 64px on the smallest breakpoint. Wordmarks use the display stack with the `/TYPE` fragment in vermilion. Public navigation uses compact uppercase labels, a ruled hover state, and a vermilion action. Below 1080px it becomes a grid menu; below 480px it becomes one column. The configurator keeps only wordmark and close action so the task remains focused.
+Public and configurator headers are sticky 72px ruled bars, reducing to 64px on the smallest breakpoint. Wordmarks use the display stack with the `/TYPE` fragment in blueprint blue. Public navigation uses compact uppercase labels, a ruled hover state, and a blueprint-blue action. Below 1080px it becomes a grid menu; below 480px it becomes one column. The configurator keeps only wordmark and close action so the task remains focused.
 
 ### Registration Progress
 
-The configurator's near-black progress register is sticky below the header. A three-pixel chartreuse line scales from the left; complete labels become chartreuse, the current label remains paper with a vermilion underline, and future labels use the future-step neutral. Mobile replaces the seven labels with the current step name and “Paso N de 7.”
+The configurator's graphite progress register is sticky below the header. A three-pixel systems-teal line scales from the left; complete labels use contrast-safe systems teal with a one-pixel underline and stronger weight, the current label remains drafting paper with a two-pixel contrast-safe blueprint-blue underline, and future labels use the future/inactive neutral. Mobile replaces the seven labels with the current step name and “Paso N de 7.”
 
 ### Motion
 
@@ -244,5 +251,5 @@ The root `MotionConfig` uses `reducedMotion="user"` and the standard exponential
 - **Don't** use gradients, glass, decorative blur, stock imagery, or generic icon tiles.
 - **Don't** build the page from repeated equal cards or nest cards inside cards.
 - **Don't** add rounded SaaS controls or ambient shadows to soften the structural language.
-- **Don't** use vermilion and chartreuse interchangeably; their decision/live meanings are fixed.
+- **Don't** scatter blueprint blue, systems teal, or technical blue tint outside their hierarchy and state roles.
 - **Don't** restyle the internal panel through public or configurator selectors.
