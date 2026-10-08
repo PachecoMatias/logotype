@@ -48,13 +48,13 @@ The current public experience does not yet communicate the craft expected at a u
   - Trigger evidence: more than two non-trivial public components and new scoped CSS.
   - Acceptance: all public academic sections remain present; editorial identity, responsive composition, purposeful motion, header/footer navigation, configurator entry, and footer panel access work.
   - Checks: focused build; structural readback; desktop/mobile visual inspection.
-  - Evidence: public composition rebuilt across the header, hero, company, objectives, organization chart, services, problem/solution, functional prototype, infrastructure, conclusions, and footer with scoped `site-` classes in `frontend/src/styles/site.css`. Every public text collection remains sourced from `company.js` and `content.js`; panel/configurator conditionals and handlers remain unchanged. Motion foundation is `MotionConfig reducedMotion="user"`; viewport reveals run once, the hero registration axis is scroll-linked, and controls use restrained hover/tap transforms. Responsive rules cover 375px, 768px, and 1280px without fixed page-width overflow. Production build passed. The implemented system pair is Franklin Gothic Medium/Arial Narrow for display and Trebuchet MS/Segoe UI for reading, using local system fonts only. Browser screenshot inspection remains intentionally assigned to PSR-4. Work-unit commit identity: pending transaction-controller commit; add the hash without amending this implementation unit if required.
-- [ ] **PSR-3 — Redesign the seven-step configurator**
+  - Evidence: public composition rebuilt across the header, hero, company, objectives, organization chart, services, problem/solution, functional prototype, infrastructure, conclusions, and footer with scoped `site-` classes in `frontend/src/styles/site.css`. Every public text collection remains sourced from `company.js` and `content.js`; panel/configurator conditionals and handlers remain unchanged. Motion foundation is `MotionConfig reducedMotion="user"`; viewport reveals run once, the hero registration axis is scroll-linked, and controls use restrained hover/tap transforms. Responsive rules cover 375px, 768px, and 1280px without fixed page-width overflow. Production build passed. The implemented system pair is Franklin Gothic Medium/Arial Narrow for display and Trebuchet MS/Segoe UI for reading, using local system fonts only. Browser screenshot inspection remains intentionally assigned to PSR-4. Work-unit commit: `652ac8d` (`feat(frontend): redesign public site`).
+- [x] **PSR-3 — Redesign the seven-step configurator**
   - Route: delegated direct.
   - Trigger evidence: multiple step components, progress UI, summary, transitions, and scoped CSS.
   - Acceptance: seven steps keep their order, payload and validations remain byte-for-behavior compatible, progress is responsive, transitions do not cause layout jumps, and summary clearly reflects entered values.
   - Checks: focused build; source contract comparison; desktop/mobile visual inspection.
-  - Evidence: pending.
+  - Evidence: configurator presentation rebuilt with dedicated `cfg-` classes and `frontend/src/styles/configurator.css`; desktop keeps the seven-step horizontal register visible and mobile collapses it to “Paso N de 7” with a smoothly scaled progress line. All steps use guided Spanish voseo copy, semantic labels, visible selection/focus/error states, bounded `AnimatePresence` transitions, and restrained button/card motion under the root reduced-motion configuration. The review summary now exposes every entered value, including the current process and the conditional “Otro” values. Source-boundary comparison confirmed no changes to `projectOptions.js`, `validation.js`, or `utils/api.js`; `stepKeys`, validator order, `projectData`, `/api/proyectos`, POST JSON body, expected 201 status, and restart assignments remain unchanged. Production build passed. Browser responsive inspection remains pending for PSR-4; work-unit commit identity remains pending the parent transaction-controller commit.
 - [ ] **PSR-4 — Close integrated quality evidence**
   - Route: delegated verification plus parent spot check.
   - Trigger evidence: full production build and responsive/browser checks would inflate the parent context.
@@ -64,10 +64,10 @@ The current public experience does not yet communicate the craft expected at a u
 
 ## Progress
 
-- Active task: PSR-3.
-- Running authored line count: pending first work-unit commit identity.
+- Active task: PSR-4.
+- Running authored line count: `652ac8d` plus the pending PSR-3 work unit.
 - Reviewed boundary: branch point at `3b45b1b`.
 
 ## Next Step
 
-Redesign the seven-step configurator as PSR-3 without changing its payload, validation, API, step order, or business state.
+Run integrated PSR-4 browser, navigation, responsive, protected-diff, detector, and finish-review evidence without changing protected panel behavior.

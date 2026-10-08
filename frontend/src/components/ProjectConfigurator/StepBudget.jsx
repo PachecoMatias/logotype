@@ -3,15 +3,15 @@ import { budgetRanges, timelineRanges } from '../../data/projectOptions.js'
 
 function StepBudget({ data, errors, onChange }) {
   return (
-    <div>
-      <h3 className="step-title">Últimos detalles</h3>
-      <p className="step-subtitle">Estos datos nos ayudan a dimensionar el proyecto.</p>
+    <div className="cfg-step">
+      <h2 className="cfg-step__title">Acordemos los últimos detalles</h2>
+      <p className="cfg-step__intro">Indicá el marco de inversión y tiempo que tenés en mente; puede ser una primera estimación.</p>
 
-      <div className="form-group">
+      <div className="cfg-field">
         <label>
-          Presupuesto estimado<span className="required">*</span>
+          Presupuesto estimado<span className="cfg-required">*</span>
         </label>
-        <div className="chip-grid">
+        <div className="cfg-chip-grid">
           {budgetRanges.map((range) => (
             <Chip
               key={range}
@@ -21,14 +21,14 @@ function StepBudget({ data, errors, onChange }) {
             />
           ))}
         </div>
-        {errors.presupuesto && <p className="field-error">{errors.presupuesto}</p>}
+        {errors.presupuesto && <p className="cfg-field-error">{errors.presupuesto}</p>}
       </div>
 
-      <div className="form-group">
+      <div className="cfg-field">
         <label>
-          Plazo esperado<span className="required">*</span>
+          Plazo esperado<span className="cfg-required">*</span>
         </label>
-        <div className="chip-grid">
+        <div className="cfg-chip-grid">
           {timelineRanges.map((range) => (
             <Chip
               key={range}
@@ -38,14 +38,14 @@ function StepBudget({ data, errors, onChange }) {
             />
           ))}
         </div>
-        {errors.plazo && <p className="field-error">{errors.plazo}</p>}
+        {errors.plazo && <p className="cfg-field-error">{errors.plazo}</p>}
       </div>
 
-      <div className="form-group">
+      <div className="cfg-field">
         <label htmlFor="infoAdicional">¿Hay algo más que consideres importante que nuestro equipo deba conocer?</label>
         <textarea
           id="infoAdicional"
-          className="form-control"
+          className="cfg-control"
           value={data.infoAdicional}
           onChange={(e) => onChange({ ...data, infoAdicional: e.target.value })}
           placeholder="Contanos cualquier detalle adicional (opcional)"

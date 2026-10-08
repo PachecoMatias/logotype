@@ -103,14 +103,14 @@ function App() {
 
   if (view === 'configurador') {
     return (
-      <div className="configurator-standalone">
-        <header className="configurator-topbar">
-          <div className="container configurator-topbar-inner">
-            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
-              LOGO<span>TYPE</span>
+      <div className="cfg-page-shell">
+        <header className="cfg-topbar">
+          <div className="cfg-container cfg-topbar__inner">
+            <button className="cfg-wordmark" onClick={handleBackHome}>
+              LOGO<span>/TYPE</span>
             </button>
-            <button className="configurator-close" onClick={handleBackHome}>
-              ✕ Cerrar
+            <button className="cfg-topbar__close" onClick={handleBackHome}>
+              <span aria-hidden="true">×</span> Cerrar
             </button>
           </div>
         </header>

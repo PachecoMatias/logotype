@@ -6,133 +6,106 @@ function ProjectSummary({ projectData, onEditStep }) {
   const tipoProyecto = projectTypes.find((t) => t.id === proyecto.tipoProyecto)
 
   return (
-    <div>
-      <h3 className="step-title">Revisá tu proyecto</h3>
-      <p className="step-subtitle">
+    <div className="cfg-step cfg-summary">
+      <h2 className="cfg-step__title">Revisá tu proyecto</h2>
+      <p className="cfg-step__intro">
         Verificá que la información sea correcta antes de enviar tu solicitud. Podés volver a
         cualquier sección para modificarla.
       </p>
 
-      <div className="summary-card">
-        <div className="summary-card-header">
+      <div className="cfg-summary__registry">
+      <section className="cfg-summary__section">
+        <div className="cfg-summary__header">
           <h3>Empresa</h3>
-          <button className="summary-edit-link" onClick={() => onEditStep(0)}>
-            Editar
+          <button className="cfg-summary__edit" onClick={() => onEditStep(0)}>
+            Editar <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <div className="summary-row">
-          <span>Empresa</span>
-          <span>{empresa.nombreEmpresa}</span>
-        </div>
-        <div className="summary-row">
-          <span>Contacto</span>
-          <span>{empresa.contacto}</span>
-        </div>
-        <div className="summary-row">
-          <span>Email</span>
-          <span>{empresa.email}</span>
-        </div>
-        <div className="summary-row">
-          <span>Teléfono</span>
-          <span>{empresa.telefono}</span>
-        </div>
-        <div className="summary-row">
-          <span>Rubro</span>
-          <span>{empresa.rubro === 'Otro' ? empresa.rubroOtro : empresa.rubro}</span>
-        </div>
-      </div>
+        <dl className="cfg-summary__rows">
+          <div><dt>Empresa</dt><dd>{empresa.nombreEmpresa}</dd></div>
+          <div><dt>Contacto</dt><dd>{empresa.contacto}</dd></div>
+          <div><dt>Email</dt><dd>{empresa.email}</dd></div>
+          <div><dt>Teléfono</dt><dd>{empresa.telefono}</dd></div>
+          <div><dt>Rubro</dt><dd>{empresa.rubro === 'Otro' ? empresa.rubroOtro : empresa.rubro}</dd></div>
+        </dl>
+      </section>
 
-      <div className="summary-card">
-        <div className="summary-card-header">
-          <h3>Solución</h3>
-          <button className="summary-edit-link" onClick={() => onEditStep(1)}>
-            Editar
+      <section className="cfg-summary__section">
+        <div className="cfg-summary__header">
+          <h3>Proyecto</h3>
+          <button className="cfg-summary__edit" onClick={() => onEditStep(1)}>
+            Editar <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <div className="summary-row">
-          <span>Tipo de proyecto</span>
-          <span>{tipoProyecto?.title}</span>
-        </div>
-        <div className="summary-row">
-          <span>Problema identificado</span>
-          <span>{problema.problemaActual}</span>
-        </div>
-        <div className="summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-          <span>Objetivos</span>
-          <div className="summary-tags" style={{ marginTop: 8 }}>
-            {problema.objetivos.map((obj) => (
-              <span className="summary-tag" key={obj}>
-                {obj === 'Otro' ? problema.objetivosOtro || 'Otro' : obj}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+        <dl className="cfg-summary__rows">
+          <div><dt>Tipo de solución</dt><dd>{tipoProyecto?.title}</dd></div>
+        </dl>
+      </section>
 
-      <div className="summary-card">
-        <div className="summary-card-header">
+      <section className="cfg-summary__section cfg-summary__section--wide">
+        <div className="cfg-summary__header">
+          <h3>Problema</h3>
+          <button className="cfg-summary__edit" onClick={() => onEditStep(2)}>
+            Editar <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+        <dl className="cfg-summary__rows">
+          <div><dt>Problema actual</dt><dd>{problema.problemaActual}</dd></div>
+          <div><dt>Proceso actual</dt><dd>{problema.procesoActual}</dd></div>
+          <div className="cfg-summary__row--stacked"><dt>Objetivos</dt><dd className="cfg-summary__tags">
+              {problema.objetivos.map((obj) => (
+                <span key={obj}>{obj === 'Otro' ? problema.objetivosOtro || 'Otro' : obj}</span>
+              ))}
+          </dd></div>
+        </dl>
+      </section>
+
+      <section className="cfg-summary__section cfg-summary__section--wide">
+        <div className="cfg-summary__header">
           <h3>Funcionalidades</h3>
-          <button className="summary-edit-link" onClick={() => onEditStep(3)}>
-            Editar
+          <button className="cfg-summary__edit" onClick={() => onEditStep(3)}>
+            Editar <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <div className="summary-tags">
-          {funcionalidades.seleccionadas.map((f) => (
-            <span className="summary-tag" key={f}>
-              {f === 'Otra' ? funcionalidades.otra || 'Otra' : f}
-            </span>
+        <div className="cfg-summary__tags">
+          {funcionalidades.seleccionadas.map((feature) => (
+            <span key={feature}>{feature === 'Otra' ? funcionalidades.otra || 'Otra' : feature}</span>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="summary-card">
-        <div className="summary-card-header">
+      <section className="cfg-summary__section">
+        <div className="cfg-summary__header">
           <h3>Alcance</h3>
-          <button className="summary-edit-link" onClick={() => onEditStep(4)}>
-            Editar
+          <button className="cfg-summary__edit" onClick={() => onEditStep(4)}>
+            Editar <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <div className="summary-row">
-          <span>Plataformas</span>
-          <span>{alcance.plataformas.join(', ')}</span>
-        </div>
-        <div className="summary-row">
-          <span>Cantidad de usuarios</span>
-          <span>{alcance.cantidadUsuarios}</span>
-        </div>
-        <div className="summary-row">
-          <span>Tipos de usuarios</span>
-          <span>
-            {alcance.necesitaTiposUsuario === 'Sí'
-              ? alcance.tiposUsuario
-                  .map((t) => (t === 'Otro' ? alcance.tiposUsuarioOtro || 'Otro' : t))
-                  .join(', ')
-              : alcance.necesitaTiposUsuario}
-          </span>
-        </div>
-      </div>
+        <dl className="cfg-summary__rows">
+          <div><dt>Plataformas</dt><dd>{alcance.plataformas.join(', ')}</dd></div>
+          <div><dt>Cantidad de usuarios</dt><dd>{alcance.cantidadUsuarios}</dd></div>
+          <div><dt>¿Requiere tipos de usuario?</dt><dd>{alcance.necesitaTiposUsuario}</dd></div>
+          {alcance.necesitaTiposUsuario === 'Sí' && (
+            <div><dt>Tipos de usuarios</dt><dd>{alcance.tiposUsuario
+              .map((type) => (type === 'Otro' ? alcance.tiposUsuarioOtro || 'Otro' : type))
+              .join(', ')}</dd></div>
+          )}
+        </dl>
+      </section>
 
-      <div className="summary-card">
-        <div className="summary-card-header">
+      <section className="cfg-summary__section">
+        <div className="cfg-summary__header">
           <h3>Planificación</h3>
-          <button className="summary-edit-link" onClick={() => onEditStep(5)}>
-            Editar
+          <button className="cfg-summary__edit" onClick={() => onEditStep(5)}>
+            Editar <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <div className="summary-row">
-          <span>Presupuesto</span>
-          <span>{presupuesto.presupuesto}</span>
-        </div>
-        <div className="summary-row">
-          <span>Plazo</span>
-          <span>{presupuesto.plazo}</span>
-        </div>
-        {presupuesto.infoAdicional && (
-          <div className="summary-row">
-            <span>Información adicional</span>
-            <span>{presupuesto.infoAdicional}</span>
-          </div>
-        )}
+        <dl className="cfg-summary__rows">
+          <div><dt>Presupuesto</dt><dd>{presupuesto.presupuesto}</dd></div>
+          <div><dt>Plazo</dt><dd>{presupuesto.plazo}</dd></div>
+          {presupuesto.infoAdicional && <div><dt>Información adicional</dt><dd>{presupuesto.infoAdicional}</dd></div>}
+        </dl>
+      </section>
       </div>
     </div>
   )

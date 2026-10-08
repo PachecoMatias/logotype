@@ -11,14 +11,13 @@ function StepFeatures({ data, errors, onChange }) {
   }
 
   return (
-    <div>
-      <h3 className="step-title">¿Qué debería poder hacer tu sistema?</h3>
-      <p className="step-subtitle">
-        Seleccioná las funcionalidades que consideres necesarias. No es necesario que tengas
-        todos los requisitos definidos.
+    <div className="cfg-step">
+      <h2 className="cfg-step__title">¿Qué debería poder hacer tu sistema?</h2>
+      <p className="cfg-step__intro">
+        Marcá las funciones que hoy imaginás. No hace falta que tengas todos los requisitos definidos.
       </p>
 
-      <div className="chip-grid">
+      <div className="cfg-chip-grid cfg-chip-grid--dense">
         {featuresList.map((feature) => (
           <Chip
             key={feature}
@@ -28,21 +27,21 @@ function StepFeatures({ data, errors, onChange }) {
           />
         ))}
       </div>
-      {errors.seleccionadas && <p className="field-error">{errors.seleccionadas}</p>}
+      {errors.seleccionadas && <p className="cfg-field-error">{errors.seleccionadas}</p>}
 
       {data.seleccionadas.includes('Otra') && (
-        <div className="form-group" style={{ marginTop: 20 }}>
+        <div className="cfg-field cfg-field--followup">
           <label htmlFor="otra">
-            Contanos cuál<span className="required">*</span>
+            Contanos cuál<span className="cfg-required">*</span>
           </label>
           <input
             id="otra"
-            className="form-control"
+            className="cfg-control"
             type="text"
             value={data.otra}
             onChange={(e) => onChange({ ...data, otra: e.target.value })}
           />
-          {errors.otra && <p className="field-error">{errors.otra}</p>}
+          {errors.otra && <p className="cfg-field-error">{errors.otra}</p>}
         </div>
       )}
     </div>

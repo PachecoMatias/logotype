@@ -30,7 +30,7 @@ const validators = [
   validatePresupuesto,
 ]
 
-function ProjectConfigurator({onBack}) {
+function ProjectConfigurator({ onBack }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [projectData, setProjectData] = useState(initialProjectData)
   const [errors, setErrors] = useState({})
@@ -105,9 +105,9 @@ function ProjectConfigurator({onBack}) {
   }
 
   const variants = {
-    enter: (dir) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
+    enter: (dir) => ({ opacity: 0, x: dir > 0 ? 28 : -28 }),
     center: { opacity: 1, x: 0 },
-    exit: (dir) => ({ opacity: 0, x: dir > 0 ? -60 : 60 }),
+    exit: (dir) => ({ opacity: 0, x: dir > 0 ? -28 : 28 }),
   }
 
   const renderStep = () => {
@@ -166,42 +166,41 @@ function ProjectConfigurator({onBack}) {
   }
 
   return (
-    <section id="configurador" className="configurator-section configurator-page">
-      <div className="container">
-        {/* Si ya tenías un botón "← Volver al inicio" acá arriba, se puede borrar: ahora está en la topbar */}
-
-        <div className="configurator-hero-title">
-          <span className="configurator-eyebrow">Relevamiento inicial de proyecto</span>
-          <h2>Contanos tu proyecto</h2>
-          <p>
-            Contanos qué necesitás y nuestro equipo analizará tu solicitud para proponerte una
-            solución de software a medida.
-          </p>
+    <main id="configurador" className="cfg-main">
+      <div className="cfg-container">
+        <div className="cfg-intro">
+          <h1>Contanos tu proyecto</h1>
+          <p>Vamos a registrar cada decisión para entender qué necesitás y preparar una solución de software a medida.</p>
+          <div className="cfg-intro__register" aria-hidden="true">
+            <span />
+            <span>Brief en construcción</span>
+          </div>
         </div>
 
-        <div className="configurator-shell">
+        <div className="cfg-workspace">
           {submitted ? (
             <SuccessMessage onRestart={handleRestart} />
           ) : (
             <>
               <ProgressBar currentStepIndex={stepIndex} />
 
-              <div className="configurator-step-content">
+              <div className="cfg-step-stage">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.div
                     key={stepIndex}
+                    className="cfg-transition"
                     custom={direction}
                     variants={variants}
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                   >
                     {submitting ? (
-                      <div className="loading-dots" aria-label="Enviando solicitud">
-                        <span />
-                        <span />
-                        <span />
+                      <div className="cfg-loading" role="status" aria-live="polite">
+                        <span className="cfg-loading__line" aria-hidden="true" />
+                        <strong>Registrando tu proyecto</strong>
+                        <span>Estamos enviando la información de forma segura.</span>
                       </div>
                     ) : (
                       renderStep()
@@ -213,20 +212,27 @@ function ProjectConfigurator({onBack}) {
               {!submitting && (
                 <>
                   {submitError && (
-                    <p className="panel-state-msg panel-state-error">{submitError}</p>
+                    <p className="cfg-submit-error" role="alert">{submitError}</p>
                   )}
-                  <div className="step-nav">
-                  <button
-                    className="btn btn-outline"
-                    onClick={handleBack}
-                    disabled={stepIndex === 0}
-                  >
-                    ← Anterior
-                  </button>
+                  <div className="cfg-actions">
+                    <motion.button
+                      className="cfg-button cfg-button--secondary"
+                      onClick={handleBack}
+                      disabled={stepIndex === 0}
+                      whileHover={stepIndex === 0 ? undefined : { x: -2 }}
+                      whileTap={stepIndex === 0 ? undefined : { scale: 0.98 }}
+                    >
+                      <span aria-hidden="true">←</span> Anterior
+                    </motion.button>
 
-                  <button className="btn btn-primary" onClick={handleNext}>
-                    {isSummaryStep ? 'Enviar solicitud' : 'Continuar →'}
-                  </button>
+                    <motion.button
+                      className="cfg-button cfg-button--primary"
+                      onClick={handleNext}
+                      whileHover={{ x: 2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {isSummaryStep ? 'Enviar solicitud' : 'Continuar'} <span aria-hidden="true">→</span>
+                    </motion.button>
                   </div>
                 </>
               )}
@@ -234,7 +240,7 @@ function ProjectConfigurator({onBack}) {
           )}
         </div>
       </div>
-    </section>
+    </main>
   )
 }
 

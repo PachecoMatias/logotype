@@ -3,19 +3,12 @@ import { motion } from 'framer-motion'
 function SuccessMessage({ onRestart }) {
   return (
     <motion.div
-      className="success-screen"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="cfg-success"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
     >
-      <motion.div
-        className="success-icon"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.15, type: 'spring', stiffness: 200 }}
-      >
-        ✓
-      </motion.div>
+      <div className="cfg-success__mark" aria-hidden="true"><span>✓</span></div>
 
       <h3>¡Proyecto recibido!</h3>
       <p>
@@ -23,9 +16,14 @@ function SuccessMessage({ onRestart }) {
         equipo analizará tus necesidades para preparar una propuesta personalizada.
       </p>
 
-      <button className="btn btn-primary" onClick={onRestart}>
-        Volver al inicio
-      </button>
+      <motion.button
+        className="cfg-button cfg-button--primary"
+        onClick={onRestart}
+        whileHover={{ x: 2 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        Cargar otro proyecto <span aria-hidden="true">→</span>
+      </motion.button>
     </motion.div>
   )
 }
