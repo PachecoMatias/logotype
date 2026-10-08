@@ -37,10 +37,11 @@ The stabilized Hero still leaves the left wordmark plane visually underdeveloped
 - [x] **EHC-2 — Refine Hero field and Organization readability**
   - Acceptance: the left Hero gains a restrained static technical diagram behind the wordmark without competing with it or altering stabilized geometry; every Organization role has clear contrast, padding, growth, and wrapping with no clipping.
   - Checks: focused CSS diff, changed-line motion scan, protected-path diff, build, detector, overflow safeguards.
-  - Evidence: `site.css` adds a non-interactive, responsive line-and-node field behind the wordmark without changing the protected Hero frame, statement, axis, shell variables, or overflow ownership. Organization nodes now use a canvas field with graphite text, centered natural-height layout, expanded padding, and `overflow-wrap: anywhere`/hyphenation. `npm run build` passed with 432 modules transformed; scoped `git diff --check` passed with only the existing LF-to-CRLF warning; the focused changed-line diff contains no motion, animation, or transition declarations and adds no `overflow-x: hidden`. No browser tooling was available, so no visual, zoom, or runtime overflow evidence is claimed. The shared detector remains intentionally deferred until all UI edits are final.
-- [ ] **EHC-3 — Refine the Configurator experience**
+  - Evidence: `site.css` adds a non-interactive, responsive line-and-node field behind the wordmark without changing the protected Hero frame, statement, axis, shell variables, or overflow ownership. Organization nodes now use a canvas field with graphite text, centered natural-height layout, expanded padding, and `overflow-wrap: anywhere`/hyphenation. `npm run build` passed with 432 modules transformed; scoped `git diff --check` passed with only the existing LF-to-CRLF warning; the focused changed-line diff contains no motion, animation, or transition declarations and adds no `overflow-x: hidden`. No browser tooling was available, so no visual, zoom, or runtime overflow evidence is claimed. The shared detector remains intentionally deferred until all UI edits are final. Work-unit commit: `89b9414` (`fix(frontend): refine hero field and organization nodes`). Native RDD assessed the committed range from `508e942` as `medium / under_budget`, so it remains in the pending slice.
+- [x] **EHC-3 — Refine the Configurator experience**
   - Acceptance: header, progress, workspace, step hierarchy, controls, state styling, actions, and summary form one cohesive premium Engineering Blueprint experience while all seven steps and behavior contracts remain unchanged.
   - Checks: CSS-only diff, protected behavior-path diff, build, detector, focus/error/disabled source invariants, responsive safeguards.
+  - Evidence: `configurator.css` now treats the graphite topbar and progress register as one technical header, strengthens the registered workspace/stage, clarifies step hierarchy, and gives controls, error/disabled states, options, chips, actions, loading, and the summary registry explicit palette roles without changing state semantics. `npm run build` passed with 432 modules transformed; scoped `git diff --check` passed with only the existing LF-to-CRLF warning; the focused changed-line diff contains no motion, animation, or transition declarations and adds no `overflow-x: hidden`. Protected behavior/source paths have no diff. The final Impeccable detector ran exactly once and returned `[]`.
 - [ ] **EHC-4 — Verify and close the work units**
   - Acceptance: builds pass, generated output is cleaned, protected paths and motion are unchanged, no horizontal-overflow shortcut is introduced, RDD outcomes and commit identities are recorded, and browser evidence is reported only when tooling is actually available.
   - Checks: `npm run build`, `git diff --check`, protected-path diff, detector, 375/768/1280 plus zoom when browser tooling is available.
@@ -54,8 +55,8 @@ The stabilized Hero still leaves the left wordmark plane visually underdeveloped
 
 ## Progress
 
-- Status: EHC-2 implementation and source/build verification complete. EHC-3 is implemented in the working tree and awaits its separate work-unit commit.
+- Status: EHC-2 and EHC-3 implementation plus source/build/detector verification complete. EHC-4 remains open for the Configurator commit, generated-output confirmation, native RDD outcome, and unavailable browser evidence.
 
 ## Next Step
 
-Commit EHC-2 with its evidence, assess the work unit, then record and commit EHC-3 separately.
+Commit EHC-3 with its evidence, assess the cumulative slice, then close EHC-4.
