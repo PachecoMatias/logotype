@@ -35,10 +35,10 @@ The previous passes established the right system and stronger global rhythm. The
   - Acceptance: four Company quadrants become distinct registered fields; Objectives gains row-level contrast; Organization nodes integrate into the blueprint network; prototype chrome gains product authority; Conclusions becomes a graphite editorial close flowing into the blueprint footer.
   - Checks: CSS-only diff, motion-declaration scan, protected path diff, detector.
   - Evidence: `frontend/src/styles/site.css` now assigns graphite/selection/canvas/primary fields to the four Company quadrants, drafting-paper/graphite contrast to Objectives rows two and three, transparent primary-ruled and selection lead nodes to Organization, an inset blueprint hairline plus graphite chrome to the prototype, and a graphite Conclusions field with an on-dark registration edge, dividers, and numbered marks. The changed-line motion scan found no matching declarations. The Impeccable detector was invoked once and returned `[]`; the final non-geometric inset implementation was then narrowed from a pseudo-element to an inner outline without changing the visual role.
-- [ ] **EBF-3 — Verify and record the work unit**
+- [x] **EBF-3 — Verify and record the work unit**
   - Acceptance: build passes, overflow safeguards remain intact, protected paths are unchanged, generated output is cleaned, and the CSS work unit is committed.
   - Checks: `npm run build`, `git diff --check`, protected diff, Impeccable detector.
-  - Evidence: `npm run build` passes (Vite 5.4.21, 432 modules); `git diff --check` passes with working-copy line-ending warnings only; protected source paths under `frontend/src` (except `site.css`), `backend`, `DESIGN.md`, and `.impeccable` have no diff from `431e068`; overflow and responsive safeguards match the reviewed boundary. Build output remains for parent cleanup because this worker cannot write outside the allowed edit surface: restore `frontend/dist/index.html`, `frontend/dist/assets/index-Cq23cU_7.js`, and `frontend/dist/assets/index-CugTMBAC.css`, then remove generated `frontend/dist/assets/index-DBeYEjMS.css` and `frontend/dist/assets/index-BweG4CLP.js`. Commit identity remains pending the parent commit.
+  - Evidence: `npm run build` passes (Vite 5.4.21, 432 modules); `git diff --check` passes with working-copy line-ending warnings only; protected source paths under `frontend/src` (except `site.css`), `backend`, `DESIGN.md`, and `.impeccable` have no diff from `431e068`; changed lines contain no motion declarations; final Impeccable detector rerun returned `[]`; overflow and responsive safeguards match the reviewed boundary; build output was restored/cleaned. Work-unit commit: `1bb3d78` (`feat(frontend): refine final public surfaces`). Browser tooling was unavailable, so runtime viewport inspection remains part of the user's browser pass. Native RDD assessed `medium / under_budget`, so no review transaction was due.
 
 ## Allowed Edit Surface
 
@@ -47,8 +47,8 @@ The previous passes established the right system and stronger global rhythm. The
 
 ## Progress
 
-- Active task: EBF-3 (parent cleanup, browser check, and commit).
+- Status: implementation and proportional source/build verification complete.
 
 ## Next Step
 
-Restore generated build output, complete the manual browser check, and create the parent-owned work-unit commit.
+Review the final Company, Objectives, Organization, prototype, and Conclusions rhythm in the user's browser pass.
