@@ -36,10 +36,10 @@ The current Hero mixes three coordinate systems: the blue statement uses a viewp
   - Acceptance: statement and CTAs remain grid-owned without negative overlap; plane and axis stay visually registered at desktop, tablet, and mobile widths; Header, Hero, Company, and Organization use stronger existing field roles; all other surfaces and all behavior remain unchanged.
   - Checks: focused source diff, changed-line motion scan, protected-path diff, Impeccable detector.
   - Evidence: `site.css` now gives the statement an explicit bounded grid column, derives the desktop plane and viewport axis from shared shell/panel variables, stacks the Hero at `<=1080px`, and derives the narrower axis from shell inset variables at `<=760px` and `<=480px`. Header, Hero plane, Company ground, and Organization ground use only existing palette variables. The focused motion scan found no changed motion declarations, the protected-path diff was empty, and the Impeccable detector returned `[]`.
-- [ ] **EBS-3 — Verify and close the work unit**
+- [x] **EBS-3 — Verify and close the work unit**
   - Acceptance: build passes, overflow safeguards remain present, generated output is cleaned, and the implementation is committed as one Conventional Commit work unit.
   - Checks: `npm run build`, `git diff --check`, protected-path diff, detector, viewport inspection at 375/768/1280 when browser tooling is available.
-  - Evidence: `npm run build` passed with 432 modules transformed; `git diff --check` passed with line-ending warnings only; `overflow-x: clip` and the two intentional `overflow-x: auto` safeguards remain, with no new `overflow-x: hidden`. Browser tooling was unavailable, so 375/768/1280 and zoom inspection was not claimed. EBS-3 remains open pending restoration of generated `frontend/dist` output, parent RDD assessment, and work-unit commit recording.
+  - Evidence: `npm run build` passed with 432 modules transformed; `git diff --check` passed with line-ending warnings only; `overflow-x: clip` and the two intentional `overflow-x: auto` safeguards remain, with no new `overflow-x: hidden`; the parent detector spot check returned `[]`; generated `frontend/dist` output was restored and cleaned. Browser tooling was unavailable, so 375/768/1280 and zoom inspection was not claimed. Work-unit commit: `5d494c9` (`fix(frontend): stabilize blueprint hero surfaces`). Native RDD assessed the committed range from `82499a9` as `medium / under_budget`, so no review transaction was due.
 
 ## Allowed Edit Surface
 
@@ -48,8 +48,8 @@ The current Hero mixes three coordinate systems: the blue statement uses a viewp
 
 ## Progress
 
-- Status: scoped CSS implementation complete; work-unit closure pending.
+- Status: implementation and proportional source/build verification complete.
 
 ## Next Step
 
-Restore generated build output, complete parent RDD assessment and viewport inspection when tooling is available, then record the work-unit commit.
+Inspect the Header and Hero registration at 375px, 768px, and 1280px plus browser zoom when browser tooling becomes available.
