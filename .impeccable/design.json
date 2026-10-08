@@ -121,9 +121,11 @@
     "rules": [
       { "name": "The State Color Rule", "body": "Blueprint blue means act, focus, or attend; systems teal means verified, live, complete, or successful; technical blue tint means selected or informational. Do not swap those meanings for decoration.", "section": "colors" },
       { "name": "The Full-Field Rule", "body": "Saturated colors may own whole sections or controls. Do not dilute them into scattered ornamental accents.", "section": "colors" },
+      { "name": "The Registered Field Rule", "body": "Alternate drafting paper, frost, technical tint, graphite, and blueprint fields by narrative role. Adjacent fields share edges and use inset hairlines or registration corners to read as one engineered sheet rather than isolated panels.", "section": "colors" },
       { "name": "The Compression Rule", "body": "Display text may be tight and uppercase; body text must remain conventionally spaced and readable. Never apply display compression to paragraphs or form values.", "section": "typography" },
       { "name": "The Continuous Sheet Rule", "body": "Adjacent material should read as one evolving document. Use shared edges, rules, and field changes instead of isolated floating panels.", "section": "layout" },
-      { "name": "The Flat-by-Default Rule", "body": "Do not add ambient card shadows. A shadow is reserved for a live/status point or a control that must remain visibly above the document.", "section": "elevation" }
+      { "name": "The Flat-by-Default Rule", "body": "Do not add ambient card shadows. A shadow is reserved for a live/status point or a control that must remain visibly above the document.", "section": "elevation" },
+      { "name": "The Structural Depth Rule", "body": "Create depth with flat layered planes and one-pixel inset graphite or blueprint registration edges. Static registration devices stay inside their host bounds, never alter geometry, and never compete with state-bearing teal.", "section": "elevation" }
     ],
     "dos": [
       "Do make color carry state or own a full region.",

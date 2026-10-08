@@ -44,7 +44,7 @@
   z-index: 1000;
   top: 0;
   border-bottom: 1px solid var(--cfg-graphite);
-  background: var(--cfg-canvas);
+  background: var(--cfg-surface);
   color: var(--cfg-graphite);
   box-shadow: none;
 }
@@ -150,8 +150,17 @@
 }
 
 .cfg-workspace {
+  position: relative;
   border: 1px solid var(--cfg-graphite);
   background: var(--cfg-surface);
+}
+
+.cfg-workspace::before {
+  position: absolute;
+  inset: 7px;
+  border: 1px solid var(--cfg-line);
+  content: "";
+  pointer-events: none;
 }
 
 .cfg-progress {
@@ -471,6 +480,7 @@
   gap: 18px;
   padding: 24px clamp(24px, 7vw, 96px) 34px;
   border-top: 1px solid var(--cfg-graphite);
+  background: var(--cfg-canvas);
 }
 
 .cfg-button {

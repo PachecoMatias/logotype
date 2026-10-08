@@ -154,6 +154,8 @@ The palette behaves like an engineering notation system: cool neutrals carry con
 
 **The Full-Field Rule.** Saturated colors may own whole sections or controls. Do not dilute them into scattered ornamental accents.
 
+**The Registered Field Rule.** Alternate drafting paper, frost, technical tint, graphite, and blueprint fields by narrative role. Adjacent fields share edges and use inset hairlines or registration corners to read as one engineered sheet rather than isolated panels.
+
 ## Typography
 
 **Display Font:** `"Franklin Gothic Medium", "Arial Narrow", sans-serif`  
@@ -184,9 +186,11 @@ Public breakpoints are 1080px, 760px, and 480px. Configurator breakpoints are 82
 
 ## Elevation & Depth
 
-The system is flat by default. Hierarchy comes from field color, overlap, line weight, and spatial scale—not stacked shadows. Shadows are restricted to small status nodes and the protected floating panel-access control: `0 3px 10px rgba(15, 111, 122, 0.28)`, `0 3px 10px rgba(15, 111, 122, 0.22)`, and `0 8px 24px rgba(16, 25, 35, 0.24)`.
+The system is flat by default. Hierarchy comes from decisive field alternation, shared edges, inset hairlines, registration corners, overlap, line weight, and spatial scale—not stacked shadows. Drafting paper carries editorial reading and artifact surfaces, frost separates neutral cells and action rails, technical tint identifies informational regions, and graphite or blueprint fields provide structural peaks. Shadows are restricted to small status nodes and the protected floating panel-access control: `0 3px 10px rgba(15, 111, 122, 0.28)`, `0 3px 10px rgba(15, 111, 122, 0.22)`, and `0 8px 24px rgba(16, 25, 35, 0.24)`.
 
 **The Flat-by-Default Rule.** Do not add ambient card shadows. A shadow is reserved for a live/status point or a control that must remain visibly above the document.
+
+**The Structural Depth Rule.** Create depth with flat layered planes and one-pixel inset graphite or blueprint registration edges. Static registration devices stay inside their host bounds, never alter geometry, and never compete with state-bearing teal.
 
 ## Shapes
 
