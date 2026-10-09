@@ -183,6 +183,36 @@
   background: var(--site-canvas);
 }
 
+.site-hero__field {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background-image:
+    linear-gradient(to right, var(--site-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--site-line) 1px, transparent 1px),
+    linear-gradient(to right, rgba(23, 78, 166, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(23, 78, 166, 0.14) 1px, transparent 1px);
+  background-size: 34px 34px, 34px 34px, 170px 170px, 170px 170px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.site-hero__diagram {
+  position: absolute;
+  top: 52%;
+  left: 32%;
+  width: min(66%, 720px);
+  height: auto;
+  color: var(--site-primary);
+  opacity: 0.2;
+  transform: translate(-50%, -50%);
+}
+
+.site-hero__diagram-node {
+  fill: var(--site-secondary);
+}
+
 .site-hero__frame {
   position: relative;
   isolation: isolate;
@@ -201,7 +231,11 @@
   right: calc((100vw - 100%) / -2);
   bottom: 0;
   left: calc(100% - var(--site-hero-panel-width));
-  background: var(--site-graphite);
+  background-color: var(--site-graphite);
+  background-image:
+    linear-gradient(to right, rgba(143, 183, 240, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(143, 183, 240, 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
   content: "";
   pointer-events: none;
 }
@@ -292,6 +326,14 @@
   padding: clamp(24px, 3vw, 42px);
   background: var(--site-primary);
   color: var(--site-surface);
+}
+
+.site-hero__statement::before {
+  position: absolute;
+  inset: 11px;
+  border: 1px solid rgba(249, 251, 252, 0.3);
+  content: "";
+  pointer-events: none;
 }
 
 .site-hero__lead {
@@ -1164,6 +1206,12 @@
 
   .site-hero__registration { grid-column: 1; }
   .site-infrastructure__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .site-hero__diagram {
+    left: 50%;
+    width: min(88%, 680px);
+    opacity: 0.16;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1275,6 +1323,9 @@
     right: 12px;
     bottom: 12px;
   }
+
+  .site-hero__diagram { display: none; }
+  .site-hero__field { opacity: 0.5; }
 }
 
 @media (prefers-reduced-motion: reduce) {
