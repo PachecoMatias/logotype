@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion'
 import { EASE_OUT, DURATION } from '../../motion/tokens.js'
+import { childVariants } from '../../motion/variants.js'
 
 /**
- * Selectable chip. Visibility is driven by its own mount animation (object
- * states), never by a parent variant label, so a chip is always shown on the
- * first render regardless of hover or viewport state.
+ * Selectable chip that remains visible by default and only animates
+ * interaction feedback.
  */
 function Chip({ label, selected, onClick, index = 0 }) {
   return (
@@ -13,11 +13,10 @@ function Chip({ label, selected, onClick, index = 0 }) {
       className={`cfg-chip${selected ? ' cfg-chip--selected' : ''}`}
       onClick={onClick}
       aria-pressed={selected}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: DURATION.state, ease: EASE_OUT, delay: index * 0.03 }}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.97 }}
+      variants={childVariants}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
     >
       <span aria-hidden="true">{selected ? '✓' : '+'}</span>{label}
     </motion.button>

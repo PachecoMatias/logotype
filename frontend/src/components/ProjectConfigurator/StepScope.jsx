@@ -1,14 +1,8 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Chip from './Chip.jsx'
 import { platforms, userRanges, yesNoUnsure, userTypes } from '../../data/projectOptions.js'
-import { stepContainer, stepField, EASE_OUT, DURATION } from '../../motion/tokens.js'
-
-const followIn = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: DURATION.layout, ease: EASE_OUT },
-}
+import RevealGroup from '../../motion/RevealGroup.jsx'
+import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepScope({ data, errors, onChange }) {
   const togglePlatform = (platform) => {
@@ -28,11 +22,11 @@ function StepScope({ data, errors, onChange }) {
   }
 
   return (
-    <motion.div className="cfg-step" variants={stepContainer} initial="hidden" animate="show">
-      <motion.h2 className="cfg-step__title" variants={stepField}>Definamos algunas características</motion.h2>
-      <motion.p className="cfg-step__intro" variants={stepField}>Ubicá dónde se va a usar y quiénes van a participar para que podamos dimensionar el alcance.</motion.p>
+    <RevealGroup className="cfg-step" viewport={false} mount>
+      <motion.h2 className="cfg-step__title" variants={childVariants}>Definamos algunas características</motion.h2>
+      <motion.p className="cfg-step__intro" variants={childVariants}>Ubicá dónde se va a usar y quiénes van a participar para que podamos dimensionar el alcance.</motion.p>
 
-      <motion.div className="cfg-field" variants={stepField}>
+      <motion.div className="cfg-field" variants={childVariants}>
         <label>
           Plataformas<span className="cfg-required">*</span>
         </label>
@@ -47,10 +41,10 @@ function StepScope({ data, errors, onChange }) {
             />
           ))}
         </div>
-        {errors.plataformas && <p className="cfg-field-error">{errors.plataformas}</p>}
+        {errors.plataformas && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.plataformas}</motion.p>}
       </motion.div>
 
-      <motion.div className="cfg-field" variants={stepField}>
+      <motion.div className="cfg-field" variants={childVariants}>
         <label htmlFor="cantidadUsuarios">
           Cantidad estimada de usuarios<span className="cfg-required">*</span>
         </label>
@@ -67,10 +61,10 @@ function StepScope({ data, errors, onChange }) {
             </option>
           ))}
         </select>
-        {errors.cantidadUsuarios && <p className="cfg-field-error">{errors.cantidadUsuarios}</p>}
+        {errors.cantidadUsuarios && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.cantidadUsuarios}</motion.p>}
       </motion.div>
 
-      <motion.div className="cfg-field" variants={stepField}>
+      <motion.div className="cfg-field" variants={childVariants}>
         <label>
           ¿Necesitás diferentes tipos de usuarios?<span className="cfg-required">*</span>
         </label>
@@ -85,12 +79,11 @@ function StepScope({ data, errors, onChange }) {
             />
           ))}
         </div>
-        {errors.necesitaTiposUsuario && <p className="cfg-field-error">{errors.necesitaTiposUsuario}</p>}
+        {errors.necesitaTiposUsuario && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.necesitaTiposUsuario}</motion.p>}
       </motion.div>
 
-      <AnimatePresence initial={false}>
-        {data.necesitaTiposUsuario === 'Sí' && (
-          <motion.div className="cfg-field" key="tiposUsuarioBlock" {...followIn}>
+      {data.necesitaTiposUsuario === 'Sí' && (
+          <motion.div className="cfg-field" variants={childVariants}>
             <label>
               ¿Qué tipos de usuarios?<span className="cfg-required">*</span>
             </label>
@@ -105,14 +98,12 @@ function StepScope({ data, errors, onChange }) {
                 />
               ))}
             </div>
-            {errors.tiposUsuario && <p className="cfg-field-error">{errors.tiposUsuario}</p>}
+            {errors.tiposUsuario && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.tiposUsuario}</motion.p>}
           </motion.div>
-        )}
-      </AnimatePresence>
+      )}
 
-      <AnimatePresence initial={false}>
-        {data.tiposUsuario.includes('Otro') && (
-          <motion.div className="cfg-field" key="tiposUsuarioOtro" {...followIn}>
+      {data.tiposUsuario.includes('Otro') && (
+          <motion.div className="cfg-field" variants={childVariants}>
             <label htmlFor="tiposUsuarioOtro">
               Contanos cuál<span className="cfg-required">*</span>
             </label>
@@ -123,11 +114,10 @@ function StepScope({ data, errors, onChange }) {
               value={data.tiposUsuarioOtro}
               onChange={(e) => onChange({ ...data, tiposUsuarioOtro: e.target.value })}
             />
-            {errors.tiposUsuarioOtro && <p className="cfg-field-error">{errors.tiposUsuarioOtro}</p>}
+            {errors.tiposUsuarioOtro && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.tiposUsuarioOtro}</motion.p>}
           </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      )}
+    </RevealGroup>
   )
 }
 

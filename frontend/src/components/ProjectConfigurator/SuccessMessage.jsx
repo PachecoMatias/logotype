@@ -1,37 +1,44 @@
-import { motion } from 'framer-motion'
-import { EASE_OUT, DURATION, SPRING } from '../../motion/tokens.js'
-
-// The confirmation arrives as three beats: the seal lands, then the message,
-// then the action.
-const box = { hidden: {}, visible: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } } }
-
-const markIn = {
-  hidden: { opacity: 0, scale: 0.7 },
-  visible: { opacity: 1, scale: 1, transition: SPRING },
-}
-
-const lineIn = {
-  hidden: { opacity: 0, y: 14 },
-  visible: { opacity: 1, y: 0, transition: { duration: DURATION.layout, ease: EASE_OUT } },
-}
+import { motion, useReducedMotion } from 'framer-motion'
+import { EASE_OUT, DURATION } from '../../motion/tokens.js'
 
 function SuccessMessage({ onRestart }) {
-  return (
-    <motion.div className="cfg-success" variants={box} initial="hidden" animate="visible">
-      <motion.div className="cfg-success__mark" aria-hidden="true" variants={markIn}><span>✓</span></motion.div>
+  const reduceMotion = useReducedMotion()
 
-      <motion.h3 variants={lineIn}>¡Proyecto recibido!</motion.h3>
-      <motion.p variants={lineIn}>
+  return (
+    <motion.div
+      className="cfg-success"
+      initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: reduceMotion ? 0 : 0.6, ease: EASE_OUT }}
+    >
+      <div className="cfg-success__mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" focusable="false">
+          <motion.path
+            d="M12 25.5 20.5 34 37 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            initial={{ pathLength: reduceMotion ? 1 : 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.6, ease: EASE_OUT, delay: reduceMotion ? 0 : 0.18 }}
+          />
+        </svg>
+      </div>
+
+      <h3>¡Proyecto recibido!</h3>
+      <p>
         Gracias por confiar en Logotype. Recibimos la información de tu proyecto y nuestro
         equipo analizará tus necesidades para preparar una propuesta personalizada.
-      </motion.p>
+      </p>
 
       <motion.button
         className="cfg-button cfg-button--primary"
         onClick={onRestart}
-        variants={lineIn}
-        whileHover={{ x: 2 }}
+        whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
       >
         Cargar otro proyecto <span aria-hidden="true">→</span>
       </motion.button>

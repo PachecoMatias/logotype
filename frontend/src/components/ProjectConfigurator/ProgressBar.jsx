@@ -1,15 +1,6 @@
 import { motion } from 'framer-motion'
 import { configuratorSteps } from '../../data/projectOptions.js'
-import { EASE_OUT, DURATION } from '../../motion/tokens.js'
-
-// The step list assembles once when the configurator opens; the fill tracks
-// progress as a single springing line.
-const stepList = { hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }
-
-const stepItem = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: DURATION.layout, ease: EASE_OUT } },
-}
+import { SPRING_SOFT } from '../../motion/tokens.js'
 
 function ProgressBar({ currentStepIndex }) {
   const total = configuratorSteps.length
@@ -34,25 +25,29 @@ function ProgressBar({ currentStepIndex }) {
           className="cfg-progress__fill"
           initial={false}
           animate={{ scaleX: progress }}
-          transition={{ duration: DURATION.layout, ease: EASE_OUT }}
+          transition={SPRING_SOFT}
         />
       </div>
 
-      <motion.ol className="cfg-progress__steps" variants={stepList} initial="hidden" animate="visible">
+      <ol className="cfg-progress__steps">
         {configuratorSteps.map((step, index) => (
-          <motion.li
+          <li
             key={step.id}
-            variants={stepItem}
             className={`cfg-progress__step${index === currentStepIndex ? ' cfg-progress__step--current' : ''}${
               index < currentStepIndex ? ' cfg-progress__step--complete' : ''
             }`}
             aria-current={index === currentStepIndex ? 'step' : undefined}
           >
+            <span className="cfg-progress__marker" aria-hidden="true">
+              {index === currentStepIndex && (
+                <motion.span className="cfg-progress__current-marker" layoutId="cfg-current-step" />
+              )}
+            </span>
             <span>{String(index + 1).padStart(2, '0')}</span>
             <strong>{step.label}</strong>
-          </motion.li>
+          </li>
         ))}
-      </motion.ol>
+      </ol>
     </div>
   )
 }

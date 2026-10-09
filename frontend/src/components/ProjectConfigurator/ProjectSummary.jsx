@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion'
 import { projectTypes } from '../../data/projectOptions.js'
-import { stepContainer, stepField, summaryContainer, summaryItem, EASE_OUT, DURATION } from '../../motion/tokens.js'
+import { EASE_OUT, DURATION } from '../../motion/tokens.js'
+import RevealGroup from '../../motion/RevealGroup.jsx'
+import { childVariants } from '../../motion/variants.js'
 
 // The summary is built like a document being assembled: each section is a
 // block that settles in order, and each edit affordance reacts on hover.
 const editMotion = {
-  whileHover: { x: 2 },
+  whileHover: { scale: 1.02 },
   whileTap: { scale: 0.98 },
   transition: { duration: DURATION.feedback, ease: EASE_OUT },
 }
@@ -16,15 +18,15 @@ function ProjectSummary({ projectData, onEditStep }) {
   const tipoProyecto = projectTypes.find((t) => t.id === proyecto.tipoProyecto)
 
   return (
-    <motion.div className="cfg-step cfg-summary" variants={stepContainer} initial="hidden" animate="show">
-      <motion.h2 className="cfg-step__title" variants={stepField}>Revisá tu proyecto</motion.h2>
-      <motion.p className="cfg-step__intro" variants={stepField}>
+    <RevealGroup className="cfg-step cfg-summary" viewport={false} mount>
+      <motion.h2 className="cfg-step__title" variants={childVariants}>Revisá tu proyecto</motion.h2>
+      <motion.p className="cfg-step__intro" variants={childVariants}>
         Verificá que la información sea correcta antes de enviar tu solicitud. Podés volver a
         cualquier sección para modificarla.
       </motion.p>
 
-      <motion.div className="cfg-summary__registry" variants={summaryContainer}>
-        <motion.section className="cfg-summary__section" variants={summaryItem}>
+      <motion.div className="cfg-summary__registry" variants={childVariants}>
+        <motion.section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Empresa</h3>
             <motion.button className="cfg-summary__edit" onClick={() => onEditStep(0)} {...editMotion}>
@@ -40,7 +42,7 @@ function ProjectSummary({ projectData, onEditStep }) {
           </dl>
         </motion.section>
 
-        <motion.section className="cfg-summary__section" variants={summaryItem}>
+        <motion.section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Proyecto</h3>
             <motion.button className="cfg-summary__edit" onClick={() => onEditStep(1)} {...editMotion}>
@@ -52,7 +54,7 @@ function ProjectSummary({ projectData, onEditStep }) {
           </dl>
         </motion.section>
 
-        <motion.section className="cfg-summary__section cfg-summary__section--wide" variants={summaryItem}>
+        <motion.section className="cfg-summary__section cfg-summary__section--wide" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Problema</h3>
             <motion.button className="cfg-summary__edit" onClick={() => onEditStep(2)} {...editMotion}>
@@ -70,7 +72,7 @@ function ProjectSummary({ projectData, onEditStep }) {
           </dl>
         </motion.section>
 
-        <motion.section className="cfg-summary__section cfg-summary__section--wide" variants={summaryItem}>
+        <motion.section className="cfg-summary__section cfg-summary__section--wide" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Funcionalidades</h3>
             <motion.button className="cfg-summary__edit" onClick={() => onEditStep(3)} {...editMotion}>
@@ -84,7 +86,7 @@ function ProjectSummary({ projectData, onEditStep }) {
           </div>
         </motion.section>
 
-        <motion.section className="cfg-summary__section" variants={summaryItem}>
+        <motion.section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Alcance</h3>
             <motion.button className="cfg-summary__edit" onClick={() => onEditStep(4)} {...editMotion}>
@@ -103,7 +105,7 @@ function ProjectSummary({ projectData, onEditStep }) {
           </dl>
         </motion.section>
 
-        <motion.section className="cfg-summary__section" variants={summaryItem}>
+        <motion.section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Planificación</h3>
             <motion.button className="cfg-summary__edit" onClick={() => onEditStep(5)} {...editMotion}>
@@ -117,7 +119,7 @@ function ProjectSummary({ projectData, onEditStep }) {
           </dl>
         </motion.section>
       </motion.div>
-    </motion.div>
+    </RevealGroup>
   )
 }
 

@@ -1,15 +1,16 @@
 import { motion } from 'framer-motion'
 import OptionCard from './OptionCard.jsx'
 import { projectTypes } from '../../data/projectOptions.js'
-import { stepContainer, stepField } from '../../motion/tokens.js'
+import RevealGroup from '../../motion/RevealGroup.jsx'
+import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepProject({ data, errors, onChange }) {
   return (
-    <motion.div className="cfg-step" variants={stepContainer} initial="hidden" animate="show">
-      <motion.h2 className="cfg-step__title" variants={stepField}>¿Qué solución estás buscando?</motion.h2>
-      <motion.p className="cfg-step__intro" variants={stepField}>Elegí la alternativa que más se acerque a tu idea; después vamos a precisar el alcance.</motion.p>
+    <RevealGroup className="cfg-step" viewport={false} mount>
+      <motion.h2 className="cfg-step__title" variants={childVariants}>¿Qué solución estás buscando?</motion.h2>
+      <motion.p className="cfg-step__intro" variants={childVariants}>Elegí la alternativa que más se acerque a tu idea; después vamos a precisar el alcance.</motion.p>
 
-      <div className="cfg-option-grid">
+      <motion.div className="cfg-option-grid" variants={childVariants}>
         {projectTypes.map((type, index) => (
           <OptionCard
             key={type.id}
@@ -21,10 +22,10 @@ function StepProject({ data, errors, onChange }) {
             onClick={() => onChange({ ...data, tipoProyecto: type.id })}
           />
         ))}
-      </div>
+      </motion.div>
 
-      {errors.tipoProyecto && <motion.p className="cfg-field-error" variants={stepField}>{errors.tipoProyecto}</motion.p>}
-    </motion.div>
+      {errors.tipoProyecto && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.tipoProyecto}</motion.p>}
+    </RevealGroup>
   )
 }
 
