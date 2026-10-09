@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE_OUT, DURATION } from '../../motion/tokens.js'
 
 /**
  * variant: 'primary' | 'secondary' | 'outline'
@@ -8,7 +9,11 @@ function Button({ children, variant = 'primary', href, onClick, type = 'button',
   const classes = `btn btn-${variant}${className ? ` ${className}` : ''}`
   const motionProps = disabled
     ? {}
-    : { whileHover: { y: -2 }, whileTap: { y: 0, scale: 0.98 } }
+    : {
+        whileHover: { y: -2 },
+        whileTap: { y: 0, scale: 0.98 },
+        transition: { duration: DURATION.feedback, ease: EASE_OUT },
+      }
 
   if (href) {
     return (

@@ -1,16 +1,25 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { rubros } from '../../data/projectOptions.js'
+import { stepContainer, stepField, EASE_OUT, DURATION } from '../../motion/tokens.js'
+
+const followIn = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: DURATION.layout, ease: EASE_OUT },
+}
 
 function StepCompany({ data, errors, onChange }) {
   const set = (field) => (e) => onChange({ ...data, [field]: e.target.value })
 
   return (
-    <div className="cfg-step">
-      <h2 className="cfg-step__title">Primero, conozcamos tu empresa</h2>
-      <p className="cfg-step__intro">
+    <motion.div className="cfg-step" variants={stepContainer} initial="hidden" animate="show">
+      <motion.h2 className="cfg-step__title" variants={stepField}>Primero, conozcamos tu empresa</motion.h2>
+      <motion.p className="cfg-step__intro" variants={stepField}>
         Compartinos los datos básicos para ubicar el proyecto en el contexto real de tu organización.
-      </p>
+      </motion.p>
 
-      <div className="cfg-field-grid">
+      <motion.div className="cfg-field-grid" variants={stepField}>
         <div className="cfg-field">
           <label htmlFor="nombreEmpresa">
             Nombre de la empresa<span className="cfg-required">*</span>
@@ -40,9 +49,9 @@ function StepCompany({ data, errors, onChange }) {
           />
           {errors.contacto && <p className="cfg-field-error">{errors.contacto}</p>}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="cfg-field-grid">
+      <motion.div className="cfg-field-grid" variants={stepField}>
         <div className="cfg-field">
           <label htmlFor="email">
             Email<span className="cfg-required">*</span>
@@ -72,9 +81,9 @@ function StepCompany({ data, errors, onChange }) {
           />
           {errors.telefono && <p className="cfg-field-error">{errors.telefono}</p>}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="cfg-field">
+      <motion.div className="cfg-field" variants={stepField}>
         <label htmlFor="rubro">
           Rubro<span className="cfg-required">*</span>
         </label>
@@ -87,25 +96,27 @@ function StepCompany({ data, errors, onChange }) {
           ))}
         </select>
         {errors.rubro && <p className="cfg-field-error">{errors.rubro}</p>}
-      </div>
+      </motion.div>
 
-      {data.rubro === 'Otro' && (
-        <div className="cfg-field">
-          <label htmlFor="rubroOtro">
-            Contanos cuál<span className="cfg-required">*</span>
-          </label>
-          <input
-            id="rubroOtro"
-            className="cfg-control"
-            type="text"
-            value={data.rubroOtro}
-            onChange={set('rubroOtro')}
-            placeholder="Describí tu rubro"
-          />
-          {errors.rubroOtro && <p className="cfg-field-error">{errors.rubroOtro}</p>}
-        </div>
-      )}
-    </div>
+      <AnimatePresence initial={false}>
+        {data.rubro === 'Otro' && (
+          <motion.div className="cfg-field" key="rubroOtro" {...followIn}>
+            <label htmlFor="rubroOtro">
+              Contanos cuál<span className="cfg-required">*</span>
+            </label>
+            <input
+              id="rubroOtro"
+              className="cfg-control"
+              type="text"
+              value={data.rubroOtro}
+              onChange={set('rubroOtro')}
+              placeholder="Describí tu rubro"
+            />
+            {errors.rubroOtro && <p className="cfg-field-error">{errors.rubroOtro}</p>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 

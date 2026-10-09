@@ -1,11 +1,13 @@
+import { motion } from 'framer-motion'
 import OptionCard from './OptionCard.jsx'
 import { projectTypes } from '../../data/projectOptions.js'
+import { stepContainer, stepField } from '../../motion/tokens.js'
 
 function StepProject({ data, errors, onChange }) {
   return (
-    <div className="cfg-step">
-      <h2 className="cfg-step__title">¿Qué solución estás buscando?</h2>
-      <p className="cfg-step__intro">Elegí la alternativa que más se acerque a tu idea; después vamos a precisar el alcance.</p>
+    <motion.div className="cfg-step" variants={stepContainer} initial="hidden" animate="show">
+      <motion.h2 className="cfg-step__title" variants={stepField}>¿Qué solución estás buscando?</motion.h2>
+      <motion.p className="cfg-step__intro" variants={stepField}>Elegí la alternativa que más se acerque a tu idea; después vamos a precisar el alcance.</motion.p>
 
       <div className="cfg-option-grid">
         {projectTypes.map((type, index) => (
@@ -21,8 +23,8 @@ function StepProject({ data, errors, onChange }) {
         ))}
       </div>
 
-      {errors.tipoProyecto && <p className="cfg-field-error">{errors.tipoProyecto}</p>}
-    </div>
+      {errors.tipoProyecto && <motion.p className="cfg-field-error" variants={stepField}>{errors.tipoProyecto}</motion.p>}
+    </motion.div>
   )
 }
 

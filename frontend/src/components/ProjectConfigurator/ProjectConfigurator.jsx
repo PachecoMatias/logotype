@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import ProgressBar from './ProgressBar.jsx'
 import StepCompany from './StepCompany.jsx'
 import StepProject from './StepProject.jsx'
@@ -19,6 +19,7 @@ import {
   validatePresupuesto,
 } from './validation.js'
 import { apiRequest } from '../../utils/api.js'
+import { EASE_OUT, DURATION } from '../../motion/tokens.js'
 
 const stepKeys = ['empresa', 'proyecto', 'problema', 'funcionalidades', 'alcance', 'presupuesto']
 const validators = [
@@ -104,11 +105,11 @@ function ProjectConfigurator({ onBack }) {
     setSubmitError(null)
   }
 
-  const variants = {
-    enter: (dir) => ({ opacity: 0, x: dir > 0 ? 28 : -28 }),
-    center: { opacity: 1, x: 0 },
-    exit: (dir) => ({ opacity: 0, x: dir > 0 ? -28 : 28 }),
-  }
+  // Step transition: the incoming step mounts and animates in with a short
+  // directional shift; the outgoing step unmounts immediately. There is no
+  // AnimatePresence exit, so the stage never empties between steps and the step
+  // is never double-animated on remount. Fast enough to feel instant.
+  const stepTransition = { duration: DURATION.state, ease: EASE_OUT }
 
   const renderStep = () => {
     switch (stepKeys[stepIndex]) {
@@ -185,29 +186,32 @@ function ProjectConfigurator({ onBack }) {
               <ProgressBar currentStepIndex={stepIndex} />
 
               <div className="cfg-step-stage">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={stepIndex}
-                    className="cfg-transition"
-                    custom={direction}
-                    variants={variants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    {submitting ? (
-                      <div className="cfg-loading" role="status" aria-live="polite">
-                        <span className="cfg-loading__line" aria-hidden="true" />
-                        <strong>Registrando tu proyecto</strong>
-                        <span>Estamos enviando la información de forma segura.</span>
-                      </div>
-                    ) : (
-                      renderStep()
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+                <motion.div
+                  key={stepIndex}
+                  className="cfg-transition"
+                  initial={{ opacity: 0, x: direction > 0 ? 26 : -26 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={stepTransition}
+                >
+                  {submitting ? (
+                    <div className="cfg-loading" role="status" aria-live="polite">
+                      <motion.span
+                        className="cfg-loading__line"
+                        aria-hidden="true"
+                        style={{ transformOrigin: 'left' }}
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: [0, 1, 1, 0] }}
+                        transition={{ duration: 1.6, times: [0, 0.4, 0.7, 1], repeat: Infinity, ease: EASE_OUT }}
+                      />
+                      <strong>Registrando tu proyecto</strong>
+                      <span>Estamos enviando la información de forma segura.</span>
+                    </div>
+                  ) : (
+                    renderStep()
+                  )}
+                </motion.div>
               </div>
+
 
               {!submitting && (
                 <>
@@ -221,6 +225,7 @@ function ProjectConfigurator({ onBack }) {
                       disabled={stepIndex === 0}
                       whileHover={stepIndex === 0 ? undefined : { x: -2 }}
                       whileTap={stepIndex === 0 ? undefined : { scale: 0.98 }}
+                      transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
                     >
                       <span aria-hidden="true">←</span> Anterior
                     </motion.button>
@@ -230,6 +235,7 @@ function ProjectConfigurator({ onBack }) {
                       onClick={handleNext}
                       whileHover={{ x: 2 }}
                       whileTap={{ scale: 0.98 }}
+                      transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
                     >
                       {isSummaryStep ? 'Enviar solicitud' : 'Continuar'} <span aria-hidden="true">→</span>
                     </motion.button>

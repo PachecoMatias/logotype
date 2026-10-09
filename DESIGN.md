@@ -238,7 +238,7 @@ The configurator's graphite progress register is sticky below the header. A thre
 
 ### Motion
 
-The root `MotionConfig` uses `reducedMotion="user"` and the standard exponential ease `[0.16, 1, 0.3, 1]`. Public reveals use `whileInView` once, typically over 650ms. Configurator step transitions use 320ms horizontal offsets of 28px; progress uses 450ms scaleX movement. CSS reduced-motion rules reduce animation and transition duration to `0.01ms`.
+The root `MotionConfig` uses `reducedMotion="user"` and the standard exponential ease `[0.16, 1, 0.3, 1]`. Public reveals use `whileInView` with `once: false`, so they replay on re-entry; every hidden state carries a zero-duration transition so leaving the viewport resets instantly instead of playing a visible reverse animation. Section titles reveal word by word out of a mask (`SplitText`) with the subtitle following, and supporting reveals stay transform, opacity, and clip-path only. Hero construction remains the authored focal sequence. Configurator step changes animate only the incoming step (280ms, 26px offset) with no exit, so the stage never empties and the step is never double-animated. CSS reduced-motion rules reduce animation and transition duration to `0.01ms`.
 
 ## Do's and Don'ts
 

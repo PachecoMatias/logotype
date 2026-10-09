@@ -1,5 +1,15 @@
 import { motion } from 'framer-motion'
 import { configuratorSteps } from '../../data/projectOptions.js'
+import { EASE_OUT, DURATION } from '../../motion/tokens.js'
+
+// The step list assembles once when the configurator opens; the fill tracks
+// progress as a single springing line.
+const stepList = { hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }
+
+const stepItem = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: DURATION.layout, ease: EASE_OUT } },
+}
 
 function ProgressBar({ currentStepIndex }) {
   const total = configuratorSteps.length
@@ -24,14 +34,15 @@ function ProgressBar({ currentStepIndex }) {
           className="cfg-progress__fill"
           initial={false}
           animate={{ scaleX: progress }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: DURATION.layout, ease: EASE_OUT }}
         />
       </div>
 
-      <ol className="cfg-progress__steps">
+      <motion.ol className="cfg-progress__steps" variants={stepList} initial="hidden" animate="visible">
         {configuratorSteps.map((step, index) => (
-          <li
+          <motion.li
             key={step.id}
+            variants={stepItem}
             className={`cfg-progress__step${index === currentStepIndex ? ' cfg-progress__step--current' : ''}${
               index < currentStepIndex ? ' cfg-progress__step--complete' : ''
             }`}
@@ -39,9 +50,9 @@ function ProgressBar({ currentStepIndex }) {
           >
             <span>{String(index + 1).padStart(2, '0')}</span>
             <strong>{step.label}</strong>
-          </li>
+          </motion.li>
         ))}
-      </ol>
+      </motion.ol>
     </div>
   )
 }

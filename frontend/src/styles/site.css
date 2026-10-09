@@ -68,6 +68,12 @@
   text-wrap: balance;
 }
 
+/* Word-level editorial title reveal: the word box is transformed and clipped by
+   Framer; inline-block preserves the text baseline so there is no layout shift. */
+.split-word {
+  display: inline-block;
+}
+
 .site-section-title p {
   max-width: 56ch;
   color: inherit;

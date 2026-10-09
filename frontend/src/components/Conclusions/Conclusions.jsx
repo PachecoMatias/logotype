@@ -1,22 +1,20 @@
 import SectionTitle from '../common/SectionTitle.jsx'
-import AnimatedSection from '../common/AnimatedSection.jsx'
+import { Stagger, StaggerItem } from '../../motion/Reveal.jsx'
 import { conclusions } from '../../data/content.js'
 
 function Conclusions() {
   return (
     <section id="conclusion" className="site-section site-conclusions">
       <div className="site-shell">
-        <AnimatedSection direction="fade">
-          <SectionTitle title="Conclusiones" />
-        </AnimatedSection>
+        <SectionTitle title="Conclusiones" reveal="clipBottom" />
 
-        <AnimatedSection direction="up">
-          <div className="site-conclusions__copy">
-            {conclusions.map((paragraph, index) => (
-              <p key={paragraph.slice(0, 20)}><span aria-hidden="true">{index + 1}</span>{paragraph}</p>
-            ))}
-          </div>
-        </AnimatedSection>
+        <Stagger className="site-conclusions__copy" stagger={0.1} amount={0.2}>
+          {conclusions.map((paragraph, index) => (
+            <StaggerItem as="p" key={paragraph.slice(0, 20)} mode="clipLeft">
+              <span aria-hidden="true">{index + 1}</span>{paragraph}
+            </StaggerItem>
+          ))}
+        </Stagger>
       </div>
     </section>
   )
