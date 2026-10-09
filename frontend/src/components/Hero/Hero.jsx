@@ -1,81 +1,84 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import Button from '../common/Button.jsx'
-import { EASE_OUT, DURATION, CLIP_VISIBLE } from '../../motion/tokens.js'
+import Parallax from '../../motion/Parallax.jsx'
+import { MOTION_DURATION, MOTION_EASE } from '../../motion/variants.js'
 
 // The hero is the authored set piece: the blueprint reticle draws first, the
 // axis rises, then the wordmark, the blue planning panel and finally the
-// actions assemble in order. Everything below is one choreographed sequence.
-// Every `hidden` state resets instantly so leaving the viewport never replays a
-// visible reverse animation.
-const RESET = { duration: 0 }
+// actions assemble in order. Everything below is one one-shot choreographed
+// sequence, so the focal entrance never resets during scroll.
 
 const heroSeq = {
-  hidden: { transition: RESET },
-  visible: { transition: { delayChildren: 0.06, staggerChildren: 0.16 } },
+  hidden: {},
+  visible: { transition: { delayChildren: 0.04, staggerChildren: 0.14 } },
 }
 
 const fieldIn = {
-  hidden: { scale: 1.04, clipPath: 'inset(7% 7% 7% 7%)', transition: RESET },
+  hidden: { opacity: 0, scale: 1.04 },
   visible: {
+    opacity: 1,
     scale: 1,
-    clipPath: CLIP_VISIBLE,
-    transition: { duration: DURATION.construction, ease: EASE_OUT, delayChildren: 0.28, staggerChildren: 0.07 },
+    transition: { duration: MOTION_DURATION.slow, ease: MOTION_EASE, delayChildren: 0.28, staggerChildren: 0.07 },
   },
 }
 
 const axisIn = {
-  hidden: { scaleY: 0, transition: RESET },
-  visible: { scaleY: 1, transition: { duration: DURATION.construction, ease: EASE_OUT } },
+  hidden: { scaleY: 0 },
+  visible: { scaleY: 1, transition: { duration: MOTION_DURATION.slow, ease: MOTION_EASE } },
 }
 
 const frameSeq = {
-  hidden: { transition: RESET },
+  hidden: {},
   visible: { transition: { staggerChildren: 0.18, delayChildren: 0.08 } },
 }
 
 const wordmarkSeq = {
-  hidden: { opacity: 0, transition: RESET },
-  visible: { opacity: 1, transition: { duration: DURATION.focal, ease: EASE_OUT, staggerChildren: 0.11 } },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE, staggerChildren: 0.11 } },
 }
 
+// Text reveals use a transform + opacity settle: no clip path touches the
+// wordmark letters, so the title can never be masked or hidden.
 const wordIn = {
-  hidden: { clipPath: 'inset(0% 0% 100% 0%)', y: 20, transition: RESET },
-  visible: { clipPath: CLIP_VISIBLE, y: 0, transition: { duration: DURATION.construction, ease: EASE_OUT } },
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: MOTION_DURATION.slow, ease: MOTION_EASE } },
 }
 
+// The statement panel is a solid plate that rises into place; its copy is
+// revealed by opacity only, never by a mask.
 const panelIn = {
-  hidden: { clipPath: 'inset(0% 100% 0% 0%)', transition: RESET },
+  hidden: { opacity: 0, y: 24 },
   visible: {
-    clipPath: CLIP_VISIBLE,
-    transition: { duration: DURATION.focal, ease: EASE_OUT, delayChildren: 0.3, staggerChildren: 0.09 },
+    opacity: 1,
+    y: 0,
+    transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE, delayChildren: 0.3, staggerChildren: 0.09 },
   },
 }
 
 const textIn = {
-  hidden: { opacity: 0, y: 14, transition: RESET },
-  visible: { opacity: 1, y: 0, transition: { duration: DURATION.layout, ease: EASE_OUT } },
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE } },
 }
 
 const actionsSeq = {
-  hidden: { transition: RESET },
+  hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
 }
 
 const actionIn = {
-  hidden: { opacity: 0, y: 12, transition: RESET },
-  visible: { opacity: 1, y: 0, transition: { duration: DURATION.state, ease: EASE_OUT } },
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: MOTION_DURATION.quick, ease: MOTION_EASE } },
 }
 
-// SVG line drawing: paths are masked by their stroke length.
 const drawIn = {
-  hidden: { pathLength: 0, opacity: 0, transition: RESET },
-  visible: { pathLength: 1, opacity: 1, transition: { duration: DURATION.construction, ease: EASE_OUT } },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: MOTION_DURATION.slow, ease: MOTION_EASE } },
 }
 
 const nodeIn = {
-  hidden: { opacity: 0, transition: RESET },
-  visible: { opacity: 1, transition: { duration: DURATION.state, ease: EASE_OUT } },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: MOTION_DURATION.quick, ease: MOTION_EASE } },
 }
 
 function Hero({ onNavigate }) {
@@ -92,12 +95,12 @@ function Hero({ onNavigate }) {
       id="inicio"
       variants={heroSeq}
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: false, amount: 0.05, margin: '0px 0px -64px 0px' }}
+      animate="visible"
     >
-      <motion.div
+      <Parallax
         className="site-hero__field"
         aria-hidden="true"
+        distance={40}
         style={{ opacity: shouldReduceMotion ? 0.6 : fieldOpacity }}
         variants={fieldIn}
       >
@@ -119,7 +122,7 @@ function Hero({ onNavigate }) {
           <motion.circle cx="232" cy="128" r="3" fill="currentColor" variants={nodeIn} />
           <motion.circle className="site-hero__diagram-node" cx="408" cy="250" r="4" variants={nodeIn} />
         </svg>
-      </motion.div>
+      </Parallax>
 
       <motion.div
         className="site-hero__axis"
@@ -142,9 +145,9 @@ function Hero({ onNavigate }) {
             proyecto y te ayudamos a construir la solución a medida que necesitás.
           </motion.p>
           <motion.div className="site-hero__actions" variants={actionsSeq}>
-            <Button className="site-button site-button--primary" variants={actionIn} onClick={() => onNavigate('configurador')}>Contanos tu proyecto <span aria-hidden="true">↗</span></Button>
-            <Button variant="line" className="site-button site-button--line" variants={actionIn} onClick={() => onNavigate('sistema')}>Ver prototipo</Button>
-            <Button variant="line" className="site-button site-button--line" variants={actionIn} onClick={() => onNavigate('empresa')}>Conocer Logotype</Button>
+            <Button className="site-button site-button--primary" variants={actionIn} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => onNavigate('configurador')}>Contanos tu proyecto <span aria-hidden="true">↗</span></Button>
+            <Button variant="line" className="site-button site-button--line" variants={actionIn} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => onNavigate('sistema')}>Ver prototipo</Button>
+            <Button variant="line" className="site-button site-button--line" variants={actionIn} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => onNavigate('empresa')}>Conocer Logotype</Button>
           </motion.div>
         </motion.div>
 

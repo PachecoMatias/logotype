@@ -1,10 +1,11 @@
 import SectionTitle from '../common/SectionTitle.jsx'
 import { Stagger, StaggerItem } from '../../motion/Reveal.jsx'
 import { objectives } from '../../data/company.js'
+import SectionReveal from '../../motion/SectionReveal.jsx'
 
 function Objectives() {
   return (
-    <section className="site-section site-objectives">
+    <SectionReveal className="site-section site-objectives">
       <div className="site-shell">
         <SectionTitle
           title="Objetivos"
@@ -24,7 +25,7 @@ function Objectives() {
           ))}
         </Stagger>
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 

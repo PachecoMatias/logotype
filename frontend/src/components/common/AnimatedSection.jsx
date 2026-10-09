@@ -14,8 +14,8 @@ const DIRECTIONS = {
 }
 
 /**
- * Backward-compatible section reveal. `direction` maps to a motion mode;
- * `mode` overrides it with any Reveal mode.
+ * Backward-compatible section wrapper. Legacy motion options are forwarded to
+ * Reveal for API compatibility but content remains visible and static.
  */
 function AnimatedSection({
   children,
@@ -24,7 +24,7 @@ function AnimatedSection({
   delay = 0,
   distance = 28,
   amount,
-  once = false,
+  once = true,
   className = '',
   as = 'div',
   ...rest

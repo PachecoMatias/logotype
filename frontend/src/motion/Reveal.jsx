@@ -1,86 +1,66 @@
 import { motion } from 'framer-motion'
-import { EASE_OUT, DURATION, VIEW, CLIP_VISIBLE, clipHidden } from './tokens.js'
+import {
+  directionalVariants,
+  MOTION_DURATION,
+  MOTION_EASE,
+  parentVariants,
+  VIEWPORT_ONCE,
+} from './variants.js'
 
-// Reveal modes that move a single axis.
-const AXIS = {
-  rise: (d) => ({ y: d }),
-  drop: (d) => ({ y: -d }),
-  left: (d) => ({ x: -d }),
-  right: (d) => ({ x: d }),
-  fade: () => ({}),
-  scale: () => ({ scale: 0.965 }),
-}
-
-// Reveal modes that grow a clip edge.
-const CLIP_SIDE = {
-  clipTop: 'top',
-  clipBottom: 'bottom',
-  clipLeft: 'left',
-  clipRight: 'right',
-}
-
-// Reveal modes that draw a line by scaling its axis.
-const DRAW = {
-  drawX: 'scaleX',
-  drawY: 'scaleY',
-}
-
-export function revealVariants(mode = 'rise', { distance = 26, duration, delay = 0 } = {}) {
-  // `duration: 0` on the hidden state makes the leave reset instant: scrolling
-  // an element out of view snaps it back without a visible reverse animation.
-  // That reverse replay was the perceived flicker. The enter transition stays
-  // authored on the `visible` state, which Framer uses as the target.
-  const hidden = { opacity: 0, transition: { duration: 0 } }
-  const visible = {
-    opacity: 1,
-    x: 0,
-    y: 0,
-    scale: 1,
-    scaleX: 1,
-    scaleY: 1,
-    transition: { duration: duration ?? DURATION.layout, delay, ease: EASE_OUT },
+export function revealVariants({ mode = 'rise', distance = 32, duration = MOTION_DURATION.base } = {}) {
+  const offset = Math.max(24, Math.min(40, distance))
+  const directions = {
+    fade: directionalVariants(0, 0),
+    rise: directionalVariants(0, offset),
+    up: directionalVariants(0, offset),
+    drop: directionalVariants(0, -offset),
+    down: directionalVariants(0, -offset),
+    left: directionalVariants(-offset, 0),
+    right: directionalVariants(offset, 0),
   }
 
-  if (CLIP_SIDE[mode]) {
-    hidden.clipPath = clipHidden(CLIP_SIDE[mode])
-    visible.clipPath = CLIP_VISIBLE
-  } else if (DRAW[mode]) {
-    hidden[DRAW[mode]] = 0
-  } else {
-    Object.assign(hidden, (AXIS[mode] || AXIS.rise)(distance))
+  const variants = directions[mode] || directions.rise
+  return {
+    ...variants,
+    visible: {
+      ...variants.visible,
+      transition: { ...variants.visible.transition, duration },
+    },
   }
-
-  return { hidden, visible }
 }
 
 /**
- * Scroll reveal wrapper. `mode` picks the motion personality.
+ * Stable wrapper retaining the former reveal API and rendered element.
  */
 export function Reveal({
   as = 'div',
   mode = 'rise',
-  distance = 26,
-  delay = 0,
-  duration,
+  distance = 32,
+  delay,
+  duration = MOTION_DURATION.base,
   amount,
-  once = false,
+  once,
+  viewport = true,
   className,
   style,
   children,
   ...rest
 }) {
   const Component = motion[as] || motion.div
-  // Object-based states (not variant labels) so visibility never depends on
-  // variant-label propagation, and a missed trigger cannot leave content hidden.
-  const { hidden, visible } = revealVariants(mode, { distance, duration, delay })
+  void delay
+  void amount
+  void once
+  const variants = revealVariants({ mode, distance, duration })
+  const viewportProps = viewport
+    ? { initial: 'hidden', whileInView: 'visible', viewport: VIEWPORT_ONCE }
+    : {}
 
   return (
     <Component
       className={className}
       style={style}
-      initial={hidden}
-      whileInView={visible}
-      viewport={{ once, amount: amount ?? VIEW.amount, margin: VIEW.margin }}
+      variants={variants}
+      {...viewportProps}
       {...rest}
     >
       {children}
@@ -89,29 +69,38 @@ export function Reveal({
 }
 
 /**
- * Parent that staggers its `StaggerItem` children when it enters the viewport.
+ * Stable group wrapper retaining the former stagger API.
  */
 export function Stagger({
   as = 'div',
-  stagger = 0.08,
+  stagger = 0.1,
   delayChildren = 0,
   amount,
-  once = false,
+  once,
+  viewport = false,
   className,
   style,
   children,
   ...rest
 }) {
   const Component = motion[as] || motion.div
+  void amount
+  void once
+  const variants = {
+    ...parentVariants,
+    visible: { transition: { delayChildren, staggerChildren: stagger } },
+  }
+  const viewportProps = viewport
+    ? { initial: 'hidden', whileInView: 'visible', viewport: VIEWPORT_ONCE }
+    : {}
 
   return (
     <Component
+      data-reveal-stagger=""
       className={className}
       style={style}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once, amount: amount ?? VIEW.amount, margin: VIEW.margin }}
-      variants={{ hidden: { transition: { duration: 0 } }, visible: { transition: { staggerChildren: stagger, delayChildren } } }}
+      variants={variants}
+      {...viewportProps}
       {...rest}
     >
       {children}
@@ -120,25 +109,25 @@ export function Stagger({
 }
 
 /**
- * Child of `Stagger`. Inherits the parent's animation state through variants.
+ * Stable child wrapper that still supports safe interaction motion props.
  */
 export function StaggerItem({
   as = 'div',
   mode = 'rise',
-  distance = 22,
-  duration,
+  distance = 32,
+  duration = MOTION_DURATION.base,
   className,
   style,
   children,
   ...rest
 }) {
   const Component = motion[as] || motion.div
-
   return (
     <Component
+      data-reveal-item=""
       className={className}
       style={style}
-      variants={revealVariants(mode, { distance, duration })}
+      variants={revealVariants({ mode, distance, duration })}
       {...rest}
     >
       {children}

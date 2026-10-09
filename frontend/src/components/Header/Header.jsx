@@ -1,19 +1,14 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
 import { navLinks } from '../../data/content.js'
-import { EASE_OUT, DURATION } from '../../motion/tokens.js'
-
-// Navigation assembles once on load: the wordmark settles and the links arrive
-// in sequence.
-const navSeq = { hidden: {}, visible: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } } }
-
-const navItem = {
-  hidden: { opacity: 0, y: -8 },
-  visible: { opacity: 1, y: 0, transition: { duration: DURATION.state, ease: EASE_OUT } },
-}
+import { MOTION_EASE } from '../../motion/variants.js'
 
 function Header({ onNavigate }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const { scrollY, scrollYProgress } = useScroll()
+
+  useMotionValueEvent(scrollY, 'change', (value) => setScrolled(value > 48))
 
   const handleClick = (id) => {
     setMenuOpen(false)
@@ -21,51 +16,69 @@ function Header({ onNavigate }) {
   }
 
   return (
-    <header className="site-header">
+    <motion.header
+      className={`site-header${scrolled ? ' site-header--scrolled' : ''}`}
+      initial={{ opacity: 0, y: -24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: MOTION_EASE }}
+    >
+      <motion.div
+        className="site-scroll-progress"
+        aria-hidden="true"
+        style={{ scaleX: scrollYProgress, transformOrigin: 'left center' }}
+      />
       <div className="site-shell site-header__inner">
         <motion.button
           className="site-wordmark"
           onClick={() => handleClick('inicio')}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: DURATION.layout, ease: EASE_OUT }}
-          whileHover={{ x: -2 }}
-          whileTap={{ scale: 0.99 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           LOGO<span>/TYPE</span>
         </motion.button>
 
-        <button
+        <motion.button
           className="site-nav-toggle"
           aria-label="Abrir menú de navegación"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((open) => !open)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           <span aria-hidden="true">{menuOpen ? '×' : '≡'}</span>
-        </button>
+        </motion.button>
 
-        <motion.nav
+        <nav
           className={`site-nav${menuOpen ? ' site-nav--open' : ''}`}
           aria-label="Navegación principal"
-          variants={navSeq}
-          initial="hidden"
-          animate="visible"
         >
           <ul>
             {navLinks.map((link) => (
-              <motion.li key={link.id} variants={navItem}>
-                <button className="site-nav__link" onClick={() => handleClick(link.id)}>{link.label}</button>
-              </motion.li>
+              <li key={link.id}>
+                <motion.button
+                  className="site-nav__link"
+                  onClick={() => handleClick(link.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {link.label}
+                </motion.button>
+              </li>
             ))}
-            <motion.li variants={navItem}>
-              <button className="site-nav__action" onClick={() => handleClick('configurador')}>
+            <li>
+              <motion.button
+                className="site-nav__action"
+                onClick={() => handleClick('configurador')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 Registrar proyecto <span aria-hidden="true">↗</span>
-              </button>
-            </motion.li>
+              </motion.button>
+            </li>
           </ul>
-        </motion.nav>
+        </nav>
       </div>
-    </header>
+    </motion.header>
   )
 }
 

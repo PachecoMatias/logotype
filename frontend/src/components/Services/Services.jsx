@@ -2,13 +2,14 @@ import { motion } from 'framer-motion'
 import SectionTitle from '../common/SectionTitle.jsx'
 import { Stagger, StaggerItem } from '../../motion/Reveal.jsx'
 import { services } from '../../data/content.js'
+import SectionReveal from '../../motion/SectionReveal.jsx'
 
 // The arrow leans into the reading direction when the row is hovered.
 const arrowHover = { hover: { x: 6, y: 6 } }
 
 function Services() {
   return (
-    <section id="servicios" className="site-section site-services">
+    <SectionReveal id="servicios" className="site-section site-services">
       <div className="site-shell">
         <SectionTitle
           title="Productos y servicios"
@@ -24,6 +25,7 @@ function Services() {
               distance={28}
               className="site-services__item"
               whileHover="hover"
+              whileTap={{ scale: 0.98 }}
             >
               <span className="site-services__code">SRV—{String(index + 1).padStart(2, '0')}</span>
               <h3>{service.title}</h3>
@@ -33,7 +35,7 @@ function Services() {
           ))}
         </Stagger>
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 
