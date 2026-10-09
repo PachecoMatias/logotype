@@ -1143,3 +1143,192 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================
+   DARK SURFACE THEME — color-only refinement
+   Deep navy / dark blueprint / charcoal with technical blue
+   and cyan-teal accents. White reserved for small accents.
+   No layout, typography, structure or behavior changes.
+   ========================================================= */
+
+.cfg-page-shell {
+  --cfg-ink: #08111d;
+  --cfg-inner: #0c1622;
+  --cfg-panel: #101b29;
+  --cfg-panel-2: #16263a;
+  --cfg-hairline: rgba(143, 183, 240, 0.16);
+  --cfg-hairline-strong: rgba(143, 183, 240, 0.34);
+  --cfg-line: rgba(143, 183, 240, 0.16);
+  --cfg-text: #e7eef5;
+  --cfg-text-muted: #9db0c2;
+  --cfg-error-on-dark: #f0a9a3;
+  background: var(--cfg-ink);
+  color: var(--cfg-text);
+}
+
+.cfg-page-shell ::selection {
+  background: var(--cfg-primary-on-dark);
+  color: var(--cfg-ink);
+}
+
+/* Page ground — integrated blueprint grid on dark */
+.cfg-main {
+  background-color: var(--cfg-ink);
+  background-image:
+    linear-gradient(to right, rgba(143, 183, 240, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(143, 183, 240, 0.05) 1px, transparent 1px),
+    linear-gradient(to right, rgba(143, 183, 240, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(143, 183, 240, 0.1) 1px, transparent 1px);
+}
+
+.cfg-intro { border-top-color: var(--cfg-hairline); }
+.cfg-intro::before { background: var(--cfg-primary-on-dark); }
+
+.cfg-workspace { border-color: var(--cfg-hairline); background: var(--cfg-panel); }
+
+.cfg-progress__fill { background: var(--cfg-secondary-on-dark); }
+.cfg-progress__step--complete::before {
+  background: var(--cfg-secondary-on-dark);
+  border-color: var(--cfg-secondary-on-dark);
+}
+
+/* Step stage — form ground */
+.cfg-step-stage {
+  background-color: var(--cfg-inner);
+  background-image:
+    linear-gradient(to right, rgba(143, 183, 240, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(143, 183, 240, 0.05) 1px, transparent 1px);
+}
+
+.cfg-step-stage::before {
+  border-top-color: var(--cfg-primary-on-dark);
+  border-left-color: var(--cfg-primary-on-dark);
+}
+
+.cfg-step-stage::after {
+  border-right-color: var(--cfg-secondary-on-dark);
+  border-bottom-color: var(--cfg-secondary-on-dark);
+}
+
+.cfg-step__title { color: var(--cfg-text); }
+.cfg-step__intro { color: var(--cfg-text-muted); }
+.cfg-field label { color: var(--cfg-text); }
+
+/* Controls */
+.cfg-control {
+  background-color: var(--cfg-panel-2);
+  color: var(--cfg-text);
+}
+
+.cfg-control:hover {
+  border-bottom-color: var(--cfg-hairline-strong);
+  background-color: var(--cfg-panel);
+}
+
+.cfg-control:focus {
+  border-color: var(--cfg-primary-on-dark);
+  border-bottom-color: var(--cfg-primary-on-dark);
+  background-color: var(--cfg-inner);
+}
+
+.cfg-control:disabled {
+  background-color: var(--cfg-inner);
+  color: var(--cfg-future);
+}
+
+.cfg-control::placeholder { color: var(--cfg-text-muted); }
+
+.cfg-field:has(.cfg-field-error) .cfg-control {
+  border-color: var(--cfg-error-on-dark);
+  border-bottom-color: var(--cfg-error-on-dark);
+  background-color: rgba(165, 58, 50, 0.16);
+}
+
+.cfg-control:is(select) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6l4.5 4.5L12.5 6' fill='none' stroke='%238fb7f0' stroke-width='1.6'/%3E%3C/svg%3E");
+}
+
+/* Option cards */
+.cfg-option-grid {
+  border-top-color: var(--cfg-hairline);
+  border-left-color: var(--cfg-hairline);
+}
+
+.cfg-option {
+  border-right-color: var(--cfg-hairline);
+  border-bottom-color: var(--cfg-hairline);
+  background: var(--cfg-panel);
+  color: var(--cfg-text);
+}
+
+.cfg-option:hover { background: var(--cfg-panel-2); }
+
+.cfg-option--selected,
+.cfg-option--selected:hover {
+  outline-color: var(--cfg-primary-on-dark);
+  background: rgba(143, 183, 240, 0.14);
+}
+
+.cfg-option__index { color: var(--cfg-primary-on-dark); }
+.cfg-option__description { color: var(--cfg-text-muted); }
+.cfg-option--selected .cfg-option__title { color: var(--cfg-primary-on-dark); }
+.cfg-option__state { color: var(--cfg-primary-on-dark); }
+
+/* Chips */
+.cfg-chip {
+  border-bottom-color: var(--cfg-hairline-strong);
+  background-color: var(--cfg-panel-2);
+  color: var(--cfg-text);
+}
+
+.cfg-chip:hover {
+  border-color: var(--cfg-hairline-strong);
+  background-color: rgba(143, 183, 240, 0.1);
+}
+
+.cfg-chip--selected,
+.cfg-chip--selected:hover {
+  border-color: var(--cfg-secondary-on-dark);
+  background-color: rgba(120, 198, 204, 0.14);
+  color: var(--cfg-secondary-on-dark);
+}
+
+.cfg-chip > span { color: var(--cfg-primary-on-dark); }
+.cfg-chip--selected > span { color: var(--cfg-secondary-on-dark); }
+
+/* Buttons */
+.cfg-button { border-color: var(--cfg-hairline); }
+.cfg-button--secondary { background: var(--cfg-panel-2); color: var(--cfg-text); }
+.cfg-button:disabled { border-color: var(--cfg-hairline); color: var(--cfg-text-muted); }
+
+/* Loading / success */
+.cfg-loading__line { background: var(--cfg-secondary-on-dark); }
+.cfg-loading > span:last-child { color: var(--cfg-text-muted); }
+.cfg-success__mark { border-color: var(--cfg-hairline); }
+.cfg-success p { color: var(--cfg-text-muted); }
+
+/* Summary */
+.cfg-summary__registry {
+  border-top-color: var(--cfg-hairline);
+  border-left-color: var(--cfg-hairline);
+}
+
+.cfg-summary__section {
+  border-right-color: var(--cfg-hairline);
+  border-bottom-color: var(--cfg-hairline);
+}
+
+.cfg-summary__header { border-bottom-color: var(--cfg-hairline); }
+.cfg-summary__rows dt { color: var(--cfg-text-muted); }
+.cfg-summary__rows dd { color: var(--cfg-text); }
+
+.cfg-summary__tags > span {
+  border-color: var(--cfg-primary-on-dark);
+  background: rgba(143, 183, 240, 0.14);
+  color: var(--cfg-primary-on-dark);
+}
+
+/* Errors */
+.cfg-field-error,
+.cfg-submit-error { color: var(--cfg-error-on-dark); }
+.cfg-submit-error { background: rgba(165, 58, 50, 0.16); }

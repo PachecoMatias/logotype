@@ -1336,3 +1336,113 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================
+   DARK SURFACE THEME — color-only refinement
+   Deep navy / dark blueprint / charcoal with technical blue
+   and cyan-teal accents. White reserved for small accents.
+   No layout, typography, structure or behavior changes.
+   ========================================================= */
+
+.site-page {
+  --site-ink: #08111d;
+  --site-inner: #0c1622;
+  --site-panel: #101b29;
+  --site-panel-2: #16263a;
+  --site-hairline: rgba(143, 183, 240, 0.16);
+  --site-hairline-strong: rgba(143, 183, 240, 0.34);
+  --site-line: rgba(143, 183, 240, 0.16);
+  --site-text: #e7eef5;
+  --site-text-muted: #9db0c2;
+  --site-error-on-dark: #f0a9a3;
+  background: var(--site-ink);
+  color: var(--site-text);
+}
+
+.site-page ::selection {
+  background: var(--site-primary-on-dark);
+  color: var(--site-ink);
+}
+
+.site-index { color: var(--site-primary-on-dark); }
+
+/* Hero — dark blueprint field */
+.site-hero { background: var(--site-ink); }
+
+.site-hero__field {
+  background-image:
+    linear-gradient(to right, var(--site-hairline) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--site-hairline) 1px, transparent 1px),
+    linear-gradient(to right, rgba(143, 183, 240, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(143, 183, 240, 0.18) 1px, transparent 1px);
+}
+
+.site-hero__diagram { color: var(--site-primary-on-dark); }
+.site-hero__diagram-node { fill: var(--site-secondary-on-dark); }
+.site-hero__wordmark::before { border-color: var(--site-hairline-strong); }
+.site-hero__wordmark span::before { border-top-color: var(--site-hairline-strong); }
+
+.site-hero__wordmark span::after {
+  border-color: var(--site-secondary-on-dark);
+  background: var(--site-ink);
+}
+
+.site-hero__wordmark span:last-child { -webkit-text-stroke-color: var(--site-text); }
+
+/* Company */
+.site-company { background: var(--site-ink); }
+.site-company__grid { border-top-color: var(--site-hairline); }
+.site-company__item { border-color: var(--site-hairline); background: var(--site-panel); }
+.site-company__item--rubro { background: var(--site-panel-2); }
+.site-company__item--mision { background: var(--site-panel); }
+
+/* Objectives */
+.site-objectives { background: var(--site-ink); }
+.site-objectives__list { border-top-color: var(--site-hairline); }
+.site-objectives__list::before { border-color: var(--site-hairline); }
+.site-objectives__item { border-bottom-color: var(--site-hairline); }
+.site-objectives__item:nth-child(2) { background: var(--site-panel); }
+.site-objectives__item:nth-child(3) { border-bottom-color: var(--site-hairline); }
+
+/* Organization chart */
+.site-org__main,
+.site-org__node { border-color: var(--site-hairline); background: var(--site-panel); }
+.site-org__node { color: var(--site-text); }
+.site-org__row--lead .site-org__node { background: var(--site-panel-2); }
+.site-org__node::before { background: var(--site-hairline-strong); }
+
+/* Problem — solution column */
+.site-problem__column--solution { background: var(--site-panel); color: var(--site-text); }
+
+/* System / prototype */
+.site-system { background: var(--site-ink); }
+
+.site-system__window {
+  border-color: var(--site-hairline);
+  outline-color: var(--site-primary-on-dark);
+  background: var(--site-panel);
+}
+
+.site-system__stats {
+  border-top-color: var(--site-hairline);
+  border-left-color: var(--site-hairline);
+}
+
+.site-system__stat {
+  border-right-color: var(--site-hairline);
+  border-bottom-color: var(--site-hairline);
+}
+
+.site-system__stat p,
+.site-system__table-wrap th { color: var(--site-text-muted); }
+
+.site-system__table-wrap th,
+.site-system__table-wrap td { border-bottom-color: var(--site-hairline); }
+
+.site-system__status--open { color: var(--site-primary-on-dark); }
+
+.site-system__sidebar button:hover,
+.site-system__sidebar .site-system__nav-active {
+  background: rgba(143, 183, 240, 0.14);
+  color: var(--site-primary-on-dark);
+}
