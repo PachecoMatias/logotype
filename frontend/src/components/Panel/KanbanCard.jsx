@@ -3,39 +3,39 @@ function resumir(texto, maxLen = 90) {
   return texto.length > maxLen ? `${texto.slice(0, maxLen)}…` : texto
 }
 
-function claseStatusPrioridad(prioridad) {
-  if (prioridad === 'Alta') return 'status prioridad-alta'
-  if (prioridad === 'Media') return 'status prioridad-media'
-  return 'status prioridad-baja'
+function clasePrioridad(prioridad) {
+  if (prioridad === 'Alta') return 'adm-badge adm-badge--alta'
+  if (prioridad === 'Media') return 'adm-badge adm-badge--media'
+  return 'adm-badge adm-badge--baja'
 }
 
 function KanbanCard({ historia, columna, onMover, onVerDetalle, puedeAtras, puedeAdelante }) {
   const completada = columna === 'Done'
 
   return (
-    <article className={`kanban-card${completada ? ' kanban-card-completada' : ''}`}>
-      <p className="kanban-card-texto">{resumir(historia.historia_usuario)}</p>
+    <article className={`adm-card${completada ? ' adm-card--done' : ''}`}>
+      <p className="adm-card__text">{resumir(historia.historia_usuario)}</p>
 
-      <div className="kanban-card-badges">
-        <span className={claseStatusPrioridad(historia.prioridad)}>
+      <div className="adm-card__badges">
+        <span className={clasePrioridad(historia.prioridad)}>
           {historia.prioridad}
         </span>
-        <span className="status kanban-badge-estimacion">
+        <span className="adm-badge adm-badge--points">
           {historia.estimacion_fibonacci} pts
         </span>
-        <span className="status kanban-badge-rol">{historia.rol_sugerido}</span>
-        {completada && <span className="status kanban-badge-completada">✓ Completada</span>}
+        <span className="adm-badge adm-badge--role">{historia.rol_sugerido}</span>
+        {completada && <span className="adm-badge adm-badge--done">✓ Completada</span>}
       </div>
 
-      <p className="kanban-card-fase">{historia.fase}</p>
+      <p className="adm-card__meta">{historia.fase}</p>
       {historia.fecha_inicio && historia.fecha_fin && (
-        <p className="kanban-card-fechas">
+        <p className="adm-card__dates">
           {historia.fecha_inicio} → {historia.fecha_fin}
         </p>
       )}
-      <div className="kanban-card-acciones">
+      <div className="adm-card__actions">
         <button
-          className="btn btn-primary kanban-btn-detalle"
+          className="adm-btn adm-btn--primary adm-btn--detail"
           type="button"
           onClick={(event) => onVerDetalle(historia, event.currentTarget)}
           aria-label={`Ver detalle de la historia: ${resumir(historia.historia_usuario, 55)}`}
@@ -43,20 +43,22 @@ function KanbanCard({ historia, columna, onMover, onVerDetalle, puedeAtras, pued
           Ver detalle
         </button>
         <button
-          className="btn btn-outline kanban-btn-mover"
+          className="adm-btn adm-btn--ghost adm-btn--move"
+          type="button"
           onClick={() => onMover(historia.id, columna, -1)}
           disabled={!puedeAtras}
           aria-label={`Mover historia desde ${columna} a la columna anterior`}
         >
-          ← Mover atrás
+          ← Anterior
         </button>
         <button
-          className="btn btn-outline kanban-btn-mover"
+          className="adm-btn adm-btn--ghost adm-btn--move"
+          type="button"
           onClick={() => onMover(historia.id, columna, 1)}
           disabled={!puedeAdelante}
           aria-label={`Mover historia desde ${columna} a la columna siguiente`}
         >
-          Mover adelante →
+          Siguiente →
         </button>
       </div>
     </article>

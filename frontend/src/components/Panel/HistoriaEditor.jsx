@@ -58,12 +58,14 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
   }
 
   return (
-    <form className="historia-editor" onSubmit={guardar}>
-      <div className="form-group">
-        <label htmlFor={fieldId('historia_usuario')}>Historia de usuario</label>
+    <form className="adm-form historia-editor" onSubmit={guardar}>
+      <div className="adm-field">
+        <label className="adm-label" htmlFor={fieldId('historia_usuario')}>
+          Historia de usuario
+        </label>
         <textarea
           id={fieldId('historia_usuario')}
-          className="form-control"
+          className="adm-control"
           value={valores.historia_usuario}
           onChange={cambiar('historia_usuario')}
           disabled={guardando}
@@ -72,11 +74,11 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor={fieldId('descripcion')}>Descripción</label>
+      <div className="adm-field">
+        <label className="adm-label" htmlFor={fieldId('descripcion')}>Descripción</label>
         <textarea
           id={fieldId('descripcion')}
-          className="form-control"
+          className="adm-control"
           value={valores.descripcion}
           onChange={cambiar('descripcion')}
           disabled={guardando}
@@ -84,27 +86,29 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor={fieldId('criterios_aceptacion')}>Criterios de aceptación</label>
+      <div className="adm-field">
+        <label className="adm-label" htmlFor={fieldId('criterios_aceptacion')}>
+          Criterios de aceptación
+        </label>
         <textarea
           id={fieldId('criterios_aceptacion')}
-          className="form-control"
+          className="adm-control"
           value={valores.criterios_aceptacion}
           onChange={cambiar('criterios_aceptacion')}
           disabled={guardando}
           aria-describedby={fieldId('criterios-ayuda')}
           required
         />
-        <p className="field-hint" id={fieldId('criterios-ayuda')}>
+        <p className="adm-hint" id={fieldId('criterios-ayuda')}>
           Escribí un criterio por línea.
         </p>
       </div>
 
-      <div className="form-group">
-        <label htmlFor={fieldId('alcance_tecnico')}>Alcance técnico</label>
+      <div className="adm-field">
+        <label className="adm-label" htmlFor={fieldId('alcance_tecnico')}>Alcance técnico</label>
         <textarea
           id={fieldId('alcance_tecnico')}
-          className="form-control"
+          className="adm-control"
           value={valores.alcance_tecnico}
           onChange={cambiar('alcance_tecnico')}
           disabled={guardando}
@@ -112,12 +116,14 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
         />
       </div>
 
-      <div className="historia-editor-selects">
-        <div className="form-group">
-          <label htmlFor={fieldId('estimacion_fibonacci')}>Estimación Fibonacci</label>
+      <div className="adm-selects">
+        <div className="adm-field">
+          <label className="adm-label" htmlFor={fieldId('estimacion_fibonacci')}>
+            Estimación Fibonacci
+          </label>
           <select
             id={fieldId('estimacion_fibonacci')}
-            className="form-control"
+            className="adm-control"
             value={valores.estimacion_fibonacci}
             onChange={cambiar('estimacion_fibonacci')}
             disabled={guardando}
@@ -128,11 +134,11 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
           </select>
         </div>
 
-        <div className="form-group">
-          <label htmlFor={fieldId('prioridad')}>Prioridad</label>
+        <div className="adm-field">
+          <label className="adm-label" htmlFor={fieldId('prioridad')}>Prioridad</label>
           <select
             id={fieldId('prioridad')}
-            className="form-control"
+            className="adm-control"
             value={valores.prioridad}
             onChange={cambiar('prioridad')}
             disabled={guardando}
@@ -143,11 +149,11 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
           </select>
         </div>
 
-        <div className="form-group">
-          <label htmlFor={fieldId('rol_sugerido')}>Rol sugerido</label>
+        <div className="adm-field">
+          <label className="adm-label" htmlFor={fieldId('rol_sugerido')}>Rol sugerido</label>
           <select
             id={fieldId('rol_sugerido')}
-            className="form-control"
+            className="adm-control"
             value={valores.rol_sugerido}
             onChange={cambiar('rol_sugerido')}
             disabled={guardando}
@@ -159,13 +165,13 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
         </div>
       </div>
 
-      {error && <p className="historia-editor-error" role="alert">{error}</p>}
+      {error && <p className="adm-alert adm-alert--error" role="alert">{error}</p>}
 
-      <div className="historia-editor-actions">
-        <button className="btn btn-primary" type="submit" disabled={guardando}>
+      <div className="adm-form__actions">
+        <button className="adm-btn adm-btn--primary" type="submit" disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </button>
-        <button className="btn btn-outline" type="button" onClick={onCancel} disabled={guardando}>
+        <button className="adm-btn adm-btn--ghost" type="button" onClick={onCancel} disabled={guardando}>
           Cancelar
         </button>
       </div>

@@ -1,15 +1,21 @@
 import KanbanCard from './KanbanCard.jsx'
 
+function slugColumna(nombre) {
+  return nombre.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
 function KanbanColumn({ nombre, historias, onMover, onVerDetalle, esPrimera, esUltima }) {
+  const slug = slugColumna(nombre)
+
   return (
-    <div className="kanban-columna">
-      <div className="kanban-columna-header">
-        <span className="kanban-columna-nombre">{nombre}</span>
-        <span className="kanban-columna-contador">{historias.length}</span>
+    <div className={`adm-col adm-col--${slug}`}>
+      <div className="adm-col__head">
+        <span className="adm-col__name">{nombre}</span>
+        <span className="adm-col__count">{historias.length}</span>
       </div>
-      <div className="kanban-columna-body">
+      <div className="adm-col__body">
         {historias.length === 0 && (
-          <p className="kanban-columna-vacia">Sin tarjetas</p>
+          <p className="adm-col__empty">Sin tarjetas</p>
         )}
         {historias.map((historia) => (
           <KanbanCard

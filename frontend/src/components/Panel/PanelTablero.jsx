@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import KanbanColumn from './KanbanColumn.jsx'
 import HistoriaModal from './HistoriaModal.jsx'
 import { prepararHistoriasTablero } from '../../utils/backlog.js'
+import '../../styles/panel.css'
 
 const COLUMNAS = ['Backlog', 'To Do', 'In Progress', 'In Code Review', 'In QA', 'Done']
 function fechaHoyString() {
@@ -80,45 +81,51 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
 
   if (!Array.isArray(historias) || historias.length === 0) {
     return (
-      <div className="tablero-standalone">
-        <div className="container tablero-error-box">
-          <p className="tablero-mensaje">
-            No hay historias cargadas para mostrar en el tablero.
-          </p>
-          <button className="btn btn-primary" onClick={onBack}>
-            ← Volver al detalle
-          </button>
+      <section className="adm-section">
+        <div className="adm-container">
+          <div className="adm-state adm-state--box">
+            <div>
+              <p className="adm-state__title">Sin historias para el tablero</p>
+              <p>No hay historias cargadas para mostrar en el tablero.</p>
+            </div>
+            <button type="button" className="adm-btn adm-btn--primary" onClick={onBack}>
+              ← Volver al detalle
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="tablero-standalone">
-      <header className="tablero-topbar">
-        <div className="container tablero-topbar-inner">
-          <button className="btn btn-outline" onClick={onBack}>
+    <>
+      <header className="adm-topbar">
+        <div className="adm-topbar__inner adm-topbar__inner--board">
+          <button type="button" className="adm-btn adm-btn--ghost adm-btn--sm" onClick={onBack}>
             ← Volver
           </button>
-          <h2 className="tablero-titulo">Tablero del proyecto</h2>
+          <span className="adm-topbar__crumb">Tablero del proyecto</span>
         </div>
       </header>
 
-      <div className="tablero-scroll-wrapper">
-        <div className="tablero-columnas">
-          {COLUMNAS.map((col) => (
-            <KanbanColumn
-              key={col}
-              nombre={col}
-              historias={historiasPorColumna[col]}
-              onMover={moverTarjeta}
-              onVerDetalle={(historia, trigger) => setDetalleAbierto({ historia, trigger })}
-              esPrimera={col === COLUMNAS[0]}
-              esUltima={col === COLUMNAS[COLUMNAS.length - 1]}
-            />
-          ))}
+      <div className="adm-board">
+        <div className="adm-board__scroll">
+          <div className="adm-board__cols">
+            {COLUMNAS.map((col) => (
+              <KanbanColumn
+                key={col}
+                nombre={col}
+                historias={historiasPorColumna[col]}
+                onMover={moverTarjeta}
+                onVerDetalle={(historia, trigger) => setDetalleAbierto({ historia, trigger })}
+                esPrimera={col === COLUMNAS[0]}
+                esUltima={col === COLUMNAS[COLUMNAS.length - 1]}
+              />
+            ))}
+          </div>
         </div>
       </div>
+
       {detalleAbierto && (
         <HistoriaModal
           historia={detalleAbierto.historia}
@@ -126,7 +133,7 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
           onClose={cerrarDetalle}
         />
       )}
-    </div>
+    </>
   )
 }
 

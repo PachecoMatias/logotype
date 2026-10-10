@@ -257,3 +257,11 @@ The root `MotionConfig` uses `reducedMotion="user"` and the standard exponential
 - **Don't** add rounded SaaS controls or ambient shadows to soften the structural language.
 - **Don't** scatter blueprint blue, systems teal, or technical blue tint outside their hierarchy and state roles.
 - **Don't** restyle the internal panel through public or configurator selectors.
+
+## Panel interno
+
+The internal panel extends the same Engineering Blueprint material as a denser work tool, using an isolated `adm-` system in `frontend/src/styles/panel.css`. It defines no new palette: `--adm-*` mirrors the public `--site-*` dark tokens 1:1 so the panel reads as the same engineered surface, with one addition, `--adm-done` (a contrast-safe systems green) reserved for the Kanban Done column. The panel never restyles itself through `site-` or `cfg-` selectors, and public/shared classes remain untouched.
+
+Structure follows task density rather than marketing rhythm. The solicitudes list is a ruled ledger with an uppercase column header; the detail view is a spec sheet whose payload sections sit in a single hairline grid of definition rows; the backlog groups stories by phase; the Kanban board scrolls inside a full-bleed track with six fixed-width columns, each carrying a state accent line (muted for Backlog, blueprint blue through progress, systems teal for review/QA, green for Done). Navigation stays a compact sticky ruled bar; the board keeps its own bar with a single accent crumb.
+
+Motion is static CSS only: hover, focus, active, and color/border/transform transitions. There is no Framer Motion, no `AnimatePresence`, no entrance/exit or infinite animation, and no `opacity:0` on content, so every view renders complete on first paint. `prefers-reduced-motion` disables transform and keeps instant color changes. Everything under `.adm-shell` is keyboard reachable with a visible focus ring, and interaction targets hold a 44px minimum on small screens.
