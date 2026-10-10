@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { motion } from 'framer-motion'
 import Header from './components/Header/Header.jsx'
 import Hero from './components/Hero/Hero.jsx'
 import Company from './components/Company/Company.jsx'
@@ -103,15 +104,15 @@ function App() {
 
   if (view === 'configurador') {
     return (
-      <div className="configurator-standalone">
-        <header className="configurator-topbar">
-          <div className="container configurator-topbar-inner">
-            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
-              LOGO<span>TYPE</span>
-            </button>
-            <button className="configurator-close" onClick={handleBackHome}>
-              ✕ Cerrar
-            </button>
+      <div className="cfg-page-shell">
+        <header className="cfg-topbar">
+          <div className="cfg-container cfg-topbar__inner">
+            <motion.button className="cfg-wordmark" onClick={handleBackHome} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              LOGO<span>/TYPE</span>
+            </motion.button>
+            <motion.button className="cfg-topbar__close" onClick={handleBackHome} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <span aria-hidden="true">×</span> Cerrar
+            </motion.button>
           </div>
         </header>
         <ProjectConfigurator onBack={handleBackHome} />
@@ -202,27 +203,29 @@ function App() {
   }
 
   return (
-    <>
+    <div className="site-page">
       <Header onNavigate={handleNavigate} />
-      <Hero onNavigate={handleNavigate} />
-      <Company />
-      <Objectives />
-      <OrganizationChart />
-      <Services />
-      <ProblemSolution />
-      <SystemPrototype />
-      <Infrastructure />
-      <Conclusions />
+      <main>
+        <Hero onNavigate={handleNavigate} />
+        <Company />
+        <Objectives />
+        <OrganizationChart />
+        <Services />
+        <ProblemSolution />
+        <SystemPrototype />
+        <Infrastructure />
+        <Conclusions />
+      </main>
       <Footer />
       <button
-        className="panel-fab"
+        className="panel-fab site-panel-access"
         onClick={handleOpenPanel}
         title="Panel interno de solicitudes"
         aria-label="Abrir panel interno de solicitudes"
       >
         ⚙
       </button>
-    </>
+    </div>
   )
 }
 

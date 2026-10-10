@@ -1,30 +1,47 @@
-import { motion } from 'framer-motion'
+import { Reveal } from '../../motion/Reveal.jsx'
 
-const directions = {
-  up: { y: 40, x: 0 },
-  left: { y: 0, x: -40 },
-  right: { y: 0, x: 40 },
-  fade: { y: 0, x: 0 },
+const DIRECTIONS = {
+  up: 'rise',
+  down: 'drop',
+  left: 'left',
+  right: 'right',
+  fade: 'fade',
+  scale: 'scale',
+  clipTop: 'clipTop',
+  clipBottom: 'clipBottom',
+  clipLeft: 'clipLeft',
+  clipRight: 'clipRight',
 }
 
 /**
- * Wraps a section's content to animate it into view on scroll.
- * direction: 'up' | 'left' | 'right' | 'fade'
+ * Backward-compatible section wrapper. Legacy motion options are forwarded to
+ * Reveal for API compatibility but content remains visible and static.
  */
-function AnimatedSection({ children, direction = 'up', delay = 0, className = '', as = 'div' }) {
-  const offset = directions[direction] || directions.up
-  const Component = motion[as] || motion.div
-
+function AnimatedSection({
+  children,
+  direction = 'up',
+  mode,
+  delay = 0,
+  distance = 28,
+  amount,
+  once = true,
+  className = '',
+  as = 'div',
+  ...rest
+}) {
   return (
-    <Component
+    <Reveal
+      as={as}
+      mode={mode || DIRECTIONS[direction] || 'rise'}
+      delay={delay}
+      distance={distance}
+      amount={amount}
+      once={once}
       className={className}
-      initial={{ opacity: 0, x: offset.x, y: offset.y }}
-      whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: false, amount: 0.2 }}
-      transition={{ duration: 0.6, delay, ease: 'easeOut' }}
+      {...rest}
     >
       {children}
-    </Component>
+    </Reveal>
   )
 }
 

@@ -1,5 +1,8 @@
+
 import Chip from './Chip.jsx'
 import { featuresList } from '../../data/projectOptions.js'
+
+import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepFeatures({ data, errors, onChange }) {
   const toggleFeature = (feature) => {
@@ -11,39 +14,39 @@ function StepFeatures({ data, errors, onChange }) {
   }
 
   return (
-    <div>
-      <h3 className="step-title">¿Qué debería poder hacer tu sistema?</h3>
-      <p className="step-subtitle">
-        Seleccioná las funcionalidades que consideres necesarias. No es necesario que tengas
-        todos los requisitos definidos.
+    <div className="cfg-step" viewport={false} mount>
+      <h2 className="cfg-step__title" variants={childVariants}>¿Qué debería poder hacer tu sistema?</h2>
+      <p className="cfg-step__intro" variants={childVariants}>
+        Marcá las funciones que hoy imaginás. No hace falta que tengas todos los requisitos definidos.
       </p>
 
-      <div className="chip-grid">
-        {featuresList.map((feature) => (
+      <div className="cfg-chip-grid cfg-chip-grid--dense" variants={childVariants}>
+        {featuresList.map((feature, index) => (
           <Chip
             key={feature}
+            index={index}
             label={feature}
             selected={data.seleccionadas.includes(feature)}
             onClick={() => toggleFeature(feature)}
           />
         ))}
       </div>
-      {errors.seleccionadas && <p className="field-error">{errors.seleccionadas}</p>}
+      {errors.seleccionadas && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.seleccionadas}</p>}
 
       {data.seleccionadas.includes('Otra') && (
-        <div className="form-group" style={{ marginTop: 20 }}>
-          <label htmlFor="otra">
-            Contanos cuál<span className="required">*</span>
-          </label>
-          <input
-            id="otra"
-            className="form-control"
-            type="text"
-            value={data.otra}
-            onChange={(e) => onChange({ ...data, otra: e.target.value })}
-          />
-          {errors.otra && <p className="field-error">{errors.otra}</p>}
-        </div>
+          <div className="cfg-field cfg-field--followup" variants={childVariants}>
+            <label htmlFor="otra">
+              Contanos cuál<span className="cfg-required">*</span>
+            </label>
+            <input
+              id="otra"
+              className="cfg-control"
+              type="text"
+              value={data.otra}
+              onChange={(e) => onChange({ ...data, otra: e.target.value })}
+            />
+            {errors.otra && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.otra}</p>}
+          </div>
       )}
     </div>
   )

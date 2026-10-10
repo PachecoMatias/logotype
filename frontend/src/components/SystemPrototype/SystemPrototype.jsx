@@ -1,57 +1,64 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import SectionTitle from '../common/SectionTitle.jsx'
-import AnimatedSection from '../common/AnimatedSection.jsx'
 import { sidebarLinks, stats, tickets } from '../../data/content.js'
+import SectionReveal from '../../motion/SectionReveal.jsx'
+import AnimatedCounter from '../../motion/AnimatedCounter.jsx'
+import { childVariants } from '../../motion/variants.js'
 
 function SystemPrototype() {
   const [activeLink, setActiveLink] = useState('dashboard')
 
   return (
-    <section id="sistema" className="system-section">
-      <div className="container">
-        <AnimatedSection direction="fade">
-          <SectionTitle
-            title="Prototipo funcional"
-            description="Simulación de la plataforma de gestión desarrollada para Logotype."
-          />
-        </AnimatedSection>
+    <SectionReveal id="sistema" className="site-section site-system">
+      <div className="site-shell">
+        <SectionTitle
+          title="Prototipo funcional"
+          description="Simulación de la plataforma de gestión desarrollada para Logotype."
+        />
 
-        <AnimatedSection direction="up">
-          <div className="system-layout">
-            <aside className="sidebar">
+        <motion.div className="site-system__window" variants={childVariants}>
+          <div className="site-system__bar" aria-hidden="true">
+            <span /> <span /> <span />
+            <small>prototype.logotype.local</small>
+          </div>
+          <div className="site-system__layout">
+            <aside className="site-system__sidebar">
               <h3>LOGOTYPE</h3>
               {sidebarLinks.map((link) => (
-                <button
+                <motion.button
                   key={link.id}
-                  className={activeLink === link.id ? 'active' : ''}
+                  className={activeLink === link.id ? 'site-system__nav-active' : ''}
                   onClick={() => setActiveLink(link.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {link.icon} {link.label}
-                </button>
+                  <span aria-hidden="true">{String(sidebarLinks.indexOf(link) + 1).padStart(2, '0')}</span> {link.label}
+                </motion.button>
               ))}
             </aside>
 
-            <main className="dashboard">
-              <div className="dashboard-header">
+            <div className="site-system__dashboard">
+              <div className="site-system__dashboard-header">
                 <div>
                   <h3>Panel de control</h3>
                   <p>Resumen de operaciones</p>
                 </div>
-                <div className="user">Administrador</div>
+                <div className="site-system__user"><span aria-hidden="true" />Administrador</div>
               </div>
 
-              <div className="stats">
+              <div className="site-system__stats">
                 {stats.map((stat) => (
-                  <div className="stat" key={stat.id}>
+                  <div className="site-system__stat" key={stat.id}>
                     <p>{stat.label}</p>
-                    <strong>{stat.value}</strong>
+                    <strong><AnimatedCounter value={stat.value} /></strong>
                   </div>
                 ))}
               </div>
 
-              <h3 style={{ marginBottom: 15 }}>Últimos tickets</h3>
+              <h3 className="site-system__table-title">Últimos tickets</h3>
 
-              <div className="table-container">
+              <div className="site-system__table-wrap">
                 <table>
                   <thead>
                     <tr>
@@ -70,18 +77,18 @@ function SystemPrototype() {
                         <td>{ticket.problema}</td>
                         <td>{ticket.prioridad}</td>
                         <td>
-                          <span className={`status ${ticket.estado}`}>{ticket.estadoLabel}</span>
+                          <span className={`site-system__status site-system__status--${ticket.estado}`}>{ticket.estadoLabel}</span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </main>
+            </div>
           </div>
-        </AnimatedSection>
+        </motion.div>
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 

@@ -1,11 +1,11 @@
-import { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
 import ProgressBar from './ProgressBar.jsx'
 import StepCompany from './StepCompany.jsx'
 import StepProject from './StepProject.jsx'
 import StepProblem from './StepProblem.jsx'
 import StepFeatures from './StepFeatures.jsx'
 import StepScope from './StepScope.jsx'
+import { Stagger } from '../../motion/Reveal.jsx'
 import StepBudget from './StepBudget.jsx'
 import ProjectSummary from './ProjectSummary.jsx'
 import SuccessMessage from './SuccessMessage.jsx'
@@ -30,7 +30,7 @@ const validators = [
   validatePresupuesto,
 ]
 
-function ProjectConfigurator({onBack}) {
+function ProjectConfigurator({ onBack }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [projectData, setProjectData] = useState(initialProjectData)
   const [errors, setErrors] = useState({})
@@ -38,7 +38,8 @@ function ProjectConfigurator({onBack}) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState(null)
-
+  const workspaceRef = useRef(null)
+  const isFirstRender = useRef(true)
   const isSummaryStep = stepIndex === configuratorSteps.length - 1
 
   const goToStep = (index, dir) => {
@@ -50,7 +51,23 @@ function ProjectConfigurator({onBack}) {
   const handleStepDataChange = (key, value) => {
     setProjectData((prev) => ({ ...prev, [key]: value }))
   }
+// Cada vez que cambia el stepIndex, scrolleamos hacia arriba (excepto la primera vez)
+  useEffect(() => {
+    // Si es la primera vez que carga, cambiamos la bandera a falso y cortamos la ejecución
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return 
+    }
 
+    // Si NO es la primera vez, hacemos el scroll normal
+    if (workspaceRef.current) {
+      const offsetTop = workspaceRef.current.getBoundingClientRect().top + window.scrollY - 100
+      window.scrollTo({
+        top: offsetTop,
+        behavior: 'smooth'
+      })
+    }
+  }, [stepIndex])
   const handleNext = () => {
     if (isSummaryStep) {
       handleSubmit()
@@ -104,137 +121,95 @@ function ProjectConfigurator({onBack}) {
     setSubmitError(null)
   }
 
-  const variants = {
-    enter: (dir) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
-    center: { opacity: 1, x: 0 },
-    exit: (dir) => ({ opacity: 0, x: dir > 0 ? -60 : 60 }),
-  }
-
   const renderStep = () => {
     switch (stepKeys[stepIndex]) {
-      case 'empresa':
-        return (
-          <StepCompany
-            data={projectData.empresa}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('empresa', value)}
-          />
-        )
-      case 'proyecto':
-        return (
-          <StepProject
-            data={projectData.proyecto}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('proyecto', value)}
-          />
-        )
-      case 'problema':
-        return (
-          <StepProblem
-            data={projectData.problema}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('problema', value)}
-          />
-        )
-      case 'funcionalidades':
-        return (
-          <StepFeatures
-            data={projectData.funcionalidades}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('funcionalidades', value)}
-          />
-        )
-      case 'alcance':
-        return (
-          <StepScope
-            data={projectData.alcance}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('alcance', value)}
-          />
-        )
-      case 'presupuesto':
-        return (
-          <StepBudget
-            data={projectData.presupuesto}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('presupuesto', value)}
-          />
-        )
-      default:
-        return <ProjectSummary projectData={projectData} onEditStep={handleEditStep} />
+      case 'empresa': return <StepCompany data={projectData.empresa} errors={errors} onChange={(v) => handleStepDataChange('empresa', v)} />
+      case 'proyecto': return <StepProject data={projectData.proyecto} errors={errors} onChange={(v) => handleStepDataChange('proyecto', v)} />
+      case 'problema': return <StepProblem data={projectData.problema} errors={errors} onChange={(v) => handleStepDataChange('problema', v)} />
+      case 'funcionalidades': return <StepFeatures data={projectData.funcionalidades} errors={errors} onChange={(v) => handleStepDataChange('funcionalidades', v)} />
+      case 'alcance': return <StepScope data={projectData.alcance} errors={errors} onChange={(v) => handleStepDataChange('alcance', v)} />
+      case 'presupuesto': return <StepBudget data={projectData.presupuesto} errors={errors} onChange={(v) => handleStepDataChange('presupuesto', v)} />
+      default: return <ProjectSummary projectData={projectData} onEditStep={handleEditStep} />
     }
   }
 
   return (
-    <section id="configurador" className="configurator-section configurator-page">
-      <div className="container">
-        {/* Si ya tenías un botón "← Volver al inicio" acá arriba, se puede borrar: ahora está en la topbar */}
-
-        <div className="configurator-hero-title">
-          <span className="configurator-eyebrow">Relevamiento inicial de proyecto</span>
-          <h2>Contanos tu proyecto</h2>
-          <p>
-            Contanos qué necesitás y nuestro equipo analizará tu solicitud para proponerte una
-            solución de software a medida.
+    <main id="configurador" className="cfg-main">
+      {/* 1. Usamos Stagger para detectar el scroll de toda la sección */}
+      <Stagger className="cfg-container">
+        
+        <div className="cfg-intro">
+          {/* 2. Clases css-motion con delay secuencial */}
+          <h1 className="css-motion mode-rise" style={{ transitionDelay: '0.1s' }}>
+            Contanos tu proyecto
+          </h1>
+          <p className="css-motion mode-rise" style={{ transitionDelay: '0.2s' }}>
+            Vamos a registrar cada decisión para entender qué necesitás y preparar una solución de software a medida.
           </p>
+          <div className="cfg-intro__register css-motion mode-rise" style={{ transitionDelay: '0.3s' }} aria-hidden="true">
+            <span />
+            <span>Brief en construcción</span>
+          </div>
         </div>
 
-        <div className="configurator-shell">
+        {/* 3. El contenedor entero del formulario entra último */}
+        <div ref={workspaceRef} className="cfg-workspace css-motion mode-rise" style={{ transitionDelay: '0.4s' }}>
           {submitted ? (
             <SuccessMessage onRestart={handleRestart} />
           ) : (
             <>
               <ProgressBar currentStepIndex={stepIndex} />
 
-              <div className="configurator-step-content">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={stepIndex}
-                    custom={direction}
-                    variants={variants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.35, ease: 'easeInOut' }}
-                  >
-                    {submitting ? (
-                      <div className="loading-dots" aria-label="Enviando solicitud">
-                        <span />
-                        <span />
-                        <span />
-                      </div>
-                    ) : (
-                      renderStep()
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+              <div className="cfg-step-stage" style={{ overflow: 'hidden' }}>
+                <div
+                  key={submitting ? 'submitting' : stepIndex}
+                  className={`cfg-transition ${direction > 0 ? 'animate-step-forward' : 'animate-step-backward'}`}
+                >
+                  {submitting ? (
+                    <div className="cfg-loading" role="status" aria-live="polite">
+                      <span className="cfg-loading__line-native" aria-hidden="true" />
+                      <strong>Registrando tu proyecto</strong>
+                      <br/>
+                      <span>Estamos enviando la información de forma segura.</span>
+                    </div>
+                  ) : (
+                    renderStep()
+                  )}
+                </div>
               </div>
 
               {!submitting && (
                 <>
                   {submitError && (
-                    <p className="panel-state-msg panel-state-error">{submitError}</p>
+                    <p className="cfg-submit-error" role="alert" style={{ color: 'red', marginBottom: '10px' }}>
+                      {submitError}
+                    </p>
                   )}
-                  <div className="step-nav">
-                  <button
-                    className="btn btn-outline"
-                    onClick={handleBack}
-                    disabled={stepIndex === 0}
-                  >
-                    ← Anterior
-                  </button>
+                  <div className="cfg-actions">
+                    <button
+                      className="cfg-button cfg-button--secondary"
+                      onClick={handleBack}
+                      disabled={stepIndex === 0}
+                      style={{ cursor: stepIndex === 0 ? 'not-allowed' : 'pointer' }}
+                    >
+                      <span aria-hidden="true">←</span> Anterior
+                    </button>
 
-                  <button className="btn btn-primary" onClick={handleNext}>
-                    {isSummaryStep ? 'Enviar solicitud' : 'Continuar →'}
-                  </button>
+                    <button
+                      className="cfg-button cfg-button--primary"
+                      onClick={handleNext}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {isSummaryStep ? 'Enviar solicitud' : 'Continuar'} <span aria-hidden="true">→</span>
+                    </button>
                   </div>
                 </>
               )}
             </>
           )}
         </div>
-      </div>
-    </section>
+      </Stagger>
+    </main>
   )
 }
 

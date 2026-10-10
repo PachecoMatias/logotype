@@ -1,5 +1,8 @@
+
 import Chip from './Chip.jsx'
 import { platforms, userRanges, yesNoUnsure, userTypes } from '../../data/projectOptions.js'
+
+import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepScope({ data, errors, onChange }) {
   const togglePlatform = (platform) => {
@@ -19,34 +22,35 @@ function StepScope({ data, errors, onChange }) {
   }
 
   return (
-    <div>
-      <h3 className="step-title">Definamos algunas características</h3>
-      <p className="step-subtitle">Esto nos ayuda a dimensionar mejor el alcance del proyecto.</p>
+    <div className="cfg-step" viewport={false} mount>
+      <h2 className="cfg-step__title" variants={childVariants}>Definamos algunas características</h2>
+      <p className="cfg-step__intro" variants={childVariants}>Ubicá dónde se va a usar y quiénes van a participar para que podamos dimensionar el alcance.</p>
 
-      <div className="form-group">
+      <div className="cfg-field" variants={childVariants}>
         <label>
-          Plataformas<span className="required">*</span>
+          Plataformas<span className="cfg-required">*</span>
         </label>
-        <div className="chip-grid">
-          {platforms.map((platform) => (
+        <div className="cfg-chip-grid">
+          {platforms.map((platform, index) => (
             <Chip
               key={platform}
+              index={index}
               label={platform}
               selected={data.plataformas.includes(platform)}
               onClick={() => togglePlatform(platform)}
             />
           ))}
         </div>
-        {errors.plataformas && <p className="field-error">{errors.plataformas}</p>}
+        {errors.plataformas && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.plataformas}</p>}
       </div>
 
-      <div className="form-group">
+      <div className="cfg-field" variants={childVariants}>
         <label htmlFor="cantidadUsuarios">
-          Cantidad estimada de usuarios<span className="required">*</span>
+          Cantidad estimada de usuarios<span className="cfg-required">*</span>
         </label>
         <select
           id="cantidadUsuarios"
-          className="form-control"
+          className="cfg-control"
           value={data.cantidadUsuarios}
           onChange={(e) => onChange({ ...data, cantidadUsuarios: e.target.value })}
         >
@@ -57,59 +61,61 @@ function StepScope({ data, errors, onChange }) {
             </option>
           ))}
         </select>
-        {errors.cantidadUsuarios && <p className="field-error">{errors.cantidadUsuarios}</p>}
+        {errors.cantidadUsuarios && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.cantidadUsuarios}</p>}
       </div>
 
-      <div className="form-group">
+      <div className="cfg-field" variants={childVariants}>
         <label>
-          ¿Necesitás diferentes tipos de usuarios?<span className="required">*</span>
+          ¿Necesitás diferentes tipos de usuarios?<span className="cfg-required">*</span>
         </label>
-        <div className="chip-grid">
-          {yesNoUnsure.map((option) => (
+        <div className="cfg-chip-grid">
+          {yesNoUnsure.map((option, index) => (
             <Chip
               key={option}
+              index={index}
               label={option}
               selected={data.necesitaTiposUsuario === option}
               onClick={() => onChange({ ...data, necesitaTiposUsuario: option })}
             />
           ))}
         </div>
-        {errors.necesitaTiposUsuario && <p className="field-error">{errors.necesitaTiposUsuario}</p>}
+        {errors.necesitaTiposUsuario && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.necesitaTiposUsuario}</p>}
       </div>
 
       {data.necesitaTiposUsuario === 'Sí' && (
-        <div className="form-group">
-          <label>
-            ¿Qué tipos de usuarios?<span className="required">*</span>
-          </label>
-          <div className="chip-grid">
-            {userTypes.map((tipo) => (
-              <Chip
-                key={tipo}
-                label={tipo}
-                selected={data.tiposUsuario.includes(tipo)}
-                onClick={() => toggleTipoUsuario(tipo)}
-              />
-            ))}
+          <div className="cfg-field" variants={childVariants}>
+            <label>
+              ¿Qué tipos de usuarios?<span className="cfg-required">*</span>
+            </label>
+            <div className="cfg-chip-grid">
+              {userTypes.map((tipo, index) => (
+                <Chip
+                  key={tipo}
+                  index={index}
+                  label={tipo}
+                  selected={data.tiposUsuario.includes(tipo)}
+                  onClick={() => toggleTipoUsuario(tipo)}
+                />
+              ))}
+            </div>
+            {errors.tiposUsuario && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.tiposUsuario}</p>}
           </div>
-          {errors.tiposUsuario && <p className="field-error">{errors.tiposUsuario}</p>}
-        </div>
       )}
 
       {data.tiposUsuario.includes('Otro') && (
-        <div className="form-group">
-          <label htmlFor="tiposUsuarioOtro">
-            Contanos cuál<span className="required">*</span>
-          </label>
-          <input
-            id="tiposUsuarioOtro"
-            className="form-control"
-            type="text"
-            value={data.tiposUsuarioOtro}
-            onChange={(e) => onChange({ ...data, tiposUsuarioOtro: e.target.value })}
-          />
-          {errors.tiposUsuarioOtro && <p className="field-error">{errors.tiposUsuarioOtro}</p>}
-        </div>
+          <div className="cfg-field" variants={childVariants}>
+            <label htmlFor="tiposUsuarioOtro">
+              Contanos cuál<span className="cfg-required">*</span>
+            </label>
+            <input
+              id="tiposUsuarioOtro"
+              className="cfg-control"
+              type="text"
+              value={data.tiposUsuarioOtro}
+              onChange={(e) => onChange({ ...data, tiposUsuarioOtro: e.target.value })}
+            />
+            {errors.tiposUsuarioOtro && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.tiposUsuarioOtro}</p>}
+          </div>
       )}
     </div>
   )

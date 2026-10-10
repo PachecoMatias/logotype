@@ -1,84 +1,87 @@
+
 import { rubros } from '../../data/projectOptions.js'
+
+import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepCompany({ data, errors, onChange }) {
   const set = (field) => (e) => onChange({ ...data, [field]: e.target.value })
 
   return (
-    <div>
-      <h3 className="step-title">Primero, conozcamos tu empresa</h3>
-      <p className="step-subtitle">
-        Necesitamos algunos datos básicos para entender el contexto de tu proyecto.
+    <div className="cfg-step">
+      <h2 className="cfg-step__title" variants={childVariants}>Primero, conozcamos tu empresa</h2>
+      <p className="cfg-step__intro" variants={childVariants}>
+        Compartinos los datos básicos para ubicar el proyecto en el contexto real de tu organización.
       </p>
 
-      <div className="two-col">
-        <div className="form-group">
+      <div className="cfg-field-grid" variants={childVariants}>
+        <div className="cfg-field">
           <label htmlFor="nombreEmpresa">
-            Nombre de la empresa<span className="required">*</span>
+            Nombre de la empresa<span className="cfg-required">*</span>
           </label>
           <input
             id="nombreEmpresa"
-            className="form-control"
+            className="cfg-control"
             type="text"
             value={data.nombreEmpresa}
             onChange={set('nombreEmpresa')}
             placeholder="Ej: Comercio Norte"
           />
-          {errors.nombreEmpresa && <p className="field-error">{errors.nombreEmpresa}</p>}
+          {errors.nombreEmpresa && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.nombreEmpresa}</motion.p>}
         </div>
 
-        <div className="form-group">
+        <div className="cfg-field">
           <label htmlFor="contacto">
-            Persona de contacto<span className="required">*</span>
+            Persona de contacto<span className="cfg-required">*</span>
           </label>
           <input
             id="contacto"
-            className="form-control"
+            className="cfg-control"
             type="text"
             value={data.contacto}
             onChange={set('contacto')}
             placeholder="Ej: Juan Pérez"
           />
-          {errors.contacto && <p className="field-error">{errors.contacto}</p>}
+          {errors.contacto && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.contacto}</p>}
         </div>
       </div>
 
-      <div className="two-col">
-        <div className="form-group">
+      <div className="cfg-field-grid" variants={childVariants}>
+        <div className="cfg-field">
           <label htmlFor="email">
-            Email<span className="required">*</span>
+            Email<span className="cfg-required">*</span>
           </label>
           <input
             id="email"
-            className="form-control"
+            className="cfg-control"
             type="email"
             value={data.email}
             onChange={set('email')}
             placeholder="nombre@empresa.com"
           />
-          {errors.email && <p className="field-error">{errors.email}</p>}
+          {errors.email && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.email}</p>}
         </div>
 
-        <div className="form-group">
+        <div className="cfg-field">
           <label htmlFor="telefono">
-            Teléfono<span className="required">*</span>
+            Teléfono<span className="cfg-required">*</span>
           </label>
           <input
             id="telefono"
-            className="form-control"
+            className="cfg-control"
             type="tel"
             value={data.telefono}
             onChange={set('telefono')}
             placeholder="Ej: 381 000 0000"
           />
-          {errors.telefono && <p className="field-error">{errors.telefono}</p>}
+          {errors.telefono && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.telefono}</p>}
         </div>
       </div>
 
-      <div className="form-group">
+      <div className="cfg-field" variants={childVariants}>
         <label htmlFor="rubro">
-          Rubro<span className="required">*</span>
+          Rubro<span className="cfg-required">*</span>
         </label>
-        <select id="rubro" className="form-control" value={data.rubro} onChange={set('rubro')}>
+        <select id="rubro" className="cfg-control" value={data.rubro} onChange={set('rubro')}>
           <option value="">Seleccioná una opción</option>
           {rubros.map((rubro) => (
             <option key={rubro} value={rubro}>
@@ -86,24 +89,24 @@ function StepCompany({ data, errors, onChange }) {
             </option>
           ))}
         </select>
-        {errors.rubro && <p className="field-error">{errors.rubro}</p>}
+        {errors.rubro && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.rubro}</p>}
       </div>
 
       {data.rubro === 'Otro' && (
-        <div className="form-group">
-          <label htmlFor="rubroOtro">
-            Contanos cuál<span className="required">*</span>
-          </label>
-          <input
-            id="rubroOtro"
-            className="form-control"
-            type="text"
-            value={data.rubroOtro}
-            onChange={set('rubroOtro')}
-            placeholder="Describí tu rubro"
-          />
-          {errors.rubroOtro && <p className="field-error">{errors.rubroOtro}</p>}
-        </div>
+          <div className="cfg-field" variants={childVariants}>
+            <label htmlFor="rubroOtro">
+              Contanos cuál<span className="cfg-required">*</span>
+            </label>
+            <input
+              id="rubroOtro"
+              className="cfg-control"
+              type="text"
+              value={data.rubroOtro}
+              onChange={set('rubroOtro')}
+              placeholder="Describí tu rubro"
+            />
+            {errors.rubroOtro && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.rubroOtro}</p>}
+          </div>
       )}
     </div>
   )

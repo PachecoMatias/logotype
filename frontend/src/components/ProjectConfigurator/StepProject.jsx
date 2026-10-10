@@ -1,26 +1,30 @@
+
 import OptionCard from './OptionCard.jsx'
 import { projectTypes } from '../../data/projectOptions.js'
 
+import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
+
 function StepProject({ data, errors, onChange }) {
   return (
-    <div>
-      <h3 className="step-title">¿Qué solución estás buscando?</h3>
-      <p className="step-subtitle">Seleccioná el tipo de solución que mejor representa tu proyecto.</p>
+    <div className="cfg-step">
+      <h2 className="cfg-step__title">¿Qué solución estás buscando?</h2>
+      <p className="cfg-step__intro">Elegí la alternativa que más se acerque a tu idea; después vamos a precisar el alcance.</p>
 
-      <div className="option-grid">
-        {projectTypes.map((type) => (
+      <div className="cfg-option-grid" variants={childVariants}>
+        {projectTypes.map((type, index) => (
           <OptionCard
             key={type.id}
             icon={type.icon}
             title={type.title}
             description={type.description}
+            index={index}
             selected={data.tipoProyecto === type.id}
             onClick={() => onChange({ ...data, tipoProyecto: type.id })}
           />
         ))}
       </div>
 
-      {errors.tipoProyecto && <p className="field-error">{errors.tipoProyecto}</p>}
+      {errors.tipoProyecto && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.tipoProyecto}</p>}
     </div>
   )
 }

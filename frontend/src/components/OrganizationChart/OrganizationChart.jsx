@@ -1,42 +1,44 @@
+import { motion } from 'framer-motion'
 import SectionTitle from '../common/SectionTitle.jsx'
-import AnimatedSection from '../common/AnimatedSection.jsx'
 import { orgChart } from '../../data/company.js'
+import SectionReveal from '../../motion/SectionReveal.jsx'
+import { childVariants, parentVariants, sectionContentVariants } from '../../motion/variants.js'
 
 function OrganizationChart() {
   return (
-    <section>
-      <div className="container">
-        <AnimatedSection direction="fade">
-          <SectionTitle title="Organigrama" description="Estructura organizacional propuesta para Logotype." />
-        </AnimatedSection>
+    <SectionReveal className="site-section site-organization">
+      <div className="site-shell">
+        <SectionTitle
+          title="Organigrama"
+          description="Estructura organizacional propuesta para Logotype."
+          reveal="clipLeft"
+        />
 
-        <AnimatedSection direction="up">
-          <div className="organigrama">
-            <div className="org-box main">{orgChart.main}</div>
+        <motion.div className="site-org" variants={sectionContentVariants}>
+          <motion.div className="site-org__main" variants={childVariants}>{orgChart.main}</motion.div>
 
-            <div className="org-line" />
+          <motion.div className="site-org__connector" aria-hidden="true" style={{ transformOrigin: 'center' }} variants={childVariants} />
 
-            <div className="org-grid">
-              {orgChart.level1.map((item) => (
-                <div className="org-box" key={item}>
-                  {item}
-                </div>
-              ))}
-            </div>
+          <motion.div className="site-org__row site-org__row--lead" variants={parentVariants}>
+            {orgChart.level1.map((item) => (
+              <motion.div className="site-org__node" key={item} variants={childVariants}>
+                {item}
+              </motion.div>
+            ))}
+          </motion.div>
 
-            <div className="org-line" />
+          <motion.div className="site-org__connector" aria-hidden="true" style={{ transformOrigin: 'center' }} variants={childVariants} />
 
-            <div className="org-grid">
-              {orgChart.level2.map((item) => (
-                <div className="org-box" key={item}>
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </AnimatedSection>
+          <motion.div className="site-org__row" variants={parentVariants}>
+            {orgChart.level2.map((item) => (
+              <motion.div className="site-org__node site-org__node--team" key={item} variants={childVariants}>
+                {item}
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 

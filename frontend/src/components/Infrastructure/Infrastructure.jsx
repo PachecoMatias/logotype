@@ -1,33 +1,32 @@
 import SectionTitle from '../common/SectionTitle.jsx'
-import AnimatedSection from '../common/AnimatedSection.jsx'
+import { Stagger, StaggerItem } from '../../motion/Reveal.jsx'
 import { infrastructure } from '../../data/content.js'
+import SectionReveal from '../../motion/SectionReveal.jsx'
+import AnimatedCounter from '../../motion/AnimatedCounter.jsx'
 
 function Infrastructure() {
   return (
-    <section id="infraestructura">
-      <div className="container">
-        <AnimatedSection direction="fade">
-          <SectionTitle
-            title="Infraestructura tecnológica"
-            description="Resumen de las principales decisiones tomadas en el TP2."
-          />
-        </AnimatedSection>
+    <SectionReveal id="infraestructura" className="site-section site-infrastructure">
+      <div className="site-shell">
+        <SectionTitle
+          title="Infraestructura tecnológica"
+          description="Resumen de las principales decisiones tomadas en el TP2."
+        />
 
-        <div className="infra-grid">
-          {infrastructure.map((item, index) => (
-            <AnimatedSection key={item.id} direction="up" delay={index * 0.08}>
-              <div className="infra-card">
-                <h3>
-                  {item.icon} {item.title}
-                </h3>
+        <Stagger className="site-infrastructure__grid" stagger={0.09}>
+          {infrastructure.map((item) => (
+            <StaggerItem key={item.id} mode="rise" distance={30} className="site-infrastructure__item">
+              <div>
+                <span className="site-infrastructure__node" aria-hidden="true" />
+                <h3>{item.title}</h3>
                 <p>{item.description}</p>
-                <div className="price">{item.price}</div>
+                <div className="site-infrastructure__value"><AnimatedCounter value={item.price} /></div>
               </div>
-            </AnimatedSection>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 

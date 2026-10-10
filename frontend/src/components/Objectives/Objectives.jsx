@@ -1,25 +1,31 @@
 import SectionTitle from '../common/SectionTitle.jsx'
-import AnimatedSection from '../common/AnimatedSection.jsx'
-import Card from '../common/Card.jsx'
+import { Stagger, StaggerItem } from '../../motion/Reveal.jsx'
 import { objectives } from '../../data/company.js'
+import SectionReveal from '../../motion/SectionReveal.jsx'
 
 function Objectives() {
   return (
-    <section className="objectives">
-      <div className="container">
-        <AnimatedSection direction="fade">
-          <SectionTitle title="Objetivos" description="Principales objetivos estratégicos de Logotype." />
-        </AnimatedSection>
+    <SectionReveal className="site-section site-objectives">
+      <div className="site-shell">
+        <SectionTitle
+          title="Objetivos"
+          description="Principales objetivos estratégicos de Logotype."
+          reveal="clipTop"
+        />
 
-        <div className="cards">
+        <Stagger className="site-objectives__list" stagger={0.1} amount={0.16}>
           {objectives.map((obj, index) => (
-            <AnimatedSection key={obj.id} direction="up" delay={index * 0.1}>
-              <Card icon={obj.icon} title={obj.title} description={obj.description} />
-            </AnimatedSection>
+            <StaggerItem key={obj.id} mode="left" distance={38} className="site-objectives__item">
+              <span className="site-objectives__mark" aria-hidden="true">{index + 1}</span>
+              <div>
+                <h3>{obj.title}</h3>
+                <p>{obj.description}</p>
+              </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 

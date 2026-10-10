@@ -1,11 +1,17 @@
-function SectionTitle({ title, description, light = false }) {
+import SplitText from '../../motion/SplitText.jsx'
+import { Stagger } from '../../motion/Reveal.jsx' // Importamos nuestro nuevo Stagger nativo
+
+function SectionTitle({ title, description, light = false, align = 'left' }) {
   return (
-    <div className="section-title">
-      <h2 style={light ? { color: 'white' } : undefined}>{title}</h2>
+    <Stagger
+      as="div"
+      className={`site-section-title site-section-title--${align}${light ? ' site-section-title--light' : ''}`}
+    >
+      <SplitText as="h2" text={title} />
       {description && (
-        <p style={light ? { color: '#cbd5e1' } : undefined}>{description}</p>
+        <p className="css-motion mode-rise">{description}</p>
       )}
-    </div>
+    </Stagger>
   )
 }
 
