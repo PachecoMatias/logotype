@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion'
+
 import Chip from './Chip.jsx'
 import { featuresList } from '../../data/projectOptions.js'
-import RevealGroup from '../../motion/RevealGroup.jsx'
+
 import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepFeatures({ data, errors, onChange }) {
@@ -14,13 +14,13 @@ function StepFeatures({ data, errors, onChange }) {
   }
 
   return (
-    <RevealGroup className="cfg-step" viewport={false} mount>
-      <motion.h2 className="cfg-step__title" variants={childVariants}>¿Qué debería poder hacer tu sistema?</motion.h2>
-      <motion.p className="cfg-step__intro" variants={childVariants}>
+    <div className="cfg-step" viewport={false} mount>
+      <h2 className="cfg-step__title" variants={childVariants}>¿Qué debería poder hacer tu sistema?</h2>
+      <p className="cfg-step__intro" variants={childVariants}>
         Marcá las funciones que hoy imaginás. No hace falta que tengas todos los requisitos definidos.
-      </motion.p>
+      </p>
 
-      <motion.div className="cfg-chip-grid cfg-chip-grid--dense" variants={childVariants}>
+      <div className="cfg-chip-grid cfg-chip-grid--dense" variants={childVariants}>
         {featuresList.map((feature, index) => (
           <Chip
             key={feature}
@@ -30,11 +30,11 @@ function StepFeatures({ data, errors, onChange }) {
             onClick={() => toggleFeature(feature)}
           />
         ))}
-      </motion.div>
-      {errors.seleccionadas && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.seleccionadas}</motion.p>}
+      </div>
+      {errors.seleccionadas && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.seleccionadas}</p>}
 
       {data.seleccionadas.includes('Otra') && (
-          <motion.div className="cfg-field cfg-field--followup" variants={childVariants}>
+          <div className="cfg-field cfg-field--followup" variants={childVariants}>
             <label htmlFor="otra">
               Contanos cuál<span className="cfg-required">*</span>
             </label>
@@ -45,10 +45,10 @@ function StepFeatures({ data, errors, onChange }) {
               value={data.otra}
               onChange={(e) => onChange({ ...data, otra: e.target.value })}
             />
-            {errors.otra && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.otra}</motion.p>}
-          </motion.div>
+            {errors.otra && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.otra}</p>}
+          </div>
       )}
-    </RevealGroup>
+    </div>
   )
 }
 

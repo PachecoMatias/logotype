@@ -1,19 +1,19 @@
-import { motion } from 'framer-motion'
+
 import { rubros } from '../../data/projectOptions.js'
-import RevealGroup from '../../motion/RevealGroup.jsx'
+
 import { childVariants, fieldErrorMotion } from '../../motion/variants.js'
 
 function StepCompany({ data, errors, onChange }) {
   const set = (field) => (e) => onChange({ ...data, [field]: e.target.value })
 
   return (
-    <RevealGroup className="cfg-step" viewport={false} mount>
-      <motion.h2 className="cfg-step__title" variants={childVariants}>Primero, conozcamos tu empresa</motion.h2>
-      <motion.p className="cfg-step__intro" variants={childVariants}>
+    <div className="cfg-step">
+      <h2 className="cfg-step__title" variants={childVariants}>Primero, conozcamos tu empresa</h2>
+      <p className="cfg-step__intro" variants={childVariants}>
         Compartinos los datos básicos para ubicar el proyecto en el contexto real de tu organización.
-      </motion.p>
+      </p>
 
-      <motion.div className="cfg-field-grid" variants={childVariants}>
+      <div className="cfg-field-grid" variants={childVariants}>
         <div className="cfg-field">
           <label htmlFor="nombreEmpresa">
             Nombre de la empresa<span className="cfg-required">*</span>
@@ -41,11 +41,11 @@ function StepCompany({ data, errors, onChange }) {
             onChange={set('contacto')}
             placeholder="Ej: Juan Pérez"
           />
-          {errors.contacto && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.contacto}</motion.p>}
+          {errors.contacto && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.contacto}</p>}
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div className="cfg-field-grid" variants={childVariants}>
+      <div className="cfg-field-grid" variants={childVariants}>
         <div className="cfg-field">
           <label htmlFor="email">
             Email<span className="cfg-required">*</span>
@@ -58,7 +58,7 @@ function StepCompany({ data, errors, onChange }) {
             onChange={set('email')}
             placeholder="nombre@empresa.com"
           />
-          {errors.email && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.email}</motion.p>}
+          {errors.email && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.email}</p>}
         </div>
 
         <div className="cfg-field">
@@ -73,11 +73,11 @@ function StepCompany({ data, errors, onChange }) {
             onChange={set('telefono')}
             placeholder="Ej: 381 000 0000"
           />
-          {errors.telefono && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.telefono}</motion.p>}
+          {errors.telefono && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.telefono}</p>}
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div className="cfg-field" variants={childVariants}>
+      <div className="cfg-field" variants={childVariants}>
         <label htmlFor="rubro">
           Rubro<span className="cfg-required">*</span>
         </label>
@@ -89,11 +89,11 @@ function StepCompany({ data, errors, onChange }) {
             </option>
           ))}
         </select>
-        {errors.rubro && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.rubro}</motion.p>}
-      </motion.div>
+        {errors.rubro && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.rubro}</p>}
+      </div>
 
       {data.rubro === 'Otro' && (
-          <motion.div className="cfg-field" variants={childVariants}>
+          <div className="cfg-field" variants={childVariants}>
             <label htmlFor="rubroOtro">
               Contanos cuál<span className="cfg-required">*</span>
             </label>
@@ -105,10 +105,10 @@ function StepCompany({ data, errors, onChange }) {
               onChange={set('rubroOtro')}
               placeholder="Describí tu rubro"
             />
-            {errors.rubroOtro && <motion.p className="cfg-field-error" {...fieldErrorMotion}>{errors.rubroOtro}</motion.p>}
-          </motion.div>
+            {errors.rubroOtro && <p className="cfg-field-error" {...fieldErrorMotion}>{errors.rubroOtro}</p>}
+          </div>
       )}
-    </RevealGroup>
+    </div>
   )
 }
 

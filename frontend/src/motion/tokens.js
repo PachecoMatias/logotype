@@ -6,11 +6,11 @@ export const EASE_STANDARD = [0.22, 1, 0.36, 1]
 export const EASE_IN = [0.55, 0, 1, 0.45]
 
 export const DURATION = {
-  feedback: 0.16,
-  state: 0.28,
-  layout: 0.44,
-  focal: 0.64,
-  construction: 0.92,
+  feedback: 0.5,
+  state: 0.8,
+  layout: 1.2,
+  focal: 1.8,
+  construction: 2.5,
 }
 
 export const SPRING = { type: 'spring', stiffness: 340, damping: 34, mass: 0.7 }

@@ -1,66 +1,35 @@
-import { motion } from 'framer-motion'
-import {
-  directionalVariants,
-  MOTION_DURATION,
-  MOTION_EASE,
-  parentVariants,
-  VIEWPORT_ONCE,
-} from './variants.js'
+import { useEffect, useRef, useState } from 'react'
 
-export function revealVariants({ mode = 'rise', distance = 32, duration = MOTION_DURATION.base } = {}) {
-  const offset = Math.max(24, Math.min(40, distance))
-  const directions = {
-    fade: directionalVariants(0, 0),
-    rise: directionalVariants(0, offset),
-    up: directionalVariants(0, offset),
-    drop: directionalVariants(0, -offset),
-    down: directionalVariants(0, -offset),
-    left: directionalVariants(-offset, 0),
-    right: directionalVariants(offset, 0),
-  }
+export function useNativeInView(options = { threshold: 0.1 }) {
+  const ref = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
 
-  const variants = directions[mode] || directions.rise
-  return {
-    ...variants,
-    visible: {
-      ...variants.visible,
-      transition: { ...variants.visible.transition, duration },
-    },
-  }
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true)
+      } else {
+        setIsVisible(false)
+      }
+    }, options)
+
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, isVisible]
 }
 
-/**
- * Stable wrapper retaining the former reveal API and rendered element.
- */
-export function Reveal({
-  as = 'div',
-  mode = 'rise',
-  distance = 32,
-  delay,
-  duration = MOTION_DURATION.base,
-  amount,
-  once,
-  viewport = true,
-  className,
-  style,
-  children,
-  ...rest
-}) {
-  const Component = motion[as] || motion.div
-  void delay
-  void amount
-  void once
-  const variants = revealVariants({ mode, distance, duration })
-  const viewportProps = viewport
-    ? { initial: 'hidden', whileInView: 'visible', viewport: VIEWPORT_ONCE }
-    : {}
+export function Reveal({ as = 'div', mode = 'rise', className = '', children, ...props }) {
+  const Component = as
+  const [ref, isVisible] = useNativeInView()
+  // Filtramos props de framer-motion
+  const { viewport, amount, once, delay, duration, ...rest } = props
 
   return (
     <Component
-      className={className}
-      style={style}
-      variants={variants}
-      {...viewportProps}
+      ref={ref}
+      className={`css-motion mode-${mode} ${isVisible ? 'is-visible' : ''} ${className}`}
       {...rest}
     >
       {children}
@@ -68,39 +37,16 @@ export function Reveal({
   )
 }
 
-/**
- * Stable group wrapper retaining the former stagger API.
- */
-export function Stagger({
-  as = 'div',
-  stagger = 0.1,
-  delayChildren = 0,
-  amount,
-  once,
-  viewport = false,
-  className,
-  style,
-  children,
-  ...rest
-}) {
-  const Component = motion[as] || motion.div
-  void amount
-  void once
-  const variants = {
-    ...parentVariants,
-    visible: { transition: { delayChildren, staggerChildren: stagger } },
-  }
-  const viewportProps = viewport
-    ? { initial: 'hidden', whileInView: 'visible', viewport: VIEWPORT_ONCE }
-    : {}
+export function Stagger({ as = 'div', className = '', children, ...props }) {
+  const Component = as
+  const [ref, isVisible] = useNativeInView()
+  // Filtramos props de framer-motion para evitar los warnings de React
+  const { stagger, delayChildren, viewport, amount, once, whileInView, initial, animate, variants, mount, ...rest } = props
 
   return (
     <Component
-      data-reveal-stagger=""
-      className={className}
-      style={style}
-      variants={variants}
-      {...viewportProps}
+      ref={ref}
+      className={`stagger-group ${isVisible ? 'is-visible' : ''} ${className}`}
       {...rest}
     >
       {children}
@@ -108,28 +54,13 @@ export function Stagger({
   )
 }
 
-/**
- * Stable child wrapper that still supports safe interaction motion props.
- */
-export function StaggerItem({
-  as = 'div',
-  mode = 'rise',
-  distance = 32,
-  duration = MOTION_DURATION.base,
-  className,
-  style,
-  children,
-  ...rest
-}) {
-  const Component = motion[as] || motion.div
+export function StaggerItem({ as = 'div', mode = 'rise', className = '', children, ...props }) {
+  const Component = as
+  // Filtramos props de framer-motion para evitar los warnings de React
+  const { whileHover, whileTap, transition, variants, distance, duration, layoutId, ...rest } = props
+
   return (
-    <Component
-      data-reveal-item=""
-      className={className}
-      style={style}
-      variants={revealVariants({ mode, distance, duration })}
-      {...rest}
-    >
+    <Component className={`css-motion mode-${mode} ${className}`} {...rest}>
       {children}
     </Component>
   )

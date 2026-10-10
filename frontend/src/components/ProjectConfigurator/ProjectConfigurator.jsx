@@ -1,11 +1,11 @@
-import { useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
 import ProgressBar from './ProgressBar.jsx'
 import StepCompany from './StepCompany.jsx'
 import StepProject from './StepProject.jsx'
 import StepProblem from './StepProblem.jsx'
 import StepFeatures from './StepFeatures.jsx'
 import StepScope from './StepScope.jsx'
+import { Stagger } from '../../motion/Reveal.jsx'
 import StepBudget from './StepBudget.jsx'
 import ProjectSummary from './ProjectSummary.jsx'
 import SuccessMessage from './SuccessMessage.jsx'
@@ -19,8 +19,6 @@ import {
   validatePresupuesto,
 } from './validation.js'
 import { apiRequest } from '../../utils/api.js'
-import { EASE_OUT, DURATION } from '../../motion/tokens.js'
-import { MOTION_DURATION, MOTION_EASE } from '../../motion/variants.js'
 
 const stepKeys = ['empresa', 'proyecto', 'problema', 'funcionalidades', 'alcance', 'presupuesto']
 const validators = [
@@ -32,18 +30,6 @@ const validators = [
   validatePresupuesto,
 ]
 
-const stepVariants = {
-  enter: ({ direction, reduceMotion }) => ({
-    opacity: 0,
-    x: reduceMotion ? 0 : direction > 0 ? 40 : -40,
-  }),
-  center: { opacity: 1, x: 0 },
-  exit: ({ direction, reduceMotion }) => ({
-    opacity: 0,
-    x: reduceMotion ? 0 : direction > 0 ? -40 : 40,
-  }),
-}
-
 function ProjectConfigurator({ onBack }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [projectData, setProjectData] = useState(initialProjectData)
@@ -52,8 +38,8 @@ function ProjectConfigurator({ onBack }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState(null)
-  const reduceMotion = useReducedMotion()
-
+  const workspaceRef = useRef(null)
+  const isFirstRender = useRef(true)
   const isSummaryStep = stepIndex === configuratorSteps.length - 1
 
   const goToStep = (index, dir) => {
@@ -65,7 +51,23 @@ function ProjectConfigurator({ onBack }) {
   const handleStepDataChange = (key, value) => {
     setProjectData((prev) => ({ ...prev, [key]: value }))
   }
+// Cada vez que cambia el stepIndex, scrolleamos hacia arriba (excepto la primera vez)
+  useEffect(() => {
+    // Si es la primera vez que carga, cambiamos la bandera a falso y cortamos la ejecución
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return 
+    }
 
+    // Si NO es la primera vez, hacemos el scroll normal
+    if (workspaceRef.current) {
+      const offsetTop = workspaceRef.current.getBoundingClientRect().top + window.scrollY - 100
+      window.scrollTo({
+        top: offsetTop,
+        behavior: 'smooth'
+      })
+    }
+  }, [stepIndex])
   const handleNext = () => {
     if (isSummaryStep) {
       handleSubmit()
@@ -119,159 +121,94 @@ function ProjectConfigurator({ onBack }) {
     setSubmitError(null)
   }
 
-  const stepTransition = { duration: reduceMotion ? 0 : 0.5, ease: MOTION_EASE }
-
   const renderStep = () => {
     switch (stepKeys[stepIndex]) {
-      case 'empresa':
-        return (
-          <StepCompany
-            data={projectData.empresa}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('empresa', value)}
-          />
-        )
-      case 'proyecto':
-        return (
-          <StepProject
-            data={projectData.proyecto}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('proyecto', value)}
-          />
-        )
-      case 'problema':
-        return (
-          <StepProblem
-            data={projectData.problema}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('problema', value)}
-          />
-        )
-      case 'funcionalidades':
-        return (
-          <StepFeatures
-            data={projectData.funcionalidades}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('funcionalidades', value)}
-          />
-        )
-      case 'alcance':
-        return (
-          <StepScope
-            data={projectData.alcance}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('alcance', value)}
-          />
-        )
-      case 'presupuesto':
-        return (
-          <StepBudget
-            data={projectData.presupuesto}
-            errors={errors}
-            onChange={(value) => handleStepDataChange('presupuesto', value)}
-          />
-        )
-      default:
-        return <ProjectSummary projectData={projectData} onEditStep={handleEditStep} />
+      case 'empresa': return <StepCompany data={projectData.empresa} errors={errors} onChange={(v) => handleStepDataChange('empresa', v)} />
+      case 'proyecto': return <StepProject data={projectData.proyecto} errors={errors} onChange={(v) => handleStepDataChange('proyecto', v)} />
+      case 'problema': return <StepProblem data={projectData.problema} errors={errors} onChange={(v) => handleStepDataChange('problema', v)} />
+      case 'funcionalidades': return <StepFeatures data={projectData.funcionalidades} errors={errors} onChange={(v) => handleStepDataChange('funcionalidades', v)} />
+      case 'alcance': return <StepScope data={projectData.alcance} errors={errors} onChange={(v) => handleStepDataChange('alcance', v)} />
+      case 'presupuesto': return <StepBudget data={projectData.presupuesto} errors={errors} onChange={(v) => handleStepDataChange('presupuesto', v)} />
+      default: return <ProjectSummary projectData={projectData} onEditStep={handleEditStep} />
     }
   }
 
   return (
     <main id="configurador" className="cfg-main">
-      <div className="cfg-container">
+      {/* 1. Usamos Stagger para detectar el scroll de toda la sección */}
+      <Stagger className="cfg-container">
+        
         <div className="cfg-intro">
-          <h1>Contanos tu proyecto</h1>
-          <p>Vamos a registrar cada decisión para entender qué necesitás y preparar una solución de software a medida.</p>
-          <div className="cfg-intro__register" aria-hidden="true">
+          {/* 2. Clases css-motion con delay secuencial */}
+          <h1 className="css-motion mode-rise" style={{ transitionDelay: '0.1s' }}>
+            Contanos tu proyecto
+          </h1>
+          <p className="css-motion mode-rise" style={{ transitionDelay: '0.2s' }}>
+            Vamos a registrar cada decisión para entender qué necesitás y preparar una solución de software a medida.
+          </p>
+          <div className="cfg-intro__register css-motion mode-rise" style={{ transitionDelay: '0.3s' }} aria-hidden="true">
             <span />
             <span>Brief en construcción</span>
           </div>
         </div>
 
-        <div className="cfg-workspace">
+        {/* 3. El contenedor entero del formulario entra último */}
+        <div ref={workspaceRef} className="cfg-workspace css-motion mode-rise" style={{ transitionDelay: '0.4s' }}>
           {submitted ? (
             <SuccessMessage onRestart={handleRestart} />
           ) : (
             <>
               <ProgressBar currentStepIndex={stepIndex} />
 
-              <div className="cfg-step-stage">
-                <AnimatePresence mode="wait" initial={false} custom={{ direction, reduceMotion }}>
-                  <motion.div
-                    key={submitting ? 'submitting' : stepIndex}
-                    className="cfg-transition"
-                    custom={{ direction, reduceMotion }}
-                    variants={stepVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={stepTransition}
-                    layout
-                  >
-                    {submitting ? (
-                      <div className="cfg-loading" role="status" aria-live="polite">
-                        <motion.span
-                          className="cfg-loading__line"
-                          aria-hidden="true"
-                          style={{ transformOrigin: 'left' }}
-                          initial={{ scaleX: reduceMotion ? 1 : 0 }}
-                          animate={{ scaleX: 1 }}
-                          transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.slow, ease: MOTION_EASE }}
-                        />
-                        <strong>Registrando tu proyecto</strong>
-                        <span>Estamos enviando la información de forma segura.</span>
-                      </div>
-                    ) : (
-                      renderStep()
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+              <div className="cfg-step-stage" style={{ overflow: 'hidden' }}>
+                <div
+                  key={submitting ? 'submitting' : stepIndex}
+                  className={`cfg-transition ${direction > 0 ? 'animate-step-forward' : 'animate-step-backward'}`}
+                >
+                  {submitting ? (
+                    <div className="cfg-loading" role="status" aria-live="polite">
+                      <span className="cfg-loading__line-native" aria-hidden="true" />
+                      <strong>Registrando tu proyecto</strong>
+                      <br/>
+                      <span>Estamos enviando la información de forma segura.</span>
+                    </div>
+                  ) : (
+                    renderStep()
+                  )}
+                </div>
               </div>
-
 
               {!submitting && (
                 <>
-                  <AnimatePresence>
-                    {submitError && (
-                      <motion.p
-                        className="cfg-submit-error"
-                        role="alert"
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                      >
-                        {submitError}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
+                  {submitError && (
+                    <p className="cfg-submit-error" role="alert" style={{ color: 'red', marginBottom: '10px' }}>
+                      {submitError}
+                    </p>
+                  )}
                   <div className="cfg-actions">
-                    <motion.button
+                    <button
                       className="cfg-button cfg-button--secondary"
                       onClick={handleBack}
                       disabled={stepIndex === 0}
-                       whileHover={stepIndex === 0 ? undefined : { scale: 1.02 }}
-                      whileTap={stepIndex === 0 ? undefined : { scale: 0.98 }}
-                      transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
+                      style={{ cursor: stepIndex === 0 ? 'not-allowed' : 'pointer' }}
                     >
                       <span aria-hidden="true">←</span> Anterior
-                    </motion.button>
+                    </button>
 
-                    <motion.button
+                    <button
                       className="cfg-button cfg-button--primary"
                       onClick={handleNext}
-                       whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
+                      style={{ cursor: 'pointer' }}
                     >
                       {isSummaryStep ? 'Enviar solicitud' : 'Continuar'} <span aria-hidden="true">→</span>
-                    </motion.button>
+                    </button>
                   </div>
                 </>
               )}
             </>
           )}
         </div>
-      </div>
+      </Stagger>
     </main>
   )
 }

@@ -1,19 +1,19 @@
 export const MOTION_EASE = [0.22, 1, 0.36, 1]
 
 export const MOTION_DURATION = {
-  quick: 0.5,
-  base: 0.64,
-  slow: 0.8,
+  quick: 1.5,
+  base: 2.0,
+  slow: 2.5,
 }
 
-export const VIEWPORT_ONCE = { once: true, amount: 0.3 }
+export const VIEWPORT_ONCE = { once: true, amount: 0.2 }
 
 export const parentVariants = {
   hidden: {},
   visible: {
     transition: {
-      delayChildren: 0.08,
-      staggerChildren: 0.24,
+      delayChildren: 0.3,
+      staggerChildren: 0.5,
     },
   },
 }
@@ -33,6 +33,8 @@ export const childVariants = {
     opacity: 1,
     y: 0,
     transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE },
+    // Esto obliga a mantener la capa estable al finalizar:
+    transitionEnd: { transform: "translateZ(0)" } 
   },
 }
 
@@ -43,6 +45,8 @@ export const directionalVariants = (x = 0, y = 32) => ({
     x: 0,
     y: 0,
     transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE },
+    // Esto obliga a mantener la capa estable al finalizar:
+    transitionEnd: { transform: "translateZ(0)" } 
   },
 })
 
@@ -58,5 +62,6 @@ export const sectionContentVariants = {
 export const fieldErrorMotion = {
   initial: { opacity: 0, y: -8 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.24, ease: MOTION_EASE },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 1.0, ease: MOTION_EASE },
 }

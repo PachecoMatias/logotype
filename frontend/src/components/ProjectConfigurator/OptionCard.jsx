@@ -1,22 +1,21 @@
-import { motion } from 'framer-motion'
-import { EASE_OUT, DURATION } from '../../motion/tokens.js'
-import { childVariants } from '../../motion/variants.js'
-
 /**
  * Selectable card used across configurator steps (single or multi select).
  * Options remain visible by default and only animate interaction feedback.
  */
 function OptionCard({ icon, title, description, selected, onClick, index = 0 }) {
   return (
-    <motion.button
+    <button
       type="button"
       className={`cfg-option${selected ? ' cfg-option--selected' : ''}`}
       onClick={onClick}
       aria-pressed={selected}
-      variants={childVariants}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: DURATION.feedback, ease: EASE_OUT }}
+      style={{
+        transition: "transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s",
+        willChange: "transform"
+      }}
+      onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.98)"}
+      onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+      onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
     >
       <span className="cfg-option__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
       <span className="cfg-option__copy">
@@ -24,7 +23,7 @@ function OptionCard({ icon, title, description, selected, onClick, index = 0 }) 
         {description && <span className="cfg-option__description">{description}</span>}
       </span>
       <span className="cfg-option__state" aria-hidden="true">{selected ? '✓' : '＋'}</span>
-    </motion.button>
+    </button>
   )
 }
 

@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion'
-import { parentVariants, VIEWPORT_ONCE } from './variants.js'
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { parentVariants } from './variants.js'
 
 function RevealGroup({
   as = 'div',
@@ -12,19 +13,26 @@ function RevealGroup({
   ...rest
 }) {
   const Component = motion[as] || motion.div
+  const ref = useRef(null)
+  
+  // Hook one-shot
+  const isInView = useInView(ref, { once: true, amount: 0.1 })
+
   const variants = {
     ...parentVariants,
     visible: { transition: { staggerChildren: stagger, delayChildren } },
   }
 
+  // Determinamos si debe verse por scroll o por montaje inicial
+  const shouldAnimate = mount || (viewport && isInView)
+
   return (
     <Component
+      ref={ref}
       className={className}
       variants={variants}
-      initial={viewport || mount ? 'hidden' : undefined}
-      whileInView={viewport ? 'visible' : undefined}
-      animate={!viewport && mount ? 'visible' : undefined}
-      viewport={viewport ? VIEWPORT_ONCE : undefined}
+      initial="hidden"
+      animate={shouldAnimate ? 'visible' : 'hidden'}
       {...rest}
     >
       {children}

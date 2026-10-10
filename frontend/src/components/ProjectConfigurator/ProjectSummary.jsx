@@ -1,7 +1,6 @@
-import { motion } from 'framer-motion'
+
 import { projectTypes } from '../../data/projectOptions.js'
 import { EASE_OUT, DURATION } from '../../motion/tokens.js'
-import RevealGroup from '../../motion/RevealGroup.jsx'
 import { childVariants } from '../../motion/variants.js'
 
 // The summary is built like a document being assembled: each section is a
@@ -18,20 +17,20 @@ function ProjectSummary({ projectData, onEditStep }) {
   const tipoProyecto = projectTypes.find((t) => t.id === proyecto.tipoProyecto)
 
   return (
-    <RevealGroup className="cfg-step cfg-summary" viewport={false} mount>
-      <motion.h2 className="cfg-step__title" variants={childVariants}>Revisá tu proyecto</motion.h2>
-      <motion.p className="cfg-step__intro" variants={childVariants}>
+    <div className="cfg-step cfg-summary" viewport={false} mount>
+      <h2 className="cfg-step__title" variants={childVariants}>Revisá tu proyecto</h2>
+      <p className="cfg-step__intro" variants={childVariants}>
         Verificá que la información sea correcta antes de enviar tu solicitud. Podés volver a
         cualquier sección para modificarla.
-      </motion.p>
+      </p>
 
-      <motion.div className="cfg-summary__registry" variants={childVariants}>
-        <motion.section className="cfg-summary__section" variants={childVariants}>
+      <div className="cfg-summary__registry" variants={childVariants}>
+        <div className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Empresa</h3>
-            <motion.button className="cfg-summary__edit" onClick={() => onEditStep(0)} {...editMotion}>
+            <button className="cfg-summary__edit" onClick={() => onEditStep(0)} {...editMotion}>
               Editar <span aria-hidden="true">↗</span>
-            </motion.button>
+            </button>
           </div>
           <dl className="cfg-summary__rows">
             <div><dt>Empresa</dt><dd>{empresa.nombreEmpresa}</dd></div>
@@ -40,26 +39,26 @@ function ProjectSummary({ projectData, onEditStep }) {
             <div><dt>Teléfono</dt><dd>{empresa.telefono}</dd></div>
             <div><dt>Rubro</dt><dd>{empresa.rubro === 'Otro' ? empresa.rubroOtro : empresa.rubro}</dd></div>
           </dl>
-        </motion.section>
+        </div>
 
-        <motion.section className="cfg-summary__section" variants={childVariants}>
+        <section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Proyecto</h3>
-            <motion.button className="cfg-summary__edit" onClick={() => onEditStep(1)} {...editMotion}>
+            <button className="cfg-summary__edit" onClick={() => onEditStep(1)} {...editMotion}>
               Editar <span aria-hidden="true">↗</span>
-            </motion.button>
+            </button>
           </div>
           <dl className="cfg-summary__rows">
             <div><dt>Tipo de solución</dt><dd>{tipoProyecto?.title}</dd></div>
           </dl>
-        </motion.section>
+        </section>
 
-        <motion.section className="cfg-summary__section cfg-summary__section--wide" variants={childVariants}>
+        <section className="cfg-summary__section cfg-summary__section--wide" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Problema</h3>
-            <motion.button className="cfg-summary__edit" onClick={() => onEditStep(2)} {...editMotion}>
+            <button className="cfg-summary__edit" onClick={() => onEditStep(2)} {...editMotion}>
               Editar <span aria-hidden="true">↗</span>
-            </motion.button>
+            </button>
           </div>
           <dl className="cfg-summary__rows">
             <div><dt>Problema actual</dt><dd>{problema.problemaActual}</dd></div>
@@ -70,28 +69,28 @@ function ProjectSummary({ projectData, onEditStep }) {
                 ))}
             </dd></div>
           </dl>
-        </motion.section>
+        </section>
 
-        <motion.section className="cfg-summary__section cfg-summary__section--wide" variants={childVariants}>
+        <section className="cfg-summary__section cfg-summary__section--wide" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Funcionalidades</h3>
-            <motion.button className="cfg-summary__edit" onClick={() => onEditStep(3)} {...editMotion}>
+            <button className="cfg-summary__edit" onClick={() => onEditStep(3)} {...editMotion}>
               Editar <span aria-hidden="true">↗</span>
-            </motion.button>
+            </button>
           </div>
           <div className="cfg-summary__tags">
             {funcionalidades.seleccionadas.map((feature) => (
               <span key={feature}>{feature === 'Otra' ? funcionalidades.otra || 'Otra' : feature}</span>
             ))}
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section className="cfg-summary__section" variants={childVariants}>
+        <section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Alcance</h3>
-            <motion.button className="cfg-summary__edit" onClick={() => onEditStep(4)} {...editMotion}>
+            <button className="cfg-summary__edit" onClick={() => onEditStep(4)} {...editMotion}>
               Editar <span aria-hidden="true">↗</span>
-            </motion.button>
+            </button>
           </div>
           <dl className="cfg-summary__rows">
             <div><dt>Plataformas</dt><dd>{alcance.plataformas.join(', ')}</dd></div>
@@ -103,23 +102,23 @@ function ProjectSummary({ projectData, onEditStep }) {
                 .join(', ')}</dd></div>
             )}
           </dl>
-        </motion.section>
+        </section>
 
-        <motion.section className="cfg-summary__section" variants={childVariants}>
+        <section className="cfg-summary__section" variants={childVariants}>
           <div className="cfg-summary__header">
             <h3>Planificación</h3>
-            <motion.button className="cfg-summary__edit" onClick={() => onEditStep(5)} {...editMotion}>
+            <button className="cfg-summary__edit" onClick={() => onEditStep(5)} {...editMotion}>
               Editar <span aria-hidden="true">↗</span>
-            </motion.button>
+            </button>
           </div>
           <dl className="cfg-summary__rows">
             <div><dt>Presupuesto</dt><dd>{presupuesto.presupuesto}</dd></div>
             <div><dt>Plazo</dt><dd>{presupuesto.plazo}</dd></div>
             {presupuesto.infoAdicional && <div><dt>Información adicional</dt><dd>{presupuesto.infoAdicional}</dd></div>}
           </dl>
-        </motion.section>
-      </motion.div>
-    </RevealGroup>
+        </section>
+      </div>
+    </div>
   )
 }
 

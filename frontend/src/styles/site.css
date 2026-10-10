@@ -115,9 +115,9 @@
   color: var(--site-surface);
   border-bottom: 1px solid var(--site-on-dark);
   box-shadow: none;
-  transition: background-color 220ms ease-out;
+  /* transition: background-color 220ms ease-out; */
 }
-
+ 
 .site-header__inner {
   display: flex;
   min-height: 72px;
@@ -125,7 +125,7 @@
   justify-content: space-between;
   gap: 24px;
   transform-origin: center top;
-  transition: transform 220ms ease-out;
+  /* transition: transform 220ms ease-out; */
 }
 
 .site-header--scrolled {
@@ -188,7 +188,7 @@
 .site-nav__link {
   padding: 8px 0;
   border-bottom: 1px solid transparent;
-  transition: border-color 180ms ease-out, color 180ms ease-out;
+  /* transition: border-color 180ms ease-out, color 180ms ease-out; */
 }
 
 .site-nav__link:hover {
@@ -200,7 +200,7 @@
   padding: 13px 16px;
   background: var(--site-primary);
   color: var(--site-surface);
-  transition: background-color 160ms ease-out, color 160ms ease-out;
+  /* transition: background-color 160ms ease-out, color 160ms ease-out; */
 }
 
 .site-nav__action:hover {
@@ -420,7 +420,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  transition: border-color 160ms ease-out, background-color 160ms ease-out, color 160ms ease-out;
+  /* transition: border-color 160ms ease-out, background-color 160ms ease-out, color 160ms ease-out; */
 }
 
 .site-button--primary {
@@ -1175,7 +1175,7 @@
   text-decoration: underline;
   text-underline-offset: 5px;
   text-transform: uppercase;
-  transition: text-underline-offset 160ms ease-out, color 160ms ease-out;
+  /* transition: text-underline-offset 160ms ease-out, color 160ms ease-out; */
 }
 
 .site-footer__return:hover {
@@ -1394,9 +1394,9 @@
   .site-page *::before,
   .site-page *::after {
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
+    /*transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    animation-iteration-count: 1 !important;*/
   }
 
   .site-header--scrolled .site-header__inner {

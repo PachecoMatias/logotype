@@ -1,6 +1,4 @@
-import { motion } from 'framer-motion'
 import { configuratorSteps } from '../../data/projectOptions.js'
-import { SPRING_SOFT } from '../../motion/tokens.js'
 
 function ProgressBar({ currentStepIndex }) {
   const total = configuratorSteps.length
@@ -21,11 +19,13 @@ function ProgressBar({ currentStepIndex }) {
         aria-valuemax={total}
         aria-valuenow={currentStepIndex + 1}
       >
-        <motion.div
+        <div
           className="cfg-progress__fill"
-          initial={false}
-          animate={{ scaleX: progress }}
-          transition={SPRING_SOFT}
+          style={{
+            transform: `scaleX(${progress})`,
+            transformOrigin: 'left',
+            transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
+          }}
         />
       </div>
 
@@ -40,7 +40,7 @@ function ProgressBar({ currentStepIndex }) {
           >
             <span className="cfg-progress__marker" aria-hidden="true">
               {index === currentStepIndex && (
-                <motion.span className="cfg-progress__current-marker" layoutId="cfg-current-step" />
+                <span className="cfg-progress__current-marker" style={{ display: 'block', width: '100%', height: '100%', backgroundColor: 'var(--blue)', borderRadius: '50%' }} />
               )}
             </span>
             <span>{String(index + 1).padStart(2, '0')}</span>

@@ -150,9 +150,10 @@ mount-only focal sequence with a text-clip swapped for a transform reveal.
       renders complete content without spatial movement, progress never animates
       width, and payload/API/state/validators remain byte-for-byte behaviorally
       unchanged. Test-first exception: this is a visual-only motion migration
-      with no meaningful deterministic RED; use bounded source-contract checks
-      before/after and a production build. Delivery: `single-pr` on
-      `redesign/public-motion`; no push requested.
+       with no meaningful deterministic RED; use bounded source-contract checks
+       before/after and a production build. Delivery: `single-pr` on
+       `redesign/public-motion`; no push requested. Evidence: commit `d9b19fc`
+       (`feat(configurator): animate directional step continuity`).
 - [x] T15 Bounded independent-verifier correction. Route: `delegated direct`;
       trigger evidence: multi-file motion correction. Remove all scoped infinite
       animations, make configurator mount groups explicitly transition from
@@ -168,9 +169,10 @@ mount-only focal sequence with a text-clip swapped for a transform reveal.
       spatial travel; protected contracts remain unchanged. Test-first exception:
       this is a visual-only correction with no meaningful deterministic RED;
       use bounded source scans and a production build. Source correction, bounded
-      checks, and the production build are complete after the user explicitly
-      authorized temporary generated `frontend/dist` output; generated files
-      remain unstaged.
+       checks, and the production build are complete after the user explicitly
+       authorized temporary generated `frontend/dist` output; generated files
+       remain unstaged. Correction evidence is contained in commits `f5e8af4`
+       and `d9b19fc`.
 
 ### Latest architecture supersession
 

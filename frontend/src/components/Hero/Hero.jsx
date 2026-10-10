@@ -4,11 +4,6 @@ import Button from '../common/Button.jsx'
 import Parallax from '../../motion/Parallax.jsx'
 import { MOTION_DURATION, MOTION_EASE } from '../../motion/variants.js'
 
-// The hero is the authored set piece: the blueprint reticle draws first, the
-// axis rises, then the wordmark, the blue planning panel and finally the
-// actions assemble in order. Everything below is one one-shot choreographed
-// sequence, so the focal entrance never resets during scroll.
-
 const heroSeq = {
   hidden: {},
   visible: { transition: { delayChildren: 0.04, staggerChildren: 0.14 } },
@@ -33,20 +28,26 @@ const frameSeq = {
   visible: { transition: { staggerChildren: 0.18, delayChildren: 0.08 } },
 }
 
+// 1. HACEMOS EL TÍTULO MÁS LENTO:
+// Aumentamos el staggerChildren (ej: 0.4) para que tarde más en aparecer la segunda palabra
 const wordmarkSeq = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE, staggerChildren: 0.11 } },
+  visible: { 
+    opacity: 1, 
+    transition: { duration: 0.8, ease: MOTION_EASE, staggerChildren: 0.2 } 
+  },
 }
 
-// Text reveals use a transform + opacity settle: no clip path touches the
-// wordmark letters, so the title can never be masked or hidden.
+// Aumentamos la duración individual de cada palabra (ej: 1.5 segundos)
 const wordIn = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: MOTION_DURATION.slow, ease: MOTION_EASE } },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 1.5, ease: MOTION_EASE } 
+  },
 }
 
-// The statement panel is a solid plate that rises into place; its copy is
-// revealed by opacity only, never by a mask.
 const panelIn = {
   hidden: { opacity: 0, y: 24 },
   visible: {
@@ -95,7 +96,10 @@ function Hero({ onNavigate }) {
       id="inicio"
       variants={heroSeq}
       initial="hidden"
-      animate="visible"
+      // 2. ACTIVACIÓN POR SCROLL REPETITIVA:
+      // Reemplazamos animate="visible" por whileInView y viewport
+      whileInView="visible"
+      viewport={{ once: false, amount: 0.2 }}
     >
       <Parallax
         className="site-hero__field"
