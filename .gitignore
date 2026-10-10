@@ -1,2 +1,15 @@
 # Dependencias de Node.js
 node_modules/
+
+# Build
+dist/
+frontend/dist/
+
+# Carpetas locales de agentes / IA
+.agent/
+.agents/
+.atl/
+.claude/
+.codex/
+.gemini/
+.opencode/

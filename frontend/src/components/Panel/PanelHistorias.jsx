@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HistoriaContenido } from './HistoriaModal.jsx'
 import HistoriaEditor from './HistoriaEditor.jsx'
+import '../../styles/panel.css'
 
 function agruparPorFase(historias) {
   return historias.reduce((grupos, historia) => {
@@ -18,34 +19,41 @@ function PanelHistorias({ historias, onHistoriaActualizada, onBack }) {
   let numeroHistoria = 0
 
   return (
-    <section className="panel-section panel-historias-section">
-      <div className="container">
-        <button className="btn btn-outline panel-back-btn" onClick={onBack}>
+    <section className="adm-section">
+      <div className="adm-container">
+        <button type="button" className="adm-btn adm-btn--ghost adm-btn--sm adm-back" onClick={onBack}>
           ← Volver
         </button>
 
-        <div className="panel-header">
-          <h2>Historias de usuario</h2>
-          <p>Backlog real del proyecto, agrupado por fase.</p>
+        <div className="adm-page-head">
+          <span className="adm-eyebrow">Backlog</span>
+          <h2 className="adm-page-title">Historias de usuario</h2>
+          <p className="adm-page-sub">Backlog real del proyecto, agrupado por fase.</p>
         </div>
 
         {lista.length === 0 ? (
-          <div className="panel-empty-card">
-            <p>No hay historias cargadas para este proyecto.</p>
-            <button className="btn btn-primary" onClick={onBack}>
+          <div className="adm-state adm-state--box">
+            <div>
+              <p className="adm-state__title">No hay historias cargadas</p>
+              <p>Todavía no se generó el backlog de este proyecto.</p>
+            </div>
+            <button type="button" className="adm-btn adm-btn--primary" onClick={onBack}>
               Volver al detalle
             </button>
           </div>
         ) : (
-          <div className="panel-backlog">
+          <div>
             {Object.entries(grupos).map(([fase, items]) => (
-              <section key={fase} className="panel-backlog-fase">
-                <h3>{fase}</h3>
-                <div className="panel-backlog-grid">
+              <section key={fase} className="adm-phase">
+                <div className="adm-phase__head">
+                  <h3 className="adm-phase__name">{fase}</h3>
+                  <span className="adm-phase__count">{items.length}</span>
+                </div>
+                <div className="adm-stories">
                   {items.map((historia) => {
                     numeroHistoria += 1
                     return (
-                      <article className="card panel-historia-card" key={historia.id}>
+                      <article className="adm-story" key={historia.id}>
                         {historiaEnEdicion === historia.id ? (
                           <HistoriaEditor
                             historia={historia}
@@ -58,13 +66,15 @@ function PanelHistorias({ historias, onHistoriaActualizada, onBack }) {
                         ) : (
                           <>
                             <HistoriaContenido historia={historia} numero={numeroHistoria} />
-                            <button
-                              className="btn btn-outline historia-editar-btn"
-                              type="button"
-                              onClick={() => setHistoriaEnEdicion(historia.id)}
-                            >
-                              Editar historia
-                            </button>
+                            <div className="adm-story__foot">
+                              <button
+                                type="button"
+                                className="adm-btn adm-btn--ghost adm-btn--sm"
+                                onClick={() => setHistoriaEnEdicion(historia.id)}
+                              >
+                                Editar historia
+                              </button>
+                            </div>
                           </>
                         )}
                       </article>

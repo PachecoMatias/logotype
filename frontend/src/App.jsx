@@ -122,13 +122,17 @@ function App() {
 
   if (view === 'panel-solicitudes') {
     return (
-      <div className="configurator-standalone panel-standalone">
-        <header className="configurator-topbar">
-          <div className="container configurator-topbar-inner">
-            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
+      <div className="adm-shell">
+        <header className="adm-topbar">
+          <div className="adm-container adm-topbar__inner">
+            <button type="button" className="adm-wordmark" onClick={handleBackHome}>
               LOGO<span>TYPE</span>
             </button>
-            <button className="configurator-close" onClick={handleBackHome}>
+            <button
+              type="button"
+              className="adm-btn adm-btn--ghost adm-btn--sm adm-topbar__exit"
+              onClick={handleBackHome}
+            >
               ✕ Cerrar
             </button>
           </div>
@@ -140,13 +144,17 @@ function App() {
 
   if (view === 'panel-detalle') {
     return (
-      <div className="configurator-standalone panel-standalone">
-        <header className="configurator-topbar">
-          <div className="container configurator-topbar-inner">
-            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
+      <div className="adm-shell">
+        <header className="adm-topbar">
+          <div className="adm-container adm-topbar__inner">
+            <button type="button" className="adm-wordmark" onClick={handleBackHome}>
               LOGO<span>TYPE</span>
             </button>
-            <button className="configurator-close" onClick={handleBackHome}>
+            <button
+              type="button"
+              className="adm-btn adm-btn--ghost adm-btn--sm adm-topbar__exit"
+              onClick={handleBackHome}
+            >
               ✕ Cerrar
             </button>
           </div>
@@ -165,13 +173,17 @@ function App() {
 
   if (view === 'panel-historias') {
     return (
-      <div className="configurator-standalone panel-standalone">
-        <header className="configurator-topbar">
-          <div className="container configurator-topbar-inner">
-            <button className="logo configurator-topbar-logo" onClick={handleBackHome}>
+      <div className="adm-shell">
+        <header className="adm-topbar">
+          <div className="adm-container adm-topbar__inner">
+            <button type="button" className="adm-wordmark" onClick={handleBackHome}>
               LOGO<span>TYPE</span>
             </button>
-            <button className="configurator-close" onClick={handleBackHome}>
+            <button
+              type="button"
+              className="adm-btn adm-btn--ghost adm-btn--sm adm-topbar__exit"
+              onClick={handleBackHome}
+            >
               ✕ Cerrar
             </button>
           </div>
@@ -189,7 +201,7 @@ function App() {
 
   if (view === 'panel-tablero') {
     return (
-      <div className="app-panel-wrapper">
+      <div className="adm-shell adm-shell--board">
         <PanelTablero
           projectId={selectedProjectId}
           historias={selectedBacklog}

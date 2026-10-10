@@ -8,7 +8,7 @@ function StatusBadge({ estado }) {
   const clase = labels[estado] ? estado : 'nuevo'
   const label = labels[estado] || estado || 'Desconocido'
 
-  return <span className={`status ${clase}`}>{label}</span>
+  return <span className={`adm-badge adm-badge--${clase}`}>{label}</span>
 }
 
 export default StatusBadge

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import StatusBadge from './StatusBadge.jsx'
 import { apiRequest } from '../../utils/api.js'
 import { adaptarHistorias } from '../../utils/backlog.js'
+import '../../styles/panel.css'
 
 function formatLabel(key) {
   return key
@@ -12,13 +13,13 @@ function formatLabel(key) {
 
 function ValorCampo({ valor }) {
   if (valor === null || valor === undefined || valor === '') {
-    return <span className="panel-campo-vacio">—</span>
+    return <span className="adm-empty-field">—</span>
   }
 
   if (Array.isArray(valor)) {
-    if (valor.length === 0) return <span className="panel-campo-vacio">—</span>
+    if (valor.length === 0) return <span className="adm-empty-field">—</span>
     return (
-      <ul className="panel-lista-valores">
+      <ul className="adm-list-values">
         {valor.map((item, i) => (
           <li key={i}>
             {typeof item === 'object' && item !== null ? (
@@ -46,18 +47,24 @@ function ValorCampo({ valor }) {
 function SeccionPayload({ titulo, datos }) {
   const entradas = Object.entries(datos || {})
 
+  const lista = (
+    <dl className="adm-dl">
+      {entradas.map(([key, value]) => (
+        <div className="adm-dl__row" key={key}>
+          <dt>{formatLabel(key)}</dt>
+          <dd><ValorCampo valor={value} /></dd>
+        </div>
+      ))}
+    </dl>
+  )
+
+  if (!titulo) return lista
+
   return (
-    <div className="panel-payload-seccion">
-      {titulo && <h4>{formatLabel(titulo)}</h4>}
-      <dl className="panel-payload-lista">
-        {entradas.map(([key, value]) => (
-          <div className="panel-payload-item" key={key}>
-            <dt>{formatLabel(key)}</dt>
-            <dd><ValorCampo valor={value} /></dd>
-          </div>
-        ))}
-      </dl>
-    </div>
+    <section className="adm-spec__section">
+      <h4 className="adm-spec__label">{formatLabel(titulo)}</h4>
+      {lista}
+    </section>
   )
 }
 
@@ -65,26 +72,41 @@ function AnalisisIA({ analisis }) {
   if (!analisis) return null
 
   return (
-    <div className={`panel-analisis ${analisis.viable ? 'panel-analisis-ok' : 'panel-analisis-no'}`}>
-      <div className="panel-analisis-top">
-        <h3>Análisis de IA</h3>
-        <span className={`status ${analisis.viable ? 'open' : 'closed'}`}>
+    <div className={`adm-ai ${analisis.viable ? 'adm-ai--ok' : 'adm-ai--no'}`}>
+      <div className="adm-ai__head">
+        <h3 className="adm-ai__title">Análisis de IA</h3>
+        <span className={`adm-verdict ${analisis.viable ? 'adm-verdict--ok' : 'adm-verdict--no'}`}>
           {analisis.viable ? 'Viable' : 'No viable'}
         </span>
       </div>
-      <p><strong>Completitud:</strong> {analisis.completitud || '—'}</p>
-      {analisis.campos_faltantes && analisis.campos_faltantes.length > 0 && (
-        <div>
-          <strong>Campos faltantes:</strong>
-          <ul className="panel-lista-valores">
-            {analisis.campos_faltantes.map((c, i) => <li key={i}>{c}</li>)}
-          </ul>
+      <div className="adm-ai__body">
+        <div className="adm-ai__block">
+          <span className="adm-ai__block-label">Completitud</span>
+          <span className={`adm-badge ${analisis.completitud === 'completo' ? 'adm-badge--planificado' : 'adm-badge--nuevo'}`}>
+            {analisis.completitud || '—'}
+          </span>
         </div>
-      )}
-      {analisis.observaciones && <p><strong>Observaciones:</strong> {analisis.observaciones}</p>}
-      {analisis.mensaje_para_cliente && (
-        <p><strong>Mensaje para el cliente:</strong> {analisis.mensaje_para_cliente}</p>
-      )}
+        {analisis.campos_faltantes && analisis.campos_faltantes.length > 0 && (
+          <div className="adm-ai__block">
+            <span className="adm-ai__block-label">Campos faltantes</span>
+            <ul className="adm-list-values">
+              {analisis.campos_faltantes.map((c, i) => <li key={i}>{c}</li>)}
+            </ul>
+          </div>
+        )}
+        {analisis.observaciones && (
+          <div className="adm-ai__block">
+            <span className="adm-ai__block-label">Observaciones</span>
+            <p className="adm-ai__text">{analisis.observaciones}</p>
+          </div>
+        )}
+        {analisis.mensaje_para_cliente && (
+          <div className="adm-ai__block">
+            <span className="adm-ai__block-label">Mensaje para el cliente</span>
+            <p className="adm-ai__note">{analisis.mensaje_para_cliente}</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -189,39 +211,49 @@ function PanelDetalle({
   const tieneBacklog = Array.isArray(historias) && historias.length > 0
 
   return (
-    <section className="panel-section">
-      <div className="container">
-        <button className="btn btn-outline panel-back-btn" onClick={onBack}>
+    <section className="adm-section">
+      <div className="adm-container">
+        <button type="button" className="adm-btn adm-btn--ghost adm-btn--sm adm-back" onClick={onBack}>
           ← Volver
         </button>
 
-        {loading && <p className="panel-state-msg panel-state-msg-on-dark">Cargando solicitud...</p>}
+        {loading && <p className="adm-state">Cargando solicitud...</p>}
 
         {!loading && error && (
-          <p className="panel-state-msg panel-state-error panel-state-msg-on-dark">Ocurrió un error: {error}</p>
+          <p className="adm-state adm-state--error">Ocurrió un error: {error}</p>
         )}
 
         {!loading && !error && proyecto && (
           <>
-            <div className="panel-header panel-detalle-header">
-              <h2>{proyecto.payload?.empresa?.nombreEmpresa || `Solicitud #${proyecto.id}`}</h2>
+            <div className="adm-detail-head">
+              <div className="adm-page-head">
+                <span className="adm-eyebrow">Detalle de solicitud</span>
+                <h2 className="adm-page-title">
+                  {proyecto.payload?.empresa?.nombreEmpresa || `Solicitud #${proyecto.id}`}
+                </h2>
+              </div>
               <StatusBadge estado={proyecto.estado} />
             </div>
 
-            <div className="panel-detalle-grid">
+            <div className="adm-spec">
               {Object.entries(proyecto.payload || {}).map(([seccion, datos]) => (
-                <div className="card panel-payload-card" key={seccion}>
-                  <SeccionPayload titulo={seccion} datos={datos} />
-                </div>
+                <SeccionPayload key={seccion} titulo={seccion} datos={datos} />
               ))}
             </div>
 
             {proyecto.estado === 'nuevo' && (
-              <div className="panel-accion-box">
-                <button className="btn btn-primary" onClick={handleAnalizar} disabled={analizando}>
-                  {analizando ? 'Analizando...' : 'Analizar con IA'}
-                </button>
-                {errorAnalisis && <p className="panel-state-msg panel-state-error">{errorAnalisis}</p>}
+              <div className="adm-actions">
+                <div className="adm-actions__stack">
+                  <button
+                    type="button"
+                    className="adm-btn adm-btn--primary"
+                    onClick={handleAnalizar}
+                    disabled={analizando}
+                  >
+                    {analizando ? 'Analizando…' : 'Analizar con IA'}
+                  </button>
+                  {errorAnalisis && <p className="adm-alert adm-alert--error">{errorAnalisis}</p>}
+                </div>
               </div>
             )}
 
@@ -230,27 +262,35 @@ function PanelDetalle({
             )}
 
             {proyecto.estado === 'analizado' && !tieneBacklog && (
-              <div className="panel-accion-box">
-                <button className="btn btn-primary" onClick={handleGenerarBacklog} disabled={generandoBacklog}>
-                  {generandoBacklog ? 'Generando...' : 'Generar backlog'}
-                </button>
-                {errorBacklog && <p className="panel-state-msg panel-state-error">{errorBacklog}</p>}
+              <div className="adm-actions">
+                <div className="adm-actions__stack">
+                  <button
+                    type="button"
+                    className="adm-btn adm-btn--primary"
+                    onClick={handleGenerarBacklog}
+                    disabled={generandoBacklog}
+                  >
+                    {generandoBacklog ? 'Generando…' : 'Generar backlog'}
+                  </button>
+                  {errorBacklog && <p className="adm-alert adm-alert--error">{errorBacklog}</p>}
+                </div>
               </div>
             )}
 
             {proyecto.estado === 'planificado' && !tieneBacklog && generandoBacklog && (
-              <p className="panel-state-msg">Cargando backlog...</p>
+              <p className="adm-state">Cargando backlog...</p>
             )}
 
             {proyecto.estado === 'planificado' && !tieneBacklog && errorBacklog && (
-              <p className="panel-state-msg panel-state-error">{errorBacklog}</p>
+              <p className="adm-alert adm-alert--error">{errorBacklog}</p>
             )}
+
             {tieneBacklog && (
-              <div className="panel-accion-box panel-action-group">
-                <button className="btn btn-primary" onClick={() => onViewBoard(projectId)}>
+              <div className="adm-actions">
+                <button type="button" className="adm-btn adm-btn--primary" onClick={() => onViewBoard(projectId)}>
                   Ver tablero
                 </button>
-                <button className="btn btn-outline" onClick={() => onViewStories(projectId)}>
+                <button type="button" className="adm-btn adm-btn--ghost" onClick={() => onViewStories(projectId)}>
                   Ver historias de usuario
                 </button>
               </div>

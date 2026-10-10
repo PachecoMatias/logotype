@@ -13,16 +13,15 @@ function ProjectCard({ project, onClick }) {
     : '—'
 
   return (
-    <button className="card panel-project-card" onClick={() => onClick(project.id)}>
-      <div className="panel-project-card-top">
-        <h3>{empresa.nombreEmpresa || 'Empresa sin nombre'}</h3>
+    <button type="button" className="adm-row" onClick={() => onClick(project.id)}>
+      <span className="adm-row__code">#{project.id}</span>
+      <span className="adm-row__empresa">{empresa.nombreEmpresa || 'Empresa sin nombre'}</span>
+      <span className="adm-row__contact">{empresa.contacto || 'Sin contacto registrado'}</span>
+      <span className="adm-row__type">{proyecto.tipoProyecto || 'Tipo no especificado'}</span>
+      <span className="adm-row__date">{fecha}</span>
+      <span className="adm-row__badge">
         <StatusBadge estado={project.estado} />
-      </div>
-      <p className="panel-project-card-contact">{empresa.contacto || 'Sin contacto registrado'}</p>
-      <div className="panel-project-card-meta">
-        <span>{proyecto.tipoProyecto || 'Tipo no especificado'}</span>
-        <span>{fecha}</span>
-      </div>
+      </span>
     </button>
   )
 }
