@@ -26,6 +26,8 @@ const validStory = {
   rol_sugerido: 'Backend',
 };
 
+const boardColumns = ['Backlog', 'To Do', 'In Progress', 'In Code Review', 'In QA', 'Done'];
+
 async function insertStory() {
   const projectResponse = await request(app)
     .post('/api/proyectos')
@@ -82,7 +84,56 @@ test('backlog response includes each persisted immutable story id', async () => 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
     success: true,
-    data: [{ id, ...validStory }],
+    data: [{ id, ...validStory, columnaTablero: 'Backlog' }],
+  });
+});
+
+test('PATCH /api/historias/:id/columna persists every supported board column', async () => {
+  const { id } = await insertStory();
+
+  for (const columnaTablero of boardColumns) {
+    const response = await request(app)
+      .patch(`/api/historias/${id}/columna`)
+      .send({ columna_tablero: columnaTablero });
+    const [rows] = await pool.execute('SELECT columna_tablero FROM historias WHERE id = ?', [id]);
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.success, true);
+    assert.equal(response.body.data.columnaTablero, columnaTablero);
+    assert.equal(rows[0].columna_tablero, columnaTablero);
+  }
+});
+
+test('PATCH /api/historias/:id/columna rejects invalid bodies and keeps story 404 semantics', async (t) => {
+  const { id } = await insertStory();
+
+  for (const body of [
+    {},
+    { columna_tablero: 'Blocked' },
+    { columnaTablero: 'Done' },
+    { columna_tablero: 'Done', extra: true },
+  ]) {
+    await t.test(JSON.stringify(body), async () => {
+      const response = await request(app).patch(`/api/historias/${id}/columna`).send(body);
+
+      assert.equal(response.status, 400);
+      assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+    });
+  }
+
+  const invalid = await request(app)
+    .patch('/api/historias/not-an-id/columna')
+    .send({ columna_tablero: 'Done' });
+  const unknown = await request(app)
+    .patch('/api/historias/4294967295/columna')
+    .send({ columna_tablero: 'Done' });
+
+  assert.equal(invalid.status, 400);
+  assert.equal(invalid.body.error.code, 'VALIDATION_ERROR');
+  assert.equal(unknown.status, 404);
+  assert.deepEqual(unknown.body, {
+    success: false,
+    error: { code: 'STORY_NOT_FOUND', message: 'Story not found' },
   });
 });
 
@@ -106,6 +157,7 @@ test('PATCH /api/historias/:id updates a partial story and returns the complete 
       prioridad: 'Media',
       estimacion_fibonacci: 8,
       rol_sugerido: 'Project Manager',
+      columnaTablero: 'Backlog',
     },
   });
 });

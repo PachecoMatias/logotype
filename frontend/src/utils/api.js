@@ -40,3 +40,11 @@ export function actualizarHistoria(id, cambios) {
     body: JSON.stringify(cambios),
   })
 }
+
+export function actualizarColumnaHistoria(id, columnaTablero) {
+  return apiRequest(`/api/historias/${id}/columna`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ columna_tablero: columnaTablero }),
+  })
+}

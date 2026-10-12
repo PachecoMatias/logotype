@@ -3,7 +3,7 @@ import { persistedProjectBacklogStorySchema } from '../schemas/project-backlog.s
 
 const storyColumns = `
   id, fase, prioridad, historia_usuario, descripcion, criterios_aceptacion,
-  alcance_tecnico, estimacion_fibonacci, rol_sugerido
+  alcance_tecnico, estimacion_fibonacci, rol_sugerido, columna_tablero
 `;
 const editableColumns = new Set([
   'historia_usuario',
@@ -30,6 +30,7 @@ function mapStory(row) {
     alcance_tecnico: row.alcance_tecnico,
     estimacion_fibonacci: row.estimacion_fibonacci,
     rol_sugerido: row.rol_sugerido,
+    columnaTablero: row.columna_tablero,
   });
 
   if (!result.success) {
@@ -79,6 +80,14 @@ async function updateById(configuration, id, changes) {
     );
 
     await connection.execute(`UPDATE historias SET ${assignments} WHERE id = ?`, [...values, id]);
+
+    return findByIdWithConnection(connection, id);
+  });
+}
+
+async function updateColumnById(configuration, id, column) {
+  return withTransaction(configuration, async (connection) => {
+    await connection.execute('UPDATE historias SET columna_tablero = ? WHERE id = ?', [column, id]);
 
     return findByIdWithConnection(connection, id);
   });
@@ -147,4 +156,9 @@ async function persistGeneratedBacklog(configuration, projectId, stories) {
   });
 }
 
-export const historiasRepository = { findByProjectId, persistGeneratedBacklog, updateById };
+export const historiasRepository = {
+  findByProjectId,
+  persistGeneratedBacklog,
+  updateById,
+  updateColumnById,
+};

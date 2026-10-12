@@ -35,15 +35,28 @@ function App() {
     }))
   }, [])
 
-  const handleHistoriaActualizada = useCallback((projectId, actualizada) => {
-    setBacklogsByProject((current) => ({
-      ...current,
-      [projectId]: current[projectId]?.map((historia) =>
-        historia.id === actualizada.id
-          ? { ...historia, ...actualizada, fase: historia.fase }
-          : historia
-      ),
-    }))
+  const handleHistoriaActualizada = useCallback((projectId, actualizada, columnaEsperada) => {
+    setBacklogsByProject((current) => {
+      const historias = current[projectId]
+      if (!historias) return current
+
+      const historiaActual = historias.find((historia) => historia.id === actualizada.id)
+      if (
+        columnaEsperada !== undefined &&
+        historiaActual?.columnaTablero !== columnaEsperada
+      ) {
+        return current
+      }
+
+      return {
+        ...current,
+        [projectId]: historias.map((historia) =>
+          historia.id === actualizada.id
+            ? { ...historia, ...actualizada, fase: historia.fase }
+            : historia
+        ),
+      }
+    })
   }, [])
 
   const handleNavigate = (id) => {
@@ -205,8 +218,8 @@ function App() {
         <PanelTablero
           projectId={selectedProjectId}
           historias={selectedBacklog}
-          onHistoriaActualizada={(historia) =>
-            handleHistoriaActualizada(selectedProjectId, historia)
+          onHistoriaActualizada={(historia, columnaEsperada) =>
+            handleHistoriaActualizada(selectedProjectId, historia, columnaEsperada)
           }
           onBack={() => setView('panel-detalle')}
         />

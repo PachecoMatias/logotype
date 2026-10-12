@@ -512,6 +512,10 @@ test('backlog persists a strict generated result and returns the stored cache on
     const first = await request(app)
       .post(`/api/proyectos/${project.id}/backlog`)
       .send({ ignored: true });
+    await pool.execute(
+      'UPDATE historias SET columna_tablero = ? WHERE proyecto_id = ? AND id = ?',
+      ['In QA', project.id, first.body.data[0].id],
+    );
     const second = await request(app).post(`/api/proyectos/${project.id}/backlog`);
     const [stories] = await pool.execute(
       'SELECT id FROM historias WHERE proyecto_id = ? ORDER BY id ASC',
@@ -523,12 +527,16 @@ test('backlog persists a strict generated result and returns the stored cache on
     const persistedBacklog = validBacklog.map((story, index) => ({
       id: stories[index].id,
       ...story,
+      columnaTablero: 'Backlog',
     }));
+    const cachedBacklog = persistedBacklog.map((story, index) =>
+      index === 0 ? { ...story, columnaTablero: 'In QA' } : story,
+    );
 
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
     assert.deepEqual(first.body, { success: true, data: persistedBacklog });
-    assert.deepEqual(second.body, { success: true, data: persistedBacklog });
+    assert.deepEqual(second.body, { success: true, data: cachedBacklog });
     assert.equal(providerCalls, 1);
     assert.equal(stories.length, 12);
     assert.equal(projects[0].estado, 'planificado');
