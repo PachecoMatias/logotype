@@ -82,7 +82,7 @@ export function createGeminiGateway({
   getConfiguration = parseGeminiEnvironment,
   captureExchange,
 } = {}) {
-  async function generateStructuredContent(prompt, responseJsonSchema) {
+  async function generateStructuredContent(prompt, responseJsonSchema, generationConfig = {}) {
     let client;
     let model;
 
@@ -97,6 +97,7 @@ export function createGeminiGateway({
     const config = {
       responseMimeType: 'application/json',
       responseJsonSchema,
+      ...generationConfig,
     };
     let response;
 
@@ -130,7 +131,10 @@ export function createGeminiGateway({
 
   return {
     async generateProjectAnalysis(prompt) {
-      return generateStructuredContent(prompt, projectAnalysisJsonSchema);
+      return generateStructuredContent(prompt, projectAnalysisJsonSchema, {
+        maxOutputTokens: 16384,
+        thinkingConfig: { thinkingBudget: 1024 },
+      });
     },
 
     async generateProjectBacklog(prompt) {

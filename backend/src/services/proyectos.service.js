@@ -1,4 +1,5 @@
 import { parseEnvironment } from '../config/env.js';
+import { companyContext } from '../config/company-context.js';
 import { AppError } from '../errors/app-error.js';
 import { geminiGateway } from '../integrations/gemini.gateway.js';
 import { buildProjectBacklogPrompt } from '../prompts/project-backlog.prompt.js';
@@ -7,6 +8,7 @@ import { historiasRepository } from '../repositories/historias.repository.js';
 import { proyectosRepository } from '../repositories/proyectos.repository.js';
 import { projectAnalysisSchema } from '../schemas/project-analysis.schema.js';
 import { projectBacklogSchema } from '../schemas/project-backlog.schema.js';
+import { calcularSenales } from './viability-signals.js';
 
 function createInternalError() {
   return new AppError(500, 'INTERNAL_ERROR', 'Internal server error');
@@ -130,15 +132,21 @@ export function createProyectosService({
       throw new AppError(404, 'PROJECT_NOT_FOUND', 'Project not found');
     }
 
-    if (project.estado === 'analizado' && project.analisisIa !== null) {
+    if (project.analisisIa?.version === 2) {
       return project.analisisIa;
     }
 
-    if (project.estado !== 'nuevo' || project.analisisIa !== null) {
+    if (project.analisisIa !== null) {
+      const storedStories = await storyRepository.findByProjectId(configuration, id);
+      if (storedStories.length > 0) {
+        return project.analisisIa;
+      }
+    } else if (project.estado !== 'nuevo') {
       throw createInternalError();
     }
 
-    const prompt = buildPrompt(project.payload);
+    const signals = calcularSenales(project.payload, companyContext);
+    const prompt = buildPrompt(project.payload, companyContext, signals);
     let analysis;
 
     try {
@@ -154,7 +162,7 @@ export function createProyectosService({
         throw new Error('Gemini returned an invalid analysis');
       }
 
-      analysis = result.data;
+      analysis = { version: 2, ...result.data, senales: signals };
     } catch {
       throw createAnalysisFailure();
     }
@@ -167,8 +175,13 @@ export function createProyectosService({
 
     const winningProject = await repository.findById(configuration, id);
 
-    if (winningProject?.estado === 'analizado' && winningProject.analisisIa !== null) {
+    if (winningProject?.analisisIa?.version === 2) {
       return winningProject.analisisIa;
+    }
+
+    if (winningProject?.analisisIa !== null) {
+      const storedStories = await storyRepository.findByProjectId(configuration, id);
+      if (storedStories.length > 0) return winningProject.analisisIa;
     }
 
     throw createInternalError();

@@ -2,7 +2,16 @@
 
 ## Objective
 
-Persist each story's Kanban column so the board retains its state after reloads and across browser sessions.
+Deliver the three-unit administrator workflow: persisted Kanban columns, evidence-based project analysis, and administrator-controlled project viability before backlog generation.
+
+Branch: `feat/admin-workflow`. Delivery strategy: `ask-on-risk`, with three work-unit commits across the feature. Test runners: backend Vitest focused files and frontend Vite build to temporary output.
+
+## Specs
+
+- **S1 — Persisted board columns (Unit 1).** Preserve the completed behavior recorded in ADMIN-1: dedicated column persistence, camelCase API mapping, optimistic ordered moves, and guarded rollback.
+- **S2 — Three-layer analysis, Part A.** Implement: "1) señales objetivas calculadas por código; 2) evaluación por criterios hecha por Gemini con contexto de la empresa, SIN veredicto global; 3) decisión humana del administrador (VIABLE / NO_VIABLE) que habilita o bloquea la generación del backlog." Part A covers the editable company context, defensive `calcularSenales(payload, contexto)`, the exact requested budget/deadline/size/security mappings, a strict v2 Zod response with exactly the six criterion IDs (`completitud`, `ajuste_servicios`, `alcance_vs_plazo`, `presupuesto_vs_alcance`, `capacidad_equipo`, `riesgos_tecnicos`), the existing standalone `BEGIN/END_UNTRUSTED_PROJECT_PAYLOAD_JSON` framing, a simple provider JSON schema, v2 caching compatibility, and the ordered analysis presentation. Preserve the visible copy exactly: "Opinión de la IA · orientativa", "calculado por reglas", "Opinión de la IA, orientativa. Decide el administrador.", and "Re-analizar con el nuevo criterio". Store `analisisIa = { version: 2, ...respuesta validada, senales }`.
+- **S3 — Administrator decision, Part B.** Add migration 006 with nullable `decision_viabilidad`, `decision_motivo`, and `decision_fecha`; backfill `planificado` projects to `VIABLE`; use migration 004 recovery/checksum conventions; do not fix the known migration 005 rollback issue; and stop if 006 recovery requires more than approximately 150 new lines in `migrate.js`. Add `PUT /api/proyectos/:id/decision` with `{ decision, motivo }`, v2-analysis and no-backlog guards, the NO_VIABLE 10-character reason rule, response mapping, analysis regeneration only "sin decisión", and backlog generation blocked unless decision is `VIABLE`. Preserve visible copy exactly: "La IA no decide: la decisión es del administrador", "Marcar como viable", "Marcar como no viable", and "Requiere marcar el proyecto como viable".
+- **S4 — Verification and delivery.** Mock Gemini in automated tests. Use only focused tests, test migration 006 up/down against the test database, make exactly one commit after Part A and one after Part B, never commit `frontend/dist`, never push, and report touched files, exact checks, the complete bounded real-Gemini analysis (at most two calls) when credentials/runtime make it available, plus manual verification steps.
 
 ## Problem and Why
 
@@ -46,6 +55,16 @@ Dedicated story-column validation and endpoint wiring, repository persistence an
   - Checks: RED observed before route/mapping implementation; historias integration tests passed 20/20; the exact generated/cached backlog test passed 1/1; touched backend ESLint and Prettier checks passed; frontend temporary-output production build passed with 439 modules; parent reran historias 20/20; `git diff --check` passed; `frontend/dist` remained untouched. The broader proyectos file was not used as the final check because a pre-existing concurrent-analysis test stalled before reaching backlog coverage.
   - Commit: this work-unit commit, `feat(admin): persist Kanban story columns`; exact hash is mirrored in Engram after creation.
   - Review: medium, `under_budget`; native review is deferred within the current slice.
+- [x] **ADMIN-2A — Build evidence-based v2 analysis**
+  - Specs: S2, S4.
+  - Route: inline; no writer trigger applies. The parent owns prompt/schema/service/gateway/tests and the panel presentation as one coherent behavior.
+  - Checks: RED observed for missing signal modules and for missing-context deadline compatibility; unit tests passed 11/11; focused analysis integration tests passed 7/7; frontend temporary-output build passed with 440 modules; touched backend ESLint and `git diff --check` passed; independent verification found one blocker, which was corrected and rechecked; `frontend/dist` remained untouched. Two bounded real Gemini calls were used; `maxOutputTokens` is 16384 and `thinkingBudget` is 1024 for analysis only.
+  - Commit: this Part A work-unit commit, `feat(admin): add evidence-based project analysis`; exact hash is mirrored in Engram after creation.
+  - Review: high risk item 3 because the persisted/API analysis contract changes from legacy to v2; independent verification passed after one scoped correction.
+- [ ] **ADMIN-2B — Add administrator viability decision**
+  - Specs: S3, S4.
+  - Route: inline; no writer trigger applies. Migration, API gate, focused tests, and decision UI form one rollback-safe work unit.
+  - Commit: pending; required after focused Part B verification.
 
 ## Progress
 
@@ -57,4 +76,11 @@ Dedicated story-column validation and endpoint wiring, repository persistence an
 
 ## Next Step
 
-Unit 1 is complete. Units 2 and 3 await separate user scope; push and PR creation remain user decisions.
+Implement ADMIN-2A test-first, verify it, commit Part A, then implement and commit ADMIN-2B. Unit 3 remains outside this scope; push and PR creation remain user decisions.
+
+## Log
+
+- **L1 — Original Unit 1 request.** Implement persisted Kanban story columns as the first admin-workflow unit on `feat/admin-workflow`.
+- **L2 — 2026-10-12 user authorization.** "Usá ODD (no SDD). Avanzá directo, sin pedirme confirmación de proceso. Misma rama feat/admin-workflow, unidad 2 de 3. Verificá que la unidad 1 esté commiteada; si no, frená y avisame. Sin push. No commitear frontend/dist. Dos commits: uno al terminar la PARTE A y otro al terminar la PARTE B." The authorized objective is the three-layer analysis and administrator decision described in S2-S4, including the exact API, migration, UI, test, Gemini-call, and reporting constraints in the user request.
+- **L3 — Starting evidence.** Unit 1 is committed at `ce338eddfbae8745c48b804e29021bf7f3f51e0a`; the worktree was clean on `feat/admin-workflow`. CodeGraph initialization was attempted but the upstream executable is unavailable, so bounded repository mapping was used. Forecast for Unit 2 exceeds 400 authored lines; the user fixed the delivery boundary as exactly two commits on the existing feature branch and prohibited push.
+- **L4 — Part A evidence.** Added trusted company context, defensive deterministic signals, strict/provider-simple v2 analysis schemas, legacy-compatible regeneration and caching, analysis-only Gemini output/thinking limits, and the ordered plain-text panel presentation. The first RED failed because the context/signals modules did not exist. Independent verification then found that a requested deadline with missing company duration context incorrectly produced `no`; a focused RED reproduced it, the implementation now returns `null`, and the verifier recheck passed. Focused unit, integration, build, lint, diff, and `frontend/dist` checks passed. Two real Gemini calls exercised the requested 14-function sample; no further live call is permitted in this unit.

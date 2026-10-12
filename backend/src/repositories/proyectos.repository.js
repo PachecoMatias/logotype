@@ -1,5 +1,5 @@
 import { getPool } from '../config/database.js';
-import { projectAnalysisSchema } from '../schemas/project-analysis.schema.js';
+import { storedProjectAnalysisSchema } from '../schemas/project-analysis.schema.js';
 
 function parsePayload(payload) {
   return typeof payload === 'string' ? JSON.parse(payload) : payload;
@@ -12,7 +12,7 @@ function parseStoredAnalysis(analysis) {
 
   try {
     const parsedAnalysis = typeof analysis === 'string' ? JSON.parse(analysis) : analysis;
-    const result = projectAnalysisSchema.safeParse(parsedAnalysis);
+    const result = storedProjectAnalysisSchema.safeParse(parsedAnalysis);
 
     if (!result.success) {
       throw new Error('Stored project analysis violates the persistence invariant');
@@ -76,7 +76,15 @@ async function storeAnalysisIfPending(configuration, id, analysis) {
     `
       UPDATE proyectos
       SET analisis_ia = CAST(? AS JSON), estado = 'analizado'
-      WHERE id = ? AND estado = 'nuevo' AND analisis_ia IS NULL
+       WHERE id = ?
+         AND estado IN ('nuevo', 'analizado')
+         AND (
+           analisis_ia IS NULL
+           OR JSON_EXTRACT(analisis_ia, '$.version') IS NULL
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM historias WHERE historias.proyecto_id = proyectos.id
+         )
     `,
     [JSON.stringify(analysis), id],
   );

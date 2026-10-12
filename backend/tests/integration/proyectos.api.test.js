@@ -5,8 +5,11 @@ import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 
 import { app } from '../../src/app.js';
+import { companyContext } from '../../src/config/company-context.js';
 import { closePool } from '../../src/config/database.js';
 import { proyectosRepository } from '../../src/repositories/proyectos.repository.js';
+import { projectCriterionIds } from '../../src/schemas/project-analysis.schema.js';
+import { calcularSenales } from '../../src/services/viability-signals.js';
 import {
   closeMigrationTestPool,
   createTestPool,
@@ -21,11 +24,32 @@ import {
 let pool;
 
 const validAnalysis = {
-  viable: true,
-  completitud: 'completo',
-  campos_faltantes: [],
-  observaciones: 'The submitted scope is internally consistent.',
-  mensaje_para_cliente: 'The project can proceed to planning.',
+  lectura_general:
+    'El pedido tiene un objetivo concreto.\n\nLas señales permiten evaluar el alcance.',
+  nivel_de_riesgo: 'medio',
+  razon_nivel_riesgo: 'El alcance requiere validación.',
+  criterios: projectCriterionIds.map((id) => ({
+    id,
+    estado: 'cumple',
+    justificacion: `El criterio ${id} tiene datos.`,
+  })),
+  fortalezas: [
+    { titulo: 'Objetivo', detalle: 'El objetivo está declarado.' },
+    { titulo: 'Plataforma', detalle: 'La plataforma está identificada.' },
+  ],
+  debilidades: [
+    { titulo: 'Detalle', detalle: 'Faltan reglas.' },
+    { titulo: 'Alcance', detalle: 'Falta priorización.' },
+  ],
+  riesgos: [
+    { titulo: 'Alcance', detalle: 'Puede crecer.', impacto: 'medio', mitigacion: 'Priorizar.' },
+    { titulo: 'Plazo', detalle: 'Puede ajustarse.', impacto: 'bajo', mitigacion: 'Planificar.' },
+    { titulo: 'Datos', detalle: 'Faltan detalles.', impacto: 'alto', mitigacion: 'Relevar.' },
+  ],
+  informacion_faltante: [{ dato: 'Reglas', por_que_importa: 'Permiten estimar.' }],
+  condiciones_para_avanzar: ['Priorizar el alcance.'],
+  preguntas_para_el_cliente: ['¿Qué funciones son prioritarias?'],
+  supuestos: ['Se supone disponibilidad del referente.'],
 };
 
 const validBacklog = Array.from({ length: 12 }, (_, index) => ({
@@ -58,6 +82,10 @@ async function importGeminiGateway() {
 
 function analysisText(analysis = validAnalysis) {
   return JSON.stringify(analysis);
+}
+
+function storedAnalysis(payload = createValidProjectPayload(), analysis = validAnalysis) {
+  return { version: 2, ...analysis, senales: calcularSenales(payload, companyContext) };
 }
 
 async function createProjectForAnalysis(payload = createValidProjectPayload()) {
@@ -190,9 +218,10 @@ test('POST /api/proyectos/:id/analizar maps stored JSON and atomically persists 
       project.id,
     ]);
 
-    assert.deepEqual(response.body, { success: true, data: validAnalysis });
+    const expected = storedAnalysis(project.payload);
+    assert.deepEqual(response.body, { success: true, data: expected });
     assert.equal(providerCalls, 1);
-    assert.deepEqual(rows[0], { estado: 'analizado', analisis_ia: validAnalysis });
+    assert.deepEqual(rows[0], { estado: 'analizado', analisis_ia: expected });
   } finally {
     restoreGateway.mock.restore();
   }
@@ -208,14 +237,14 @@ test('repository exposes parsed stored analysis and rejects schema-corrupted cac
 
   await pool.execute(
     'UPDATE proyectos SET analisis_ia = CAST(? AS JSON), estado = ? WHERE id = ?',
-    [analysisText(), 'analizado', project.id],
+    [JSON.stringify(storedAnalysis(project.payload)), 'analizado', project.id],
   );
   const mapped = await proyectosRepository.findById(
     { database: { database: 'logotype_test' } },
     project.id,
   );
 
-  assert.deepEqual(mapped.analisisIa, validAnalysis);
+  assert.deepEqual(mapped.analisisIa, storedAnalysis(project.payload));
 
   await pool.execute('UPDATE proyectos SET analisis_ia = CAST(? AS JSON) WHERE id = ?', [
     JSON.stringify({ unexpected: 'stored corruption' }),
@@ -355,8 +384,8 @@ test('analysis normalizes provider and response failures to the same private 502
     '   ',
     '{not json}',
     analysisText({ ...validAnalysis, additional: true }),
-    analysisText({ ...validAnalysis, completitud: 'unknown' }),
-    analysisText({ ...validAnalysis, campos_faltantes: [1] }),
+    analysisText({ ...validAnalysis, nivel_de_riesgo: 'unknown' }),
+    analysisText({ ...validAnalysis, criterios: validAnalysis.criterios.slice(1) }),
   ];
 
   for (const failure of failures) {
@@ -413,7 +442,7 @@ test('analysis caches a stored result, fails a persistence write safely, and lea
 
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
-    assert.deepEqual(second.body.data, validAnalysis);
+    assert.deepEqual(second.body.data, storedAnalysis(project.payload));
     assert.equal(providerCalls, 1);
 
     const blockedProject = await createProjectForAnalysis();
@@ -452,9 +481,10 @@ test('concurrent first analysis requests preserve the first stored result withou
   );
   const project = await createProjectForAnalysis();
   const responses = [
-    { ...validAnalysis, observaciones: 'First candidate.' },
-    { ...validAnalysis, observaciones: 'Second candidate.' },
+    { ...validAnalysis, razon_nivel_riesgo: 'Primera respuesta.' },
+    { ...validAnalysis, razon_nivel_riesgo: 'Segunda respuesta.' },
   ];
+  const storedResponses = responses.map((analysis) => storedAnalysis(project.payload, analysis));
   const gates = [Promise.withResolvers(), Promise.withResolvers()];
   let providerCalls = 0;
   const restoreGateway = test.mock.method(geminiGateway, 'generateProjectAnalysis', async () => {
@@ -484,7 +514,7 @@ test('concurrent first analysis requests preserve the first stored result withou
     assert.equal(providerCalls, 2);
     assert.equal(rows[0].estado, 'analizado');
     assert.ok(
-      responses.some(
+      storedResponses.some(
         (analysis) => JSON.stringify(rows[0].analisis_ia) === JSON.stringify(analysis),
       ),
     );
