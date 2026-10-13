@@ -24,8 +24,12 @@ import {
 let pool;
 
 const validAnalysis = {
-  lectura_general:
-    'El pedido tiene un objetivo concreto.\n\nLas señales permiten evaluar el alcance.',
+  sintesis: 'El pedido tiene un objetivo concreto y señales suficientes para evaluar el alcance.',
+  claves_para_decidir: [
+    'Objetivo: está declarado.',
+    'Plataforma: está identificada.',
+    'Alcance: requiere priorización.',
+  ],
   nivel_de_riesgo: 'medio',
   razon_nivel_riesgo: 'El alcance requiere validación.',
   criterios: projectCriterionIds.map((id) => ({

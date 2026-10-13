@@ -776,6 +776,8 @@
 }
 
 .adm-ai__section h4 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--adm-hairline);
   font-size: 0.92rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -797,7 +799,15 @@
 
 .adm-ai__reading,
 .adm-ai__prose {
-  max-width: 72ch;
+  max-width: 70ch;
+}
+
+.adm-ai__summary {
+  max-width: 70ch;
+  margin: 16px 0 0;
+  color: var(--adm-text);
+  font-size: clamp(1.08rem, 1.8vw, 1.28rem);
+  line-height: 1.7;
 }
 
 .adm-ai__prose,
@@ -807,6 +817,20 @@
   margin: 8px 0 0;
   color: var(--adm-text);
   line-height: 1.68;
+}
+
+.adm-ai__keys {
+  display: grid;
+  gap: 10px;
+  max-width: 70ch;
+  margin: 16px 0 0;
+  padding-left: 20px;
+  color: var(--adm-text);
+  line-height: 1.65;
+}
+
+.adm-ai__keys strong {
+  font-weight: 800;
 }
 
 .adm-ai__signals {
@@ -860,6 +884,10 @@
   border-top: 1px solid var(--adm-hairline);
 }
 
+.adm-ai__criterion p {
+  max-width: 70ch;
+}
+
 .adm-ai__criterion:first-child,
 .adm-ai__risk:first-child {
   border-top: none;
@@ -869,8 +897,14 @@
   display: block;
 }
 
+.adm-ai__mitigation {
+  color: var(--adm-text-muted) !important;
+  font-size: 0.9rem;
+}
+
 .adm-ai__two-columns,
-.adm-ai__secondary {
+.adm-ai__secondary,
+.adm-ai__legacy-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 32px;
@@ -918,6 +952,19 @@
 
 .adm-ai--legacy .adm-alert {
   margin: 0 0 18px;
+}
+
+.adm-ai__legacy-verdict {
+  color: var(--adm-text-muted);
+  font-size: 0.86rem;
+}
+
+.adm-ai__legacy-verdict p {
+  margin: 12px 0 0;
+}
+
+.adm-ai__legacy-action {
+  padding: 18px 24px;
 }
 
 /* =========================================================
@@ -1663,7 +1710,8 @@ select.adm-control option {
 
   .adm-ai__signals,
   .adm-ai__two-columns,
-  .adm-ai__secondary {
+  .adm-ai__secondary,
+  .adm-ai__legacy-grid {
     grid-template-columns: 1fr;
   }
 

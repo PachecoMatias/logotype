@@ -222,6 +222,10 @@ function PanelDetalle({
   const decisionFecha = proyecto?.decisionFecha
     ? new Date(proyecto.decisionFecha).toLocaleString("es-AR")
     : null;
+  const decisionMigrada =
+    proyecto?.decisionViabilidad === "VIABLE" &&
+    !proyecto?.decisionMotivo &&
+    !analisisV2;
 
   return (
     <section className="adm-section">
@@ -313,6 +317,15 @@ function PanelDetalle({
 
                 {proyecto.decisionViabilidad && (
                   <dl className="adm-decision__saved">
+                    {decisionMigrada && (
+                      <div>
+                        <dt>Origen</dt>
+                        <dd>
+                          Decisión registrada automáticamente al migrar: el
+                          proyecto ya estaba planificado
+                        </dd>
+                      </div>
+                    )}
                     {proyecto.decisionMotivo && (
                       <div>
                         <dt>Motivo</dt>
@@ -321,14 +334,16 @@ function PanelDetalle({
                     )}
                     {decisionFecha && (
                       <div>
-                        <dt>Fecha</dt>
+                        <dt>
+                          {decisionMigrada ? "Fecha de migración" : "Fecha"}
+                        </dt>
                         <dd>{decisionFecha}</dd>
                       </div>
                     )}
                   </dl>
                 )}
 
-                {!analisisV2 && (
+                {!proyecto.decisionViabilidad && !analisisV2 && (
                   <p className="adm-alert adm-alert--warning">
                     Requiere un análisis con el nuevo criterio antes de
                     registrar una decisión.

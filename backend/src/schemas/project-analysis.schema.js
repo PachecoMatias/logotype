@@ -30,6 +30,9 @@ const missingInformationSchema = z.strictObject({
 function clipLists(analysis) {
   return {
     ...analysis,
+    ...(analysis.claves_para_decidir
+      ? { claves_para_decidir: analysis.claves_para_decidir.slice(0, 5) }
+      : {}),
     fortalezas: analysis.fortalezas.slice(0, 8),
     debilidades: analysis.debilidades.slice(0, 8),
     riesgos: analysis.riesgos.slice(0, 8),
@@ -40,8 +43,7 @@ function clipLists(analysis) {
   };
 }
 
-const projectAnalysisShape = {
-  lectura_general: z.string(),
+const sharedProjectAnalysisShape = {
   nivel_de_riesgo: z.enum(['bajo', 'medio', 'alto']),
   razon_nivel_riesgo: z.string(),
   criterios: z.array(criterionSchema),
@@ -52,6 +54,17 @@ const projectAnalysisShape = {
   condiciones_para_avanzar: z.array(z.string()),
   preguntas_para_el_cliente: z.array(z.string()),
   supuestos: z.array(z.string()),
+};
+
+const projectAnalysisShape = {
+  sintesis: z.string().trim().min(1),
+  claves_para_decidir: z.array(z.string()).min(1),
+  ...sharedProjectAnalysisShape,
+};
+
+const storedGeneralReadingShape = {
+  lectura_general: z.string(),
+  ...sharedProjectAnalysisShape,
 };
 
 function requireCriteria(analysis, context) {
@@ -92,6 +105,14 @@ export const storedProjectAnalysisSchema = z.union([
     })
     .superRefine((analysis, context) => requireCriteria(analysis, context))
     .transform(clipLists),
+  z
+    .strictObject({
+      version: z.literal(2),
+      ...storedGeneralReadingShape,
+      senales: z.record(z.string(), z.unknown()),
+    })
+    .superRefine((analysis, context) => requireCriteria(analysis, context))
+    .transform(clipLists),
   legacyProjectAnalysisSchema,
 ]);
 
@@ -105,7 +126,8 @@ const titledDetailObject = {
 export const projectAnalysisJsonSchema = {
   type: 'object',
   required: [
-    'lectura_general',
+    'sintesis',
+    'claves_para_decidir',
     'nivel_de_riesgo',
     'razon_nivel_riesgo',
     'criterios',
@@ -118,7 +140,8 @@ export const projectAnalysisJsonSchema = {
     'supuestos',
   ],
   properties: {
-    lectura_general: { type: 'string' },
+    sintesis: { type: 'string' },
+    claves_para_decidir: stringArray,
     nivel_de_riesgo: { type: 'string' },
     razon_nivel_riesgo: { type: 'string' },
     criterios: {

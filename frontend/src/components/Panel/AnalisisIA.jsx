@@ -1,3 +1,5 @@
+import { splitIntoSentencePairs } from "../../utils/analysis-text.js";
+
 const criterionLabels = {
   completitud: "Completitud de la información",
   ajuste_servicios: "Ajuste a los servicios",
@@ -37,6 +39,40 @@ function TextList({ items, ordered = false }) {
   );
 }
 
+function DecisionKeys({ items }) {
+  if (!items?.length) return null;
+
+  return (
+    <ul className="adm-ai__keys">
+      {items.map((item, index) => {
+        const separatorIndex = item.indexOf(":");
+        const label =
+          separatorIndex >= 0 ? item.slice(0, separatorIndex) : null;
+        const detail =
+          separatorIndex >= 0 ? item.slice(separatorIndex + 1).trim() : item;
+
+        return (
+          <li key={`${item}-${index}`}>
+            {label && <strong>{label}:</strong>} {detail}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function SentenceParagraphs({ value }) {
+  const paragraphs = splitIntoSentencePairs(value);
+  if (paragraphs.length === 0)
+    return <p className="adm-ai__empty">Sin información registrada.</p>;
+
+  return paragraphs.map((paragraph, index) => (
+    <p className="adm-ai__prose" key={`${paragraph}-${index}`}>
+      {paragraph}
+    </p>
+  ));
+}
+
 function LegacyAnalysis({ analisis, canReanalyze, reanalyzing, onReanalyze }) {
   return (
     <section
@@ -44,22 +80,39 @@ function LegacyAnalysis({ analisis, canReanalyze, reanalyzing, onReanalyze }) {
       aria-labelledby="legacy-analysis-title"
     >
       <div className="adm-ai__head">
-        <div>
-          <span className="adm-ai__orientation">Análisis anterior</span>
-          <h3 className="adm-ai__title" id="legacy-analysis-title">
-            Criterio desactualizado
-          </h3>
-        </div>
+        <h3 className="adm-ai__title" id="legacy-analysis-title">
+          Análisis anterior
+        </h3>
       </div>
       <div className="adm-ai__section">
         <p className="adm-alert adm-alert--warning">
-          Este análisis fue generado con el criterio anterior y puede incluir un
-          veredicto de IA.
+          Análisis anterior: no incluye las señales ni los criterios nuevos
         </p>
-        {analisis.observaciones && (
-          <p className="adm-ai__prose">{analisis.observaciones}</p>
-        )}
-        {canReanalyze && (
+        <h4>Observaciones</h4>
+        <SentenceParagraphs value={analisis.observaciones} />
+      </div>
+      <div className="adm-ai__section adm-ai__legacy-grid">
+        <div>
+          <h4>Completitud</h4>
+          <p className="adm-ai__prose">{formatValue(analisis.completitud)}</p>
+        </div>
+        <div>
+          <h4>Información faltante</h4>
+          <TextList items={analisis.campos_faltantes} />
+        </div>
+      </div>
+      <div className="adm-ai__section">
+        <h4>Mensaje para el cliente</h4>
+        <p className="adm-ai__prose">
+          {formatValue(analisis.mensaje_para_cliente)}
+        </p>
+      </div>
+      <div className="adm-ai__section adm-ai__legacy-verdict">
+        <h4>Veredicto anterior de la IA (ya no se usa para decidir)</h4>
+        <p>{analisis.viable ? "Afirmativo" : "Negativo"}</p>
+      </div>
+      {canReanalyze && (
+        <div className="adm-ai__legacy-action">
           <button
             type="button"
             className="adm-btn adm-btn--primary"
@@ -70,8 +123,8 @@ function LegacyAnalysis({ analisis, canReanalyze, reanalyzing, onReanalyze }) {
               ? "Re-analizando…"
               : "Re-analizar con el nuevo criterio"}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -107,11 +160,8 @@ function AnalisisIA({
     <article className="adm-ai" aria-labelledby="analysis-title">
       <header className="adm-ai__head">
         <div>
-          <span className="adm-ai__orientation">
-            Opinión de la IA · orientativa
-          </span>
           <h3 className="adm-ai__title" id="analysis-title">
-            Análisis del proyecto
+            Opinión de la IA · orientativa
           </h3>
         </div>
         <div className="adm-ai__risk-summary">
@@ -126,15 +176,25 @@ function AnalisisIA({
 
       <section
         className="adm-ai__section adm-ai__reading"
-        aria-labelledby="general-reading-title"
+        aria-labelledby="summary-title"
       >
-        <h4 id="general-reading-title">Lectura general</h4>
-        {analisis.lectura_general.split(/\n\s*\n/).map((paragraph, index) => (
-          <p className="adm-ai__prose" key={`${paragraph}-${index}`}>
-            {paragraph}
-          </p>
-        ))}
+        <h4 id="summary-title">Resumen</h4>
+        {analisis.sintesis ? (
+          <p className="adm-ai__summary">{analisis.sintesis}</p>
+        ) : (
+          <SentenceParagraphs value={analisis.lectura_general} />
+        )}
       </section>
+
+      {analisis.claves_para_decidir?.length > 0 && (
+        <section
+          className="adm-ai__section"
+          aria-labelledby="decision-keys-title"
+        >
+          <h4 id="decision-keys-title">Claves para decidir</h4>
+          <DecisionKeys items={analisis.claves_para_decidir} />
+        </section>
+      )}
 
       <section className="adm-ai__section" aria-labelledby="signals-title">
         <div className="adm-ai__section-head">
@@ -215,7 +275,7 @@ function AnalisisIA({
                 </span>
               </div>
               <p>{risk.detalle}</p>
-              <p>
+              <p className="adm-ai__mitigation">
                 <strong>Mitigación:</strong> {risk.mitigacion}
               </p>
             </div>
@@ -223,19 +283,23 @@ function AnalisisIA({
         </div>
       </section>
 
-      <section className="adm-ai__section" aria-labelledby="missing-title">
-        <h4 id="missing-title">Información faltante</h4>
-        {(analisis.informacion_faltante || []).map((item) => (
-          <div className="adm-ai__named-item" key={item.dato}>
-            <h5>{item.dato}</h5>
-            <p>{item.por_que_importa}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="adm-ai__section" aria-labelledby="conditions-title">
-        <h4 id="conditions-title">Condiciones para avanzar</h4>
-        <TextList items={analisis.condiciones_para_avanzar} ordered />
+      <section
+        className="adm-ai__section adm-ai__two-columns"
+        aria-label="Información faltante y condiciones para avanzar"
+      >
+        <div>
+          <h4>Información faltante</h4>
+          {(analisis.informacion_faltante || []).map((item) => (
+            <div className="adm-ai__named-item" key={item.dato}>
+              <h5>{item.dato}</h5>
+              <p>{item.por_que_importa}</p>
+            </div>
+          ))}
+        </div>
+        <div>
+          <h4>Condiciones para avanzar</h4>
+          <TextList items={analisis.condiciones_para_avanzar} ordered />
+        </div>
       </section>
 
       <section
