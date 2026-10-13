@@ -173,3 +173,18 @@ export const projectIdParamsSchema = z.looseObject({
     .transform((value) => Number(value))
     .pipe(z.number().int().positive().max(4294967295)),
 });
+
+export const projectDecisionBodySchema = z
+  .strictObject({
+    decision: z.enum(['VIABLE', 'NO_VIABLE']),
+    motivo: z.string().optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.decision === 'NO_VIABLE' && (value.motivo?.trim().length ?? 0) < 10) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'motivo must contain at least 10 characters for NO_VIABLE',
+        path: ['motivo'],
+      });
+    }
+  });

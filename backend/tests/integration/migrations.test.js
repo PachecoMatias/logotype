@@ -34,6 +34,7 @@ const interruptedMigration = {
 const backendDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const analysisMigration = '004_add_project_ai_analysis';
 const backlogMigration = '005_enable_backlog_planning';
+const viabilityDecisionMigration = '006_add_viability_decision';
 const validAnalysis = {
   viable: true,
   completitud: 'completo',
@@ -181,6 +182,7 @@ async function preparePreAnalysisSchema(t) {
   await resetMigrationTestState(pool);
   await runMigration('up');
   await runMigration('down');
+  await runMigration('down');
 
   return pool;
 }
@@ -285,6 +287,7 @@ test('applies and reverses the guarded planning schema in order', async (t) => {
     { migration_name: '003_create_equipo', state: 'applied' },
     { migration_name: '004_add_project_ai_analysis', state: 'applied' },
     { migration_name: '005_enable_backlog_planning', state: 'applied' },
+    { migration_name: '006_add_viability_decision', state: 'applied' },
   ]);
   assert.deepEqual(
     historyColumns.map((column) => column.COLUMN_NAME),
@@ -294,6 +297,7 @@ test('applies and reverses the guarded planning schema in order', async (t) => {
   assert.equal(historyColumns[1].COLUMN_TYPE, 'binary(32)');
   assert.equal(historyColumns[2].COLUMN_TYPE, 'varchar(16)');
 
+  await runMigration('down');
   await runMigration('down');
   await runMigration('down');
   await runMigration('down');
@@ -322,7 +326,17 @@ test('creates the project table with server-owned state and JSON-object protecti
 
   assert.deepEqual(
     columns.map((column) => column.COLUMN_NAME),
-    ['id', 'payload', 'estado', 'analisis_ia', 'creado_en', 'actualizado_en'],
+    [
+      'id',
+      'payload',
+      'estado',
+      'analisis_ia',
+      'decision_viabilidad',
+      'decision_motivo',
+      'decision_fecha',
+      'creado_en',
+      'actualizado_en',
+    ],
   );
   assert.equal(columns[0].COLUMN_TYPE, 'int unsigned');
   assert.equal(columns[1].COLUMN_TYPE, 'json');
@@ -330,8 +344,12 @@ test('creates the project table with server-owned state and JSON-object protecti
   assert.equal(columns[2].COLLATION_NAME, 'utf8mb4_0900_as_cs');
   assert.equal(columns[3].COLUMN_TYPE, 'json');
   assert.equal(columns[3].IS_NULLABLE, 'YES');
-  assert.equal(columns[4].COLUMN_TYPE, 'datetime(6)');
-  assert.match(columns[5].EXTRA, /on update CURRENT_TIMESTAMP\(6\)$/);
+  assert.equal(columns[4].COLUMN_TYPE, 'varchar(16)');
+  assert.equal(columns[4].COLLATION_NAME, 'utf8mb4_0900_as_cs');
+  assert.equal(columns[5].COLUMN_TYPE, 'text');
+  assert.equal(columns[6].COLUMN_TYPE, 'datetime');
+  assert.equal(columns[7].COLUMN_TYPE, 'datetime(6)');
+  assert.match(columns[8].EXTRA, /on update CURRENT_TIMESTAMP\(6\)$/);
 
   await assert.rejects(
     pool.execute("INSERT INTO proyectos (payload, estado) VALUES (CAST(? AS JSON), 'nuevo')", [
@@ -581,19 +599,22 @@ test('classifies source, target, and recognized migration 004 ALTER recovery sta
   ];
 
   for (const supportedState of supportedStates) {
-    await t.test(`completes ${supportedState.name} with fixed migration-owned clauses`, async (t) => {
-      const pool = await preparePreAnalysisSchema(t);
+    await t.test(
+      `completes ${supportedState.name} with fixed migration-owned clauses`,
+      async (t) => {
+        const pool = await preparePreAnalysisSchema(t);
 
-      await supportedState.arrange(pool);
-      await runMigration('up');
+        await supportedState.arrange(pool);
+        await runMigration('up');
 
-      await assertAnalysisTarget(pool);
-      assert.equal(
-        (await getAnalysisHistory(pool))?.state,
-        'applied',
-        'Migration 004 history is not recorded after target verification',
-      );
-    });
+        await assertAnalysisTarget(pool);
+        assert.equal(
+          (await getAnalysisHistory(pool))?.state,
+          'applied',
+          'Migration 004 history is not recorded after target verification',
+        );
+      },
+    );
   }
 });
 
@@ -631,7 +652,9 @@ test('refuses every ambiguous migration 004 schema state without repair or succe
     {
       name: 'wrong analysis column type',
       async arrange(pool) {
-        await pool.query('ALTER TABLE proyectos ADD COLUMN analisis_ia VARCHAR(255) NULL AFTER estado');
+        await pool.query(
+          'ALTER TABLE proyectos ADD COLUMN analisis_ia VARCHAR(255) NULL AFTER estado',
+        );
       },
     },
     {
@@ -695,10 +718,10 @@ test('refuses every ambiguous migration 004 schema state without repair or succe
       name: 'non-object retained JSON',
       async arrange(pool) {
         await createAnalysisColumn(pool);
-        await pool.execute("INSERT INTO proyectos (payload, estado, analisis_ia) VALUES (CAST(? AS JSON), 'nuevo', CAST(? AS JSON))", [
-          JSON.stringify({ empresa: {} }),
-          JSON.stringify([]),
-        ]);
+        await pool.execute(
+          "INSERT INTO proyectos (payload, estado, analisis_ia) VALUES (CAST(? AS JSON), 'nuevo', CAST(? AS JSON))",
+          [JSON.stringify({ empresa: {} }), JSON.stringify([])],
+        );
       },
     },
   ];
@@ -719,11 +742,12 @@ test('protects migration 004 rollback data and reconciles only supported interru
 
   await assertAnalysisTarget(pool);
 
-  await pool.execute("INSERT INTO proyectos (payload, estado, analisis_ia) VALUES (CAST(? AS JSON), 'analizado', CAST(? AS JSON))", [
-    JSON.stringify({ empresa: {} }),
-    JSON.stringify(validAnalysis),
-  ]);
+  await pool.execute(
+    "INSERT INTO proyectos (payload, estado, analisis_ia) VALUES (CAST(? AS JSON), 'analizado', CAST(? AS JSON))",
+    [JSON.stringify({ empresa: {} }), JSON.stringify(validAnalysis)],
+  );
 
+  await runMigration('down');
   await runMigration('down');
   await assert.rejects(runMigration('down'), /analysis|data|rollback/i);
   await assertAnalysisTarget(pool);
@@ -739,6 +763,7 @@ test('protects migration 004 rollback data and reconciles only supported interru
   assert.equal((await getAnalysisHistory(pool))?.state, 'applied');
   await runMigration('down');
   await runMigration('down');
+  await runMigration('down');
 
   const [columns] = await pool.query(`
     SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
@@ -752,6 +777,7 @@ test('resumes supported source rollback and refuses a partial rolling-back schem
   await t.test('reapplies from an exact source rolling-back state', async (t) => {
     const pool = await prepareMigratedSchema(t);
 
+    await runMigration('down');
     await runMigration('down');
     await assertAnalysisTarget(pool);
 
@@ -773,39 +799,47 @@ test('resumes supported source rollback and refuses a partial rolling-back schem
     assert.equal((await getAnalysisHistory(pool))?.state, 'applied');
   });
 
-  await t.test('refuses a partial rolling-back state before repair SQL or history deletion', async (t) => {
-    const pool = await prepareMigratedSchema(t);
+  await t.test(
+    'refuses a partial rolling-back state before repair SQL or history deletion',
+    async (t) => {
+      const pool = await prepareMigratedSchema(t);
 
-    await runMigration('down');
-    await assertAnalysisTarget(pool);
+      await runMigration('down');
+      await runMigration('down');
+      await assertAnalysisTarget(pool);
 
-    await pool.execute(
-      "UPDATE schema_migrations SET state = 'rolling_back' WHERE migration_name = ?",
-      [analysisMigration],
-    );
-    await pool.query('ALTER TABLE proyectos DROP CHECK chk_proyectos_analisis_ia_objeto');
+      await pool.execute(
+        "UPDATE schema_migrations SET state = 'rolling_back' WHERE migration_name = ?",
+        [analysisMigration],
+      );
+      await pool.query('ALTER TABLE proyectos DROP CHECK chk_proyectos_analisis_ia_objeto');
 
-    await assert.rejects(runMigration('down'), /partial|ambiguous|rollback/i);
-    assert.equal((await getAnalysisHistory(pool))?.state, 'rolling_back');
-    const [checks] = await pool.query(`
+      await assert.rejects(runMigration('down'), /partial|ambiguous|rollback/i);
+      assert.equal((await getAnalysisHistory(pool))?.state, 'rolling_back');
+      const [checks] = await pool.query(`
       SELECT CONSTRAINT_NAME
       FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'proyectos'
     `);
-    assert.equal(
-      checks.some((check) => check.CONSTRAINT_NAME === 'chk_proyectos_analisis_ia_objeto'),
-      false,
-    );
-  });
+      assert.equal(
+        checks.some((check) => check.CONSTRAINT_NAME === 'chk_proyectos_analisis_ia_objeto'),
+        false,
+      );
+    },
+  );
 });
 
 test('applies, recovers, and safely rolls back the bounded migration 005 constraint evolution', async (t) => {
   const migrationsDirectory = path.join(backendDirectory, 'migrations');
-  const priorMigrationFiles = ['001_create_proyectos', '002_create_historias', '003_create_equipo', analysisMigration]
-    .flatMap((name) => [
-      path.join(migrationsDirectory, `${name}.up.sql`),
-      path.join(migrationsDirectory, `${name}.down.sql`),
-    ]);
+  const priorMigrationFiles = [
+    '001_create_proyectos',
+    '002_create_historias',
+    '003_create_equipo',
+    analysisMigration,
+  ].flatMap((name) => [
+    path.join(migrationsDirectory, `${name}.up.sql`),
+    path.join(migrationsDirectory, `${name}.down.sql`),
+  ]);
   const priorBytes = await Promise.all(priorMigrationFiles.map((file) => readFile(file)));
   const pool = await prepareMigratedSchema(t);
   const [columns] = await pool.query(`
@@ -854,7 +888,10 @@ test('applies, recovers, and safely rolls back the bounded migration 005 constra
     canonicalizeCheckClause(roleCheck?.CHECK_CLAUSE ?? ''),
     "rol_sugeridoin'desarrolladorfrontend','desarrolladorbackend','analistaqa','analistadeciberseguridad','analistaderequerimientos','projectmanager','frontend','backend','qa','ciberseguridad'",
   );
-  assert.deepEqual(await Promise.all(priorMigrationFiles.map((file) => readFile(file))), priorBytes);
+  assert.deepEqual(
+    await Promise.all(priorMigrationFiles.map((file) => readFile(file))),
+    priorBytes,
+  );
 
   await runMigration('up');
 
@@ -864,9 +901,11 @@ test('applies, recovers, and safely rolls back the bounded migration 005 constra
   );
   assert.equal(history[0]?.state, 'applied');
 
-  await pool.execute("INSERT INTO proyectos (payload, estado) VALUES (CAST(? AS JSON), 'planificado')", [
-    JSON.stringify({ empresa: {} }),
-  ]);
+  await pool.execute(
+    "INSERT INTO proyectos (payload, estado) VALUES (CAST(? AS JSON), 'planificado')",
+    [JSON.stringify({ empresa: {} })],
+  );
+  await runMigration('down');
   await assert.rejects(runMigration('down'), /planning data|rollback/i);
   assert.equal(history[0]?.state, 'applied');
 
@@ -904,6 +943,85 @@ test('applies, recovers, and safely rolls back the bounded migration 005 constra
     );
     assert.equal(partialHistory[0]?.state, 'applied');
   });
+});
+
+test('applies, backfills, and reverses migration 006 viability decisions', async (t) => {
+  const pool = await prepareMigratedSchema(t);
+  const [history] = await pool.execute(
+    'SELECT state FROM schema_migrations WHERE migration_name = ?',
+    [viabilityDecisionMigration],
+  );
+
+  assert.equal(history[0]?.state, 'applied');
+
+  await runMigration('down');
+  await pool.execute(
+    "INSERT INTO proyectos (payload, estado) VALUES (CAST(? AS JSON), 'planificado')",
+    [JSON.stringify({ empresa: {} })],
+  );
+  await runMigration('up');
+
+  const [columns] = await pool.query(`
+    SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLLATION_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'proyectos'
+      AND COLUMN_NAME IN ('decision_viabilidad', 'decision_motivo', 'decision_fecha')
+    ORDER BY ORDINAL_POSITION
+  `);
+  const [checks] = await pool.query(`
+    SELECT cc.CHECK_CLAUSE
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+    JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+      ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+      AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+    WHERE tc.TABLE_SCHEMA = DATABASE()
+      AND tc.TABLE_NAME = 'proyectos'
+      AND tc.CONSTRAINT_NAME = 'chk_proyectos_decision_viabilidad'
+  `);
+  const [projects] = await pool.query(`
+    SELECT decision_viabilidad, decision_motivo, decision_fecha
+    FROM proyectos
+    WHERE estado = 'planificado'
+  `);
+
+  assert.deepEqual(columns, [
+    {
+      COLUMN_NAME: 'decision_viabilidad',
+      COLUMN_TYPE: 'varchar(16)',
+      IS_NULLABLE: 'YES',
+      COLLATION_NAME: 'utf8mb4_0900_as_cs',
+    },
+    {
+      COLUMN_NAME: 'decision_motivo',
+      COLUMN_TYPE: 'text',
+      IS_NULLABLE: 'YES',
+      COLLATION_NAME: 'utf8mb4_0900_as_cs',
+    },
+    {
+      COLUMN_NAME: 'decision_fecha',
+      COLUMN_TYPE: 'datetime',
+      IS_NULLABLE: 'YES',
+      COLLATION_NAME: null,
+    },
+  ]);
+  assert.equal(
+    canonicalizeCheckClause(checks[0]?.CHECK_CLAUSE ?? ''),
+    "decision_viabilidadisnullordecision_viabilidadin'viable','no_viable'",
+  );
+  assert.equal(projects[0]?.decision_viabilidad, 'VIABLE');
+  assert.equal(projects[0]?.decision_motivo, null);
+  assert.ok(projects[0]?.decision_fecha instanceof Date);
+
+  await runMigration('down');
+  const [remainingColumns] = await pool.query(`
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'proyectos'
+      AND COLUMN_NAME IN ('decision_viabilidad', 'decision_motivo', 'decision_fecha')
+  `);
+  assert.deepEqual(remainingColumns, []);
 });
 
 test('uses only the fixed Node child-process invocation and refuses unknown migration commands before mutation', async (t) => {

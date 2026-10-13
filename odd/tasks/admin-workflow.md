@@ -61,10 +61,12 @@ Dedicated story-column validation and endpoint wiring, repository persistence an
   - Checks: RED observed for missing signal modules and for missing-context deadline compatibility; unit tests passed 11/11; focused analysis integration tests passed 7/7; frontend temporary-output build passed with 440 modules; touched backend ESLint and `git diff --check` passed; independent verification found one blocker, which was corrected and rechecked; `frontend/dist` remained untouched. Two bounded real Gemini calls were used; `maxOutputTokens` is 16384 and `thinkingBudget` is 1024 for analysis only.
   - Commit: this Part A work-unit commit, `feat(admin): add evidence-based project analysis`; exact hash is mirrored in Engram after creation.
   - Review: high risk item 3 because the persisted/API analysis contract changes from legacy to v2; independent verification passed after one scoped correction.
-- [ ] **ADMIN-2B — Add administrator viability decision**
+- [x] **ADMIN-2B — Add administrator viability decision**
   - Specs: S3, S4.
   - Route: inline; no writer trigger applies. Migration, API gate, focused tests, and decision UI form one rollback-safe work unit.
-  - Commit: pending; required after focused Part B verification.
+  - Checks: migration 006 focused up/down passed 1/1; the complete migration file produced exactly the 15 accepted pre-existing/cascade failures (26 passed) and no migration 006 or `decision_viabilidad` failure; decision/backlog API tests passed 4/4; analysis unit tests passed 11/11; touched backend ESLint and Prettier passed; frontend temporary-output build passed with 441 modules; `git diff --check` passed; `frontend/dist` remained untouched. Browser verification remains user-owned.
+  - Commit: this Part B work-unit commit, `feat(admin): add viability decision workflow`; exact hash will be recorded with the next tracker update.
+  - Review: user explicitly declined a verification subagent and owns functional browser verification; no native review was started.
 
 ## Progress
 
@@ -76,7 +78,7 @@ Dedicated story-column validation and endpoint wiring, repository persistence an
 
 ## Next Step
 
-Implement ADMIN-2A test-first, verify it, commit Part A, then implement and commit ADMIN-2B. Unit 3 remains outside this scope; push and PR creation remain user decisions.
+Commit ADMIN-2B, then implement the authorized readable-analysis backend and panel presentation as the next work unit. Push and PR creation remain user decisions.
 
 ## Log
 
@@ -84,3 +86,4 @@ Implement ADMIN-2A test-first, verify it, commit Part A, then implement and comm
 - **L2 — 2026-10-12 user authorization.** "Usá ODD (no SDD). Avanzá directo, sin pedirme confirmación de proceso. Misma rama feat/admin-workflow, unidad 2 de 3. Verificá que la unidad 1 esté commiteada; si no, frená y avisame. Sin push. No commitear frontend/dist. Dos commits: uno al terminar la PARTE A y otro al terminar la PARTE B." The authorized objective is the three-layer analysis and administrator decision described in S2-S4, including the exact API, migration, UI, test, Gemini-call, and reporting constraints in the user request.
 - **L3 — Starting evidence.** Unit 1 is committed at `ce338eddfbae8745c48b804e29021bf7f3f51e0a`; the worktree was clean on `feat/admin-workflow`. CodeGraph initialization was attempted but the upstream executable is unavailable, so bounded repository mapping was used. Forecast for Unit 2 exceeds 400 authored lines; the user fixed the delivery boundary as exactly two commits on the existing feature branch and prohibited push.
 - **L4 — Part A evidence.** Added trusted company context, defensive deterministic signals, strict/provider-simple v2 analysis schemas, legacy-compatible regeneration and caching, analysis-only Gemini output/thinking limits, and the ordered plain-text panel presentation. The first RED failed because the context/signals modules did not exist. Independent verification then found that a requested deadline with missing company duration context incorrectly produced `no`; a focused RED reproduced it, the implementation now returns `null`, and the verifier recheck passed. Focused unit, integration, build, lint, diff, and `frontend/dist` checks passed. Two real Gemini calls exercised the requested 14-function sample; no further live call is permitted in this unit.
+- **L5 — Part B evidence.** Added migration 006 with guarded recovery, administrator decision persistence and API, the `VIABLE` backlog gate, and panel decision controls. The complete migration test file closed with 26 passes and exactly 15 accepted pre-existing/cascade migration-004/005 failures; migration 006 passed and no failure named `decision_viabilidad`. The user owns browser verification and explicitly prohibited a verification subagent. No push was performed and `frontend/dist` stayed untouched.

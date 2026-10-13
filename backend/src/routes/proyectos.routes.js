@@ -2,7 +2,11 @@ import { Router } from 'express';
 
 import * as proyectosController from '../controllers/proyectos.controller.js';
 import { validate } from '../middleware/validate.js';
-import { projectBodySchema, projectIdParamsSchema } from '../schemas/proyectos.schemas.js';
+import {
+  projectBodySchema,
+  projectDecisionBodySchema,
+  projectIdParamsSchema,
+} from '../schemas/proyectos.schemas.js';
 
 export const proyectosRouter = Router();
 
@@ -12,6 +16,12 @@ proyectosRouter.post(
   '/:id/analizar',
   validate(projectIdParamsSchema, 'params'),
   proyectosController.analyze,
+);
+proyectosRouter.put(
+  '/:id/decision',
+  validate(projectIdParamsSchema, 'params'),
+  validate(projectDecisionBodySchema, 'body'),
+  proyectosController.decideViability,
 );
 proyectosRouter.post(
   '/:id/backlog',

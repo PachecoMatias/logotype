@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import StatusBadge from "./StatusBadge.jsx";
 import AnalisisIA from "./AnalisisIA.jsx";
+import DecisionBadge from "./DecisionBadge.jsx";
 import { apiRequest } from "../../utils/api.js";
 import { adaptarHistorias } from "../../utils/backlog.js";
 import "../../styles/panel.css";
@@ -86,6 +87,11 @@ function PanelDetalle({
   const [analizando, setAnalizando] = useState(false);
   const [errorAnalisis, setErrorAnalisis] = useState(null);
 
+  const [guardandoDecision, setGuardandoDecision] = useState(false);
+  const [motivoDecision, setMotivoDecision] = useState("");
+  const [mostrandoMotivo, setMostrandoMotivo] = useState(false);
+  const [errorDecision, setErrorDecision] = useState(null);
+
   const [generandoBacklog, setGenerandoBacklog] = useState(false);
   const [errorBacklog, setErrorBacklog] = useState(null);
   const cargaPlanificadaIntentada = useRef(null);
@@ -101,6 +107,7 @@ function PanelDetalle({
 
         if (!cancelado) {
           setProyecto(project);
+          setMotivoDecision(project.decisionMotivo || "");
         }
       } catch (err) {
         if (!cancelado) {
@@ -162,6 +169,39 @@ function PanelDetalle({
     }
   }, [onBacklogLoaded, projectId]);
 
+  const handleDecision = async (decision) => {
+    const motivo = motivoDecision.trim();
+    if (decision === "NO_VIABLE" && motivo.length < 10) {
+      setErrorDecision("El motivo debe tener al menos 10 caracteres.");
+      return;
+    }
+
+    const label = decision === "VIABLE" ? "viable" : "no viable";
+    if (
+      !window.confirm(
+        `¿Confirmar la decisión y marcar el proyecto como ${label}?`,
+      )
+    )
+      return;
+
+    setGuardandoDecision(true);
+    setErrorDecision(null);
+    try {
+      const project = await apiRequest(`/api/proyectos/${projectId}/decision`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, ...(motivo ? { motivo } : {}) }),
+      });
+      setProyecto(project);
+      setMotivoDecision(project.decisionMotivo || "");
+      setMostrandoMotivo(false);
+    } catch (err) {
+      setErrorDecision(err.message || "No se pudo guardar la decisión.");
+    } finally {
+      setGuardandoDecision(false);
+    }
+  };
+
   // Si el proyecto ya está planificado (por ejemplo, entrando directo por refresh),
   // pedimos el backlog existente: el endpoint lo devuelve sin regenerar.
   useEffect(() => {
@@ -176,6 +216,12 @@ function PanelDetalle({
   }, [handleGenerarBacklog, historias, projectId, proyecto?.estado]);
 
   const tieneBacklog = Array.isArray(historias) && historias.length > 0;
+  const analisisV2 = proyecto?.analisisIa?.version === 2;
+  const puedeDecidir =
+    analisisV2 && proyecto?.estado !== "planificado" && !tieneBacklog;
+  const decisionFecha = proyecto?.decisionFecha
+    ? new Date(proyecto.decisionFecha).toLocaleString("es-AR")
+    : null;
 
   return (
     <section className="adm-section">
@@ -251,6 +297,103 @@ function PanelDetalle({
               />
             )}
 
+            {(proyecto.estado === "analizado" ||
+              proyecto.estado === "planificado") && (
+              <section
+                className="adm-decision"
+                aria-labelledby="decision-title"
+              >
+                <div className="adm-decision__head">
+                  <div>
+                    <h3 id="decision-title">Decisión del administrador</h3>
+                    <p>La IA no decide: la decisión es del administrador</p>
+                  </div>
+                  <DecisionBadge decision={proyecto.decisionViabilidad} />
+                </div>
+
+                {proyecto.decisionViabilidad && (
+                  <dl className="adm-decision__saved">
+                    {proyecto.decisionMotivo && (
+                      <div>
+                        <dt>Motivo</dt>
+                        <dd>{proyecto.decisionMotivo}</dd>
+                      </div>
+                    )}
+                    {decisionFecha && (
+                      <div>
+                        <dt>Fecha</dt>
+                        <dd>{decisionFecha}</dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
+
+                {!analisisV2 && (
+                  <p className="adm-alert adm-alert--warning">
+                    Requiere un análisis con el nuevo criterio antes de
+                    registrar una decisión.
+                  </p>
+                )}
+
+                {puedeDecidir && (
+                  <div className="adm-decision__controls">
+                    <div className="adm-decision__buttons">
+                      <button
+                        type="button"
+                        className="adm-btn adm-btn--primary"
+                        onClick={() => handleDecision("VIABLE")}
+                        disabled={guardandoDecision}
+                      >
+                        Marcar como viable
+                      </button>
+                      <button
+                        type="button"
+                        className="adm-btn adm-btn--ghost"
+                        onClick={() => setMostrandoMotivo(true)}
+                        disabled={guardandoDecision}
+                      >
+                        Marcar como no viable
+                      </button>
+                    </div>
+
+                    {mostrandoMotivo && (
+                      <div className="adm-decision__reason">
+                        <label htmlFor="decision-motivo">
+                          Motivo de la decisión
+                        </label>
+                        <textarea
+                          id="decision-motivo"
+                          className="adm-control"
+                          value={motivoDecision}
+                          onChange={(event) =>
+                            setMotivoDecision(event.target.value)
+                          }
+                          rows={4}
+                          minLength={10}
+                          disabled={guardandoDecision}
+                        />
+                        <button
+                          type="button"
+                          className="adm-btn adm-btn--primary"
+                          onClick={() => handleDecision("NO_VIABLE")}
+                          disabled={guardandoDecision}
+                        >
+                          {guardandoDecision
+                            ? "Guardando…"
+                            : "Confirmar no viable"}
+                        </button>
+                      </div>
+                    )}
+                    {errorDecision && (
+                      <p className="adm-alert adm-alert--error">
+                        {errorDecision}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
+
             {proyecto.estado === "analizado" && !tieneBacklog && (
               <div className="adm-actions">
                 <div className="adm-actions__stack">
@@ -258,10 +401,18 @@ function PanelDetalle({
                     type="button"
                     className="adm-btn adm-btn--primary"
                     onClick={handleGenerarBacklog}
-                    disabled={generandoBacklog}
+                    disabled={
+                      generandoBacklog ||
+                      proyecto.decisionViabilidad !== "VIABLE"
+                    }
                   >
                     {generandoBacklog ? "Generando…" : "Generar backlog"}
                   </button>
+                  {proyecto.decisionViabilidad !== "VIABLE" && (
+                    <p className="adm-actions__hint">
+                      Requiere marcar el proyecto como viable
+                    </p>
+                  )}
                   {errorBacklog && (
                     <p className="adm-alert adm-alert--error">{errorBacklog}</p>
                   )}

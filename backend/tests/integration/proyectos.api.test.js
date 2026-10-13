@@ -525,13 +525,90 @@ test('concurrent first analysis requests preserve the first stored result withou
   }
 });
 
+test('PUT /api/proyectos/:id/decision enforces v2 analysis, reason rules, and no-backlog changes', async () => {
+  const unanalyzed = await createProjectForAnalysis();
+  const withoutAnalysis = await request(app)
+    .put(`/api/proyectos/${unanalyzed.id}/decision`)
+    .send({ decision: 'VIABLE' });
+  assert.equal(withoutAnalysis.status, 409);
+  assert.equal(withoutAnalysis.body.error.code, 'PROJECT_ANALYSIS_V2_REQUIRED');
+
+  const project = await createProjectForAnalysis();
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
+  );
+
+  const shortReason = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'NO_VIABLE', motivo: 'Muy corto' });
+  assert.equal(shortReason.status, 400);
+  assert.equal(shortReason.body.error.code, 'VALIDATION_ERROR');
+
+  const rejected = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'NO_VIABLE', motivo: 'El alcance excede el presupuesto disponible.' });
+  assert.equal(rejected.status, 200);
+  assert.equal(rejected.body.data.decisionViabilidad, 'NO_VIABLE');
+  assert.equal(rejected.body.data.decisionMotivo, 'El alcance excede el presupuesto disponible.');
+  assert.ok(rejected.body.data.decisionFecha);
+
+  const accepted = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'VIABLE' });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.body.data.decisionViabilidad, 'VIABLE');
+  assert.equal(accepted.body.data.decisionMotivo, null);
+
+  await pool.execute(
+    "INSERT INTO historias (proyecto_id, prioridad, historia_usuario, descripcion, criterios_aceptacion, alcance_tecnico, estimacion_fibonacci, rol_sugerido, fase) VALUES (?, 'Alta', 'Historia', 'Descripción', CAST(? AS JSON), 'Alcance', 3, 'Backend', 'Desarrollo Backend')",
+    [project.id, JSON.stringify(['Criterio'])],
+  );
+  const blockedChange = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'NO_VIABLE', motivo: 'Ya existe un backlog para este proyecto.' });
+  assert.equal(blockedChange.status, 409);
+  assert.equal(blockedChange.body.error.code, 'PROJECT_BACKLOG_ALREADY_EXISTS');
+});
+
+test('backlog generation requires an administrator VIABLE decision', async () => {
+  const { geminiGateway } = await importGeminiGateway();
+  const project = await createProjectForAnalysis();
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
+  );
+  let providerCalls = 0;
+  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
+    providerCalls += 1;
+    return JSON.stringify(validBacklog);
+  });
+
+  try {
+    const pending = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    assert.equal(pending.status, 409);
+    assert.equal(pending.body.error.code, 'PROJECT_VIABILITY_DECISION_REQUIRED');
+
+    await pool.execute(
+      "UPDATE proyectos SET decision_viabilidad = 'NO_VIABLE', decision_motivo = 'No cumple las condiciones', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+      [project.id],
+    );
+    const rejected = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    assert.equal(rejected.status, 409);
+    assert.equal(rejected.body.error.code, 'PROJECT_VIABILITY_DECISION_REQUIRED');
+    assert.equal(providerCalls, 0);
+  } finally {
+    restoreGateway.mock.restore();
+  }
+});
+
 test('backlog persists a strict generated result and returns the stored cache on repeat', async () => {
   const { geminiGateway } = await importGeminiGateway();
   const project = await createProjectForAnalysis();
   let providerCalls = 0;
   await pool.execute(
-    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
-    [analysisText(), project.id],
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON), decision_viabilidad = 'VIABLE', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
   );
   const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
     providerCalls += 1;
@@ -614,8 +691,8 @@ test('backlog normalizes malformed provider JSON without a persistence write', a
   const { geminiGateway } = await importGeminiGateway();
   const project = await createProjectForAnalysis();
   await pool.execute(
-    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
-    [analysisText(), project.id],
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON), decision_viabilidad = 'VIABLE', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
   );
   const restoreGateway = test.mock.method(
     geminiGateway,

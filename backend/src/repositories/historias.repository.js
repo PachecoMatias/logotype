@@ -96,7 +96,7 @@ async function updateColumnById(configuration, id, column) {
 async function persistGeneratedBacklog(configuration, projectId, stories) {
   return withTransaction(configuration, async (connection) => {
     const [projects] = await connection.execute(
-      'SELECT estado FROM proyectos WHERE id = ? FOR UPDATE',
+      'SELECT estado, decision_viabilidad FROM proyectos WHERE id = ? FOR UPDATE',
       [projectId],
     );
 
@@ -112,6 +112,10 @@ async function persistGeneratedBacklog(configuration, projectId, stories) {
 
     if (projects[0].estado !== 'analizado') {
       return { outcome: 'ineligible' };
+    }
+
+    if (projects[0].decision_viabilidad !== 'VIABLE') {
+      return { outcome: 'decision_required' };
     }
 
     const placeholders = stories.map(() => '(?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?)').join(', ');
