@@ -66,9 +66,28 @@ cd logotype
 
 ### 2. Configurar la base de datos
 
-Creá manualmente una base de datos MySQL vacía para la aplicación y un usuario con permisos sobre ella. El repositorio no incluye un comando para crear la base de datos; podés hacerlo con MySQL Workbench, la CLI de MySQL u otra herramienta equivalente.
+Las migraciones del proyecto crean y actualizan las tablas, pero **la base de datos debe existir antes** de ejecutar `npm run db:migrate`.
 
-Recordá el host, puerto, usuario, contraseña y nombre elegidos: se utilizarán en el archivo de entorno del backend.
+Podés crearla desde MySQL Workbench o desde la CLI de MySQL. Un ejemplo simple para desarrollo local es usar una base llamada `logotype`:
+
+```sql
+CREATE DATABASE logotype
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_as_cs;
+```
+
+Si ya tenés un usuario de MySQL con permisos, podés usarlo directamente en el `.env`. Si preferís crear un usuario específico para la aplicación, podés usar algo como esto:
+
+```sql
+CREATE USER 'logotype_user'@'localhost' IDENTIFIED BY 'logotype_password';
+GRANT ALL PRIVILEGES ON logotype.* TO 'logotype_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+> [!NOTE]
+> Si usás `root` en local, no hace falta crear `logotype_user`; simplemente configurá `MYSQL_USER=root` y la contraseña correspondiente en el `.env`.
+
+Recordá el host, puerto, usuario, contraseña y nombre de la base elegidos: se utilizarán en el archivo de entorno del backend.
 
 ### 3. Configurar las variables de entorno
 
