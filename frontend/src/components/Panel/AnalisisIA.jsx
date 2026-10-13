@@ -18,12 +18,77 @@ const stateLabels = {
 
 const impactOrder = { alto: 3, medio: 2, bajo: 1 };
 
-function formatValue(value) {
+const signalLabels = {
+  cantidad_funcionalidades: "Cantidad de funcionalidades",
+  cantidad_plataformas: "Cantidad de plataformas",
+  escala_usuarios: "Escala de usuarios",
+  tamano_estimado: "Tamaño estimado",
+  duracion_referencia_semanas: "Duración de referencia",
+  plazo_solicitado_semanas: "Plazo solicitado",
+  plazo_compatible: "Compatibilidad del plazo",
+  presupuesto_solicitado_usd: "Presupuesto solicitado",
+  presupuesto_minimo_referencia_usd: "Presupuesto mínimo de referencia",
+  presupuesto_compatible: "Compatibilidad del presupuesto",
+  funcionalidades_sensibles: "Funcionalidades sensibles",
+  rubro_sensible: "Rubro sensible",
+  requiere_revision_seguridad: "Requiere revisión de seguridad",
+  plataformas_fuera_de_foco: "Plataformas fuera de foco",
+  campos_vacios: "Campos que requieren más detalle",
+  cuelloDeBotella: "Cuello de botella",
+};
+
+const currencySignalKeys = new Set([
+  "presupuesto_solicitado_usd",
+  "presupuesto_minimo_referencia_usd",
+]);
+const weekSignalKeys = new Set([
+  "duracion_referencia_semanas",
+  "plazo_solicitado_semanas",
+]);
+const signalValueLabels = {
+  si: "Sí",
+  no: "No",
+  ajustado: "Ajustado",
+  insuficiente: "Insuficiente",
+  compatible: "Compatible",
+  fuera_de_rango: "Fuera de rango",
+};
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("es-AR").format(value);
+}
+
+function formatRange(value, suffix = "") {
+  const values = Array.isArray(value) ? value : [value];
+  const formatted = values
+    .map(formatNumber)
+    .join(values.length > 1 ? " a " : "");
+  return `${formatted}${suffix}`;
+}
+
+function formatSignalLabel(key) {
+  if (signalLabels[key]) return signalLabels[key];
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replaceAll("_", " ")
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
+function formatValue(value, key) {
   if (value === null || value === undefined) return "Sin dato";
+  if (currencySignalKeys.has(key)) return `USD ${formatRange(value)}`;
+  if (weekSignalKeys.has(key)) return formatRange(value, " semanas");
+  if (key === "campos_vacios" && Array.isArray(value)) {
+    return value.length > 0
+      ? value.map(formatSignalLabel).join(", ")
+      : "Ninguno";
+  }
   if (Array.isArray(value))
     return value.length > 0 ? value.join(", ") : "Ninguna";
   if (typeof value === "boolean") return value ? "Sí" : "No";
-  return String(value).replaceAll("_", " ");
+  if (signalValueLabels[value]) return signalValueLabels[value];
+  const text = String(value).replaceAll("_", " ");
+  return text.replace(/^./, (character) => character.toUpperCase());
 }
 
 function TextList({ items, ordered = false }) {
@@ -159,19 +224,17 @@ function AnalisisIA({
   return (
     <article className="adm-ai" aria-labelledby="analysis-title">
       <header className="adm-ai__head">
-        <div>
+        <div className="adm-ai__head-top">
           <h3 className="adm-ai__title" id="analysis-title">
             Opinión de la IA · orientativa
           </h3>
-        </div>
-        <div className="adm-ai__risk-summary">
           <span
             className={`adm-ai-badge adm-ai-badge--${analisis.nivel_de_riesgo}`}
           >
             Riesgo {analisis.nivel_de_riesgo}
           </span>
-          <p>{analisis.razon_nivel_riesgo}</p>
         </div>
+        <p className="adm-ai__risk-reason">{analisis.razon_nivel_riesgo}</p>
       </header>
 
       <section
@@ -204,8 +267,8 @@ function AnalisisIA({
         <dl className="adm-ai__signals">
           {Object.entries(analisis.senales || {}).map(([key, value]) => (
             <div key={key}>
-              <dt>{key.replaceAll("_", " ")}</dt>
-              <dd>{formatValue(value)}</dd>
+              <dt>{formatSignalLabel(key)}</dt>
+              <dd>{formatValue(value, key)}</dd>
             </div>
           ))}
         </dl>
@@ -222,15 +285,15 @@ function AnalisisIA({
         <div className="adm-ai__criteria">
           {(analisis.criterios || []).map((criterion) => (
             <div className="adm-ai__criterion" key={criterion.id}>
-              <div>
+              <div className="adm-ai__criterion-head">
                 <h5>{criterionLabels[criterion.id]}</h5>
-                <p>{criterion.justificacion}</p>
+                <span
+                  className={`adm-ai-badge adm-ai-badge--compact adm-ai-badge--${criterion.estado}`}
+                >
+                  {stateLabels[criterion.estado]}
+                </span>
               </div>
-              <span
-                className={`adm-ai-badge adm-ai-badge--${criterion.estado}`}
-              >
-                {stateLabels[criterion.estado]}
-              </span>
+              <p>{criterion.justificacion}</p>
             </div>
           ))}
         </div>
@@ -240,7 +303,7 @@ function AnalisisIA({
         className="adm-ai__section adm-ai__two-columns"
         aria-label="Fortalezas y debilidades"
       >
-        <div>
+        <div className="adm-ai__column adm-ai__column--strengths">
           <h4>Fortalezas</h4>
           {(analisis.fortalezas || []).map((item) => (
             <div className="adm-ai__named-item" key={item.titulo}>
@@ -249,7 +312,7 @@ function AnalisisIA({
             </div>
           ))}
         </div>
-        <div>
+        <div className="adm-ai__column adm-ai__column--weaknesses">
           <h4>Debilidades</h4>
           {(analisis.debilidades || []).map((item) => (
             <div className="adm-ai__named-item" key={item.titulo}>

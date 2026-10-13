@@ -311,6 +311,12 @@ function PanelDetalle({
                   <div>
                     <h3 id="decision-title">Decisión del administrador</h3>
                     <p>La IA no decide: la decisión es del administrador</p>
+                    {!proyecto.decisionViabilidad && (
+                      <p className="adm-decision__pending-note">
+                        Para generar el backlog, primero registrá una decisión
+                        administrativa.
+                      </p>
+                    )}
                   </div>
                   <DecisionBadge decision={proyecto.decisionViabilidad} />
                 </div>
