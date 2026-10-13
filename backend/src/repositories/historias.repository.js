@@ -3,7 +3,7 @@ import { persistedProjectBacklogStorySchema } from '../schemas/project-backlog.s
 
 const storyColumns = `
   id, fase, prioridad, historia_usuario, descripcion, criterios_aceptacion,
-  alcance_tecnico, estimacion_fibonacci, rol_sugerido
+  alcance_tecnico, estimacion_fibonacci, rol_sugerido, columna_tablero
 `;
 const editableColumns = new Set([
   'historia_usuario',
@@ -30,6 +30,7 @@ function mapStory(row) {
     alcance_tecnico: row.alcance_tecnico,
     estimacion_fibonacci: row.estimacion_fibonacci,
     rol_sugerido: row.rol_sugerido,
+    columnaTablero: row.columna_tablero,
   });
 
   if (!result.success) {
@@ -84,10 +85,18 @@ async function updateById(configuration, id, changes) {
   });
 }
 
+async function updateColumnById(configuration, id, column) {
+  return withTransaction(configuration, async (connection) => {
+    await connection.execute('UPDATE historias SET columna_tablero = ? WHERE id = ?', [column, id]);
+
+    return findByIdWithConnection(connection, id);
+  });
+}
+
 async function persistGeneratedBacklog(configuration, projectId, stories) {
   return withTransaction(configuration, async (connection) => {
     const [projects] = await connection.execute(
-      'SELECT estado FROM proyectos WHERE id = ? FOR UPDATE',
+      'SELECT estado, decision_viabilidad FROM proyectos WHERE id = ? FOR UPDATE',
       [projectId],
     );
 
@@ -103,6 +112,10 @@ async function persistGeneratedBacklog(configuration, projectId, stories) {
 
     if (projects[0].estado !== 'analizado') {
       return { outcome: 'ineligible' };
+    }
+
+    if (projects[0].decision_viabilidad !== 'VIABLE') {
+      return { outcome: 'decision_required' };
     }
 
     const placeholders = stories.map(() => '(?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?)').join(', ');
@@ -147,4 +160,9 @@ async function persistGeneratedBacklog(configuration, projectId, stories) {
   });
 }
 
-export const historiasRepository = { findByProjectId, persistGeneratedBacklog, updateById };
+export const historiasRepository = {
+  findByProjectId,
+  persistGeneratedBacklog,
+  updateById,
+  updateColumnById,
+};

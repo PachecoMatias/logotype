@@ -4,6 +4,7 @@ import {
   generateProjectBacklog,
   getProjectById,
   listProjects,
+  setProjectViabilityDecision,
 } from '../services/proyectos.service.js';
 
 export async function create(request, response) {
@@ -34,4 +35,10 @@ export async function generateBacklog(request, response) {
   const backlog = await generateProjectBacklog(request.params.id);
 
   response.status(200).json({ success: true, data: backlog });
+}
+
+export async function decideViability(request, response) {
+  const project = await setProjectViabilityDecision(request.params.id, request.body);
+
+  response.status(200).json({ success: true, data: project });
 }

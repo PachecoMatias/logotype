@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import KanbanColumn from './KanbanColumn.jsx'
 import HistoriaModal from './HistoriaModal.jsx'
 import { prepararHistoriasTablero } from '../../utils/backlog.js'
+import { actualizarColumnaHistoria } from '../../utils/api.js'
 import '../../styles/panel.css'
 
 const COLUMNAS = ['Backlog', 'To Do', 'In Progress', 'In Code Review', 'In QA', 'Done']
@@ -15,14 +16,23 @@ function fechaHoyString() {
 
 function crearColumnas(historias) {
   const preparadas = prepararHistoriasTablero(historias, fechaHoyString())
-  return {
-    Backlog: preparadas,
+  const columnas = {
+    Backlog: [],
     'To Do': [],
     'In Progress': [],
     'In Code Review': [],
     'In QA': [],
     Done: [],
   }
+
+  preparadas.forEach((historia) => {
+    const columna = COLUMNAS.includes(historia.columnaTablero)
+      ? historia.columnaTablero
+      : 'Backlog'
+    columnas[columna].push({ ...historia, columnaTablero: columna })
+  })
+
+  return columnas
 }
 
 function reemplazarHistoria(actual, actualizada) {
@@ -36,6 +46,9 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
     crearColumnas(Array.isArray(historias) ? historias : [])
   )
   const [detalleAbierto, setDetalleAbierto] = useState(null)
+  const [errorMovimiento, setErrorMovimiento] = useState('')
+  const colasPorHistoria = useRef(new Map())
+  const versionesPorHistoria = useRef(new Map())
 
   const moverTarjeta = (historiaId, columnaActual, direccion) => {
     const indiceActual = COLUMNAS.indexOf(columnaActual)
@@ -43,17 +56,63 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
     if (indiceDestino < 0 || indiceDestino >= COLUMNAS.length) return
 
     const columnaDestino = COLUMNAS[indiceDestino]
+    const historia = historiasPorColumna[columnaActual].find((item) => item.id === historiaId)
+    if (!historia) return
+    const historiaMovida = { ...historia, columnaTablero: columnaDestino }
+    setErrorMovimiento('')
 
     setHistoriasPorColumna((prev) => {
-      const historia = prev[columnaActual].find((h) => h.id === historiaId)
-      if (!historia) return prev
+      const historiaActual = prev[columnaActual].find((item) => item.id === historiaId)
+      if (!historiaActual) return prev
 
       return {
         ...prev,
-        [columnaActual]: prev[columnaActual].filter((h) => h.id !== historiaId),
-        [columnaDestino]: [...prev[columnaDestino], historia],
+        [columnaActual]: prev[columnaActual].filter((item) => item.id !== historiaId),
+        [columnaDestino]: [...prev[columnaDestino], historiaMovida],
       }
     })
+
+    onHistoriaActualizada(historiaMovida)
+
+    const version = (versionesPorHistoria.current.get(historiaId) ?? 0) + 1
+    versionesPorHistoria.current.set(historiaId, version)
+    const solicitudAnterior = colasPorHistoria.current.get(historiaId) ?? Promise.resolve()
+    const solicitud = solicitudAnterior
+      .catch(() => undefined)
+      .then(() => actualizarColumnaHistoria(historiaId, columnaDestino))
+
+    colasPorHistoria.current.set(historiaId, solicitud)
+    solicitud
+      .then((actualizada) => {
+        if (versionesPorHistoria.current.get(historiaId) === version) {
+          actualizarHistoria(actualizada)
+          setErrorMovimiento('')
+        }
+      })
+      .catch(() => {
+        if (versionesPorHistoria.current.get(historiaId) !== version) return
+
+        const historiaRestaurada = { ...historia, columnaTablero: columnaActual }
+        setHistoriasPorColumna((prev) => {
+          const sigueEnDestino = prev[columnaDestino].some(
+            (item) => item.id === historiaId && item.columnaTablero === columnaDestino
+          )
+          if (!sigueEnDestino) return prev
+
+          return {
+            ...prev,
+            [columnaDestino]: prev[columnaDestino].filter((item) => item.id !== historiaId),
+            [columnaActual]: [...prev[columnaActual], historiaRestaurada],
+          }
+        })
+        onHistoriaActualizada(historiaRestaurada, columnaDestino)
+        setErrorMovimiento('No se pudo actualizar la columna. Inténtalo de nuevo.')
+      })
+      .finally(() => {
+        if (colasPorHistoria.current.get(historiaId) === solicitud) {
+          colasPorHistoria.current.delete(historiaId)
+        }
+      })
   }
 
   const cerrarDetalle = useCallback(() => {
@@ -107,6 +166,12 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
           <span className="adm-topbar__crumb">Tablero del proyecto</span>
         </div>
       </header>
+
+      {errorMovimiento && (
+        <div className="adm-alert adm-alert--error" role="alert">
+          {errorMovimiento}
+        </div>
+      )}
 
       <div className="adm-board">
         <div className="adm-board__scroll">

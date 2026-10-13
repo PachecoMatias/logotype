@@ -5,8 +5,11 @@ import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 
 import { app } from '../../src/app.js';
+import { companyContext } from '../../src/config/company-context.js';
 import { closePool } from '../../src/config/database.js';
 import { proyectosRepository } from '../../src/repositories/proyectos.repository.js';
+import { projectCriterionIds } from '../../src/schemas/project-analysis.schema.js';
+import { calcularSenales } from '../../src/services/viability-signals.js';
 import {
   closeMigrationTestPool,
   createTestPool,
@@ -21,11 +24,36 @@ import {
 let pool;
 
 const validAnalysis = {
-  viable: true,
-  completitud: 'completo',
-  campos_faltantes: [],
-  observaciones: 'The submitted scope is internally consistent.',
-  mensaje_para_cliente: 'The project can proceed to planning.',
+  sintesis: 'El pedido tiene un objetivo concreto y señales suficientes para evaluar el alcance.',
+  claves_para_decidir: [
+    'Objetivo: está declarado.',
+    'Plataforma: está identificada.',
+    'Alcance: requiere priorización.',
+  ],
+  nivel_de_riesgo: 'medio',
+  razon_nivel_riesgo: 'El alcance requiere validación.',
+  criterios: projectCriterionIds.map((id) => ({
+    id,
+    estado: 'cumple',
+    justificacion: `El criterio ${id} tiene datos.`,
+  })),
+  fortalezas: [
+    { titulo: 'Objetivo', detalle: 'El objetivo está declarado.' },
+    { titulo: 'Plataforma', detalle: 'La plataforma está identificada.' },
+  ],
+  debilidades: [
+    { titulo: 'Detalle', detalle: 'Faltan reglas.' },
+    { titulo: 'Alcance', detalle: 'Falta priorización.' },
+  ],
+  riesgos: [
+    { titulo: 'Alcance', detalle: 'Puede crecer.', impacto: 'medio', mitigacion: 'Priorizar.' },
+    { titulo: 'Plazo', detalle: 'Puede ajustarse.', impacto: 'bajo', mitigacion: 'Planificar.' },
+    { titulo: 'Datos', detalle: 'Faltan detalles.', impacto: 'alto', mitigacion: 'Relevar.' },
+  ],
+  informacion_faltante: [{ dato: 'Reglas', por_que_importa: 'Permiten estimar.' }],
+  condiciones_para_avanzar: ['Priorizar el alcance.'],
+  preguntas_para_el_cliente: ['¿Qué funciones son prioritarias?'],
+  supuestos: ['Se supone disponibilidad del referente.'],
 };
 
 const validBacklog = Array.from({ length: 12 }, (_, index) => ({
@@ -58,6 +86,10 @@ async function importGeminiGateway() {
 
 function analysisText(analysis = validAnalysis) {
   return JSON.stringify(analysis);
+}
+
+function storedAnalysis(payload = createValidProjectPayload(), analysis = validAnalysis) {
+  return { version: 2, ...analysis, senales: calcularSenales(payload, companyContext) };
 }
 
 async function createProjectForAnalysis(payload = createValidProjectPayload()) {
@@ -190,9 +222,10 @@ test('POST /api/proyectos/:id/analizar maps stored JSON and atomically persists 
       project.id,
     ]);
 
-    assert.deepEqual(response.body, { success: true, data: validAnalysis });
+    const expected = storedAnalysis(project.payload);
+    assert.deepEqual(response.body, { success: true, data: expected });
     assert.equal(providerCalls, 1);
-    assert.deepEqual(rows[0], { estado: 'analizado', analisis_ia: validAnalysis });
+    assert.deepEqual(rows[0], { estado: 'analizado', analisis_ia: expected });
   } finally {
     restoreGateway.mock.restore();
   }
@@ -208,14 +241,14 @@ test('repository exposes parsed stored analysis and rejects schema-corrupted cac
 
   await pool.execute(
     'UPDATE proyectos SET analisis_ia = CAST(? AS JSON), estado = ? WHERE id = ?',
-    [analysisText(), 'analizado', project.id],
+    [JSON.stringify(storedAnalysis(project.payload)), 'analizado', project.id],
   );
   const mapped = await proyectosRepository.findById(
     { database: { database: 'logotype_test' } },
     project.id,
   );
 
-  assert.deepEqual(mapped.analisisIa, validAnalysis);
+  assert.deepEqual(mapped.analisisIa, storedAnalysis(project.payload));
 
   await pool.execute('UPDATE proyectos SET analisis_ia = CAST(? AS JSON) WHERE id = ?', [
     JSON.stringify({ unexpected: 'stored corruption' }),
@@ -355,8 +388,8 @@ test('analysis normalizes provider and response failures to the same private 502
     '   ',
     '{not json}',
     analysisText({ ...validAnalysis, additional: true }),
-    analysisText({ ...validAnalysis, completitud: 'unknown' }),
-    analysisText({ ...validAnalysis, campos_faltantes: [1] }),
+    analysisText({ ...validAnalysis, nivel_de_riesgo: 'unknown' }),
+    analysisText({ ...validAnalysis, criterios: validAnalysis.criterios.slice(1) }),
   ];
 
   for (const failure of failures) {
@@ -413,7 +446,7 @@ test('analysis caches a stored result, fails a persistence write safely, and lea
 
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
-    assert.deepEqual(second.body.data, validAnalysis);
+    assert.deepEqual(second.body.data, storedAnalysis(project.payload));
     assert.equal(providerCalls, 1);
 
     const blockedProject = await createProjectForAnalysis();
@@ -452,9 +485,10 @@ test('concurrent first analysis requests preserve the first stored result withou
   );
   const project = await createProjectForAnalysis();
   const responses = [
-    { ...validAnalysis, observaciones: 'First candidate.' },
-    { ...validAnalysis, observaciones: 'Second candidate.' },
+    { ...validAnalysis, razon_nivel_riesgo: 'Primera respuesta.' },
+    { ...validAnalysis, razon_nivel_riesgo: 'Segunda respuesta.' },
   ];
+  const storedResponses = responses.map((analysis) => storedAnalysis(project.payload, analysis));
   const gates = [Promise.withResolvers(), Promise.withResolvers()];
   let providerCalls = 0;
   const restoreGateway = test.mock.method(geminiGateway, 'generateProjectAnalysis', async () => {
@@ -484,7 +518,7 @@ test('concurrent first analysis requests preserve the first stored result withou
     assert.equal(providerCalls, 2);
     assert.equal(rows[0].estado, 'analizado');
     assert.ok(
-      responses.some(
+      storedResponses.some(
         (analysis) => JSON.stringify(rows[0].analisis_ia) === JSON.stringify(analysis),
       ),
     );
@@ -495,13 +529,90 @@ test('concurrent first analysis requests preserve the first stored result withou
   }
 });
 
+test('PUT /api/proyectos/:id/decision enforces v2 analysis, reason rules, and no-backlog changes', async () => {
+  const unanalyzed = await createProjectForAnalysis();
+  const withoutAnalysis = await request(app)
+    .put(`/api/proyectos/${unanalyzed.id}/decision`)
+    .send({ decision: 'VIABLE' });
+  assert.equal(withoutAnalysis.status, 409);
+  assert.equal(withoutAnalysis.body.error.code, 'PROJECT_ANALYSIS_V2_REQUIRED');
+
+  const project = await createProjectForAnalysis();
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
+  );
+
+  const shortReason = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'NO_VIABLE', motivo: 'Muy corto' });
+  assert.equal(shortReason.status, 400);
+  assert.equal(shortReason.body.error.code, 'VALIDATION_ERROR');
+
+  const rejected = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'NO_VIABLE', motivo: 'El alcance excede el presupuesto disponible.' });
+  assert.equal(rejected.status, 200);
+  assert.equal(rejected.body.data.decisionViabilidad, 'NO_VIABLE');
+  assert.equal(rejected.body.data.decisionMotivo, 'El alcance excede el presupuesto disponible.');
+  assert.ok(rejected.body.data.decisionFecha);
+
+  const accepted = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'VIABLE' });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.body.data.decisionViabilidad, 'VIABLE');
+  assert.equal(accepted.body.data.decisionMotivo, null);
+
+  await pool.execute(
+    "INSERT INTO historias (proyecto_id, prioridad, historia_usuario, descripcion, criterios_aceptacion, alcance_tecnico, estimacion_fibonacci, rol_sugerido, fase) VALUES (?, 'Alta', 'Historia', 'Descripción', CAST(? AS JSON), 'Alcance', 3, 'Backend', 'Desarrollo Backend')",
+    [project.id, JSON.stringify(['Criterio'])],
+  );
+  const blockedChange = await request(app)
+    .put(`/api/proyectos/${project.id}/decision`)
+    .send({ decision: 'NO_VIABLE', motivo: 'Ya existe un backlog para este proyecto.' });
+  assert.equal(blockedChange.status, 409);
+  assert.equal(blockedChange.body.error.code, 'PROJECT_BACKLOG_ALREADY_EXISTS');
+});
+
+test('backlog generation requires an administrator VIABLE decision', async () => {
+  const { geminiGateway } = await importGeminiGateway();
+  const project = await createProjectForAnalysis();
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
+  );
+  let providerCalls = 0;
+  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
+    providerCalls += 1;
+    return JSON.stringify(validBacklog);
+  });
+
+  try {
+    const pending = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    assert.equal(pending.status, 409);
+    assert.equal(pending.body.error.code, 'PROJECT_VIABILITY_DECISION_REQUIRED');
+
+    await pool.execute(
+      "UPDATE proyectos SET decision_viabilidad = 'NO_VIABLE', decision_motivo = 'No cumple las condiciones', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+      [project.id],
+    );
+    const rejected = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    assert.equal(rejected.status, 409);
+    assert.equal(rejected.body.error.code, 'PROJECT_VIABILITY_DECISION_REQUIRED');
+    assert.equal(providerCalls, 0);
+  } finally {
+    restoreGateway.mock.restore();
+  }
+});
+
 test('backlog persists a strict generated result and returns the stored cache on repeat', async () => {
   const { geminiGateway } = await importGeminiGateway();
   const project = await createProjectForAnalysis();
   let providerCalls = 0;
   await pool.execute(
-    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
-    [analysisText(), project.id],
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON), decision_viabilidad = 'VIABLE', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
   );
   const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
     providerCalls += 1;
@@ -512,6 +623,10 @@ test('backlog persists a strict generated result and returns the stored cache on
     const first = await request(app)
       .post(`/api/proyectos/${project.id}/backlog`)
       .send({ ignored: true });
+    await pool.execute(
+      'UPDATE historias SET columna_tablero = ? WHERE proyecto_id = ? AND id = ?',
+      ['In QA', project.id, first.body.data[0].id],
+    );
     const second = await request(app).post(`/api/proyectos/${project.id}/backlog`);
     const [stories] = await pool.execute(
       'SELECT id FROM historias WHERE proyecto_id = ? ORDER BY id ASC',
@@ -523,12 +638,16 @@ test('backlog persists a strict generated result and returns the stored cache on
     const persistedBacklog = validBacklog.map((story, index) => ({
       id: stories[index].id,
       ...story,
+      columnaTablero: 'Backlog',
     }));
+    const cachedBacklog = persistedBacklog.map((story, index) =>
+      index === 0 ? { ...story, columnaTablero: 'In QA' } : story,
+    );
 
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
     assert.deepEqual(first.body, { success: true, data: persistedBacklog });
-    assert.deepEqual(second.body, { success: true, data: persistedBacklog });
+    assert.deepEqual(second.body, { success: true, data: cachedBacklog });
     assert.equal(providerCalls, 1);
     assert.equal(stories.length, 12);
     assert.equal(projects[0].estado, 'planificado');
@@ -576,8 +695,8 @@ test('backlog normalizes malformed provider JSON without a persistence write', a
   const { geminiGateway } = await importGeminiGateway();
   const project = await createProjectForAnalysis();
   await pool.execute(
-    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON) WHERE id = ?",
-    [analysisText(), project.id],
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON), decision_viabilidad = 'VIABLE', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+    [JSON.stringify(storedAnalysis(project.payload)), project.id],
   );
   const restoreGateway = test.mock.method(
     geminiGateway,

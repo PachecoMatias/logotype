@@ -1,4 +1,5 @@
 import { parseEnvironment } from '../config/env.js';
+import { companyContext } from '../config/company-context.js';
 import { AppError } from '../errors/app-error.js';
 import { geminiGateway } from '../integrations/gemini.gateway.js';
 import { buildProjectBacklogPrompt } from '../prompts/project-backlog.prompt.js';
@@ -7,6 +8,7 @@ import { historiasRepository } from '../repositories/historias.repository.js';
 import { proyectosRepository } from '../repositories/proyectos.repository.js';
 import { projectAnalysisSchema } from '../schemas/project-analysis.schema.js';
 import { projectBacklogSchema } from '../schemas/project-backlog.schema.js';
+import { calcularSenales } from './viability-signals.js';
 
 function createInternalError() {
   return new AppError(500, 'INTERNAL_ERROR', 'Internal server error');
@@ -130,15 +132,22 @@ export function createProyectosService({
       throw new AppError(404, 'PROJECT_NOT_FOUND', 'Project not found');
     }
 
-    if (project.estado === 'analizado' && project.analisisIa !== null) {
+    if (project.analisisIa?.version === 2) {
       return project.analisisIa;
     }
 
-    if (project.estado !== 'nuevo' || project.analisisIa !== null) {
+    if (project.analisisIa !== null) {
+      if (['VIABLE', 'NO_VIABLE'].includes(project.decisionViabilidad)) return project.analisisIa;
+      const storedStories = await storyRepository.findByProjectId(configuration, id);
+      if (storedStories.length > 0) {
+        return project.analisisIa;
+      }
+    } else if (project.estado !== 'nuevo') {
       throw createInternalError();
     }
 
-    const prompt = buildPrompt(project.payload);
+    const signals = calcularSenales(project.payload, companyContext);
+    const prompt = buildPrompt(project.payload, companyContext, signals);
     let analysis;
 
     try {
@@ -154,7 +163,7 @@ export function createProyectosService({
         throw new Error('Gemini returned an invalid analysis');
       }
 
-      analysis = result.data;
+      analysis = { version: 2, ...result.data, senales: signals };
     } catch {
       throw createAnalysisFailure();
     }
@@ -167,8 +176,16 @@ export function createProyectosService({
 
     const winningProject = await repository.findById(configuration, id);
 
-    if (winningProject?.estado === 'analizado' && winningProject.analisisIa !== null) {
+    if (winningProject?.analisisIa?.version === 2) {
       return winningProject.analisisIa;
+    }
+
+    if (winningProject?.analisisIa !== null) {
+      if (['VIABLE', 'NO_VIABLE'].includes(winningProject.decisionViabilidad)) {
+        return winningProject.analisisIa;
+      }
+      const storedStories = await storyRepository.findByProjectId(configuration, id);
+      if (storedStories.length > 0) return winningProject.analisisIa;
     }
 
     throw createInternalError();
@@ -193,6 +210,14 @@ export function createProyectosService({
         409,
         'PROJECT_NOT_ANALYZED',
         'Project must be analyzed before backlog generation',
+      );
+    }
+
+    if (project.decisionViabilidad !== 'VIABLE') {
+      throw new AppError(
+        409,
+        'PROJECT_VIABILITY_DECISION_REQUIRED',
+        'Project must be marked viable before backlog generation',
       );
     }
 
@@ -251,10 +276,55 @@ export function createProyectosService({
       );
     }
 
+    if (persisted.outcome === 'decision_required') {
+      throw new AppError(
+        409,
+        'PROJECT_VIABILITY_DECISION_REQUIRED',
+        'Project must be marked viable before backlog generation',
+      );
+    }
+
     throw createInternalError();
   }
 
-  return { createProject, listProjects, getProjectById, analyzeProject, generateProjectBacklog };
+  async function setProjectViabilityDecision(id, input) {
+    const reason = input.motivo?.trim() || null;
+    const result = await repository.storeViabilityDecision(
+      getConfiguration(),
+      id,
+      input.decision,
+      reason,
+    );
+
+    if (result.outcome === 'missing') {
+      throw new AppError(404, 'PROJECT_NOT_FOUND', 'Project not found');
+    }
+    if (result.outcome === 'analysis_required') {
+      throw new AppError(
+        409,
+        'PROJECT_ANALYSIS_V2_REQUIRED',
+        'Project requires a version 2 analysis before a decision',
+      );
+    }
+    if (result.outcome === 'backlog_exists') {
+      throw new AppError(
+        409,
+        'PROJECT_BACKLOG_ALREADY_EXISTS',
+        'Project decision cannot change after backlog generation',
+      );
+    }
+
+    return result.project;
+  }
+
+  return {
+    createProject,
+    listProjects,
+    getProjectById,
+    analyzeProject,
+    generateProjectBacklog,
+    setProjectViabilityDecision,
+  };
 }
 
 export const proyectosService = createProyectosService();
@@ -265,4 +335,5 @@ export const {
   getProjectById,
   analyzeProject,
   generateProjectBacklog,
+  setProjectViabilityDecision,
 } = proyectosService;

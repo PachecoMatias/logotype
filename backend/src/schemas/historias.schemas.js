@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { projectBacklogStorySchema } from './project-backlog.schema.js';
+import { projectBacklogStorySchema, storyBoardColumns } from './project-backlog.schema.js';
 
 export const storyIdParamsSchema = z.strictObject({
   id: z
@@ -16,3 +16,7 @@ export const updateStoryBodySchema = projectBacklogStorySchema
   .refine((body) => Object.keys(body).length > 0, {
     message: 'At least one editable story field is required',
   });
+
+export const updateStoryColumnBodySchema = z.strictObject({
+  columna_tablero: z.enum(storyBoardColumns),
+});

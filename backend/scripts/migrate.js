@@ -16,10 +16,12 @@ const migrations = [
   { name: '003_create_equipo', table: 'equipo' },
   { name: '004_add_project_ai_analysis', table: 'proyectos', kind: 'project-analysis-alter' },
   { name: '005_enable_backlog_planning', table: 'proyectos', kind: 'backlog-planning-alter' },
+  { name: '006_add_viability_decision', table: 'proyectos', kind: 'viability-decision-alter' },
 ];
 
 const projectAnalysisMigrationKind = 'project-analysis-alter';
 const backlogPlanningMigrationKind = 'backlog-planning-alter';
+const viabilityDecisionMigrationKind = 'viability-decision-alter';
 const projectAnalysisColumnName = 'analisis_ia';
 const projectStatusCheckName = 'chk_proyectos_estado';
 const projectAnalysisCheckName = 'chk_proyectos_analisis_ia_objeto';
@@ -38,6 +40,9 @@ const targetRoleCheckClause = `rol_sugerido IN (
   'Frontend', 'Backend', 'QA', 'Ciberseguridad'
 )`;
 const storyRoleCheckName = 'chk_historias_rol';
+const viabilityDecisionCheckName = 'chk_proyectos_decision_viabilidad';
+const viabilityDecisionCheckClause =
+  "decision_viabilidad IS NULL OR decision_viabilidad IN ('VIABLE', 'NO_VIABLE')";
 const analysisObjectCheckClause = "analisis_ia IS NULL OR JSON_TYPE(analisis_ia) = 'OBJECT'";
 const addAnalysisColumnClause = 'ADD COLUMN analisis_ia JSON NULL AFTER estado';
 const addAnalysisObjectCheckClause = `ADD CONSTRAINT ${projectAnalysisCheckName}
@@ -133,8 +138,16 @@ function isBacklogPlanningMigration(definition) {
   return definition.kind === backlogPlanningMigrationKind;
 }
 
+function isViabilityDecisionMigration(definition) {
+  return definition.kind === viabilityDecisionMigrationKind;
+}
+
 function isSpecialMigration(definition) {
-  return isProjectAnalysisMigration(definition) || isBacklogPlanningMigration(definition);
+  return (
+    isProjectAnalysisMigration(definition) ||
+    isBacklogPlanningMigration(definition) ||
+    isViabilityDecisionMigration(definition)
+  );
 }
 
 function canonicalizeCheckClause(clause) {
@@ -201,6 +214,7 @@ async function inspectProjectAnalysisState(connection) {
     projectPayloadCheckName,
     projectStatusCheckName,
     projectAnalysisCheckName,
+    viabilityDecisionCheckName,
   ]);
   const unexpectedChecks = checks.filter((check) => !allowedCheckNames.has(check.CONSTRAINT_NAME));
 
@@ -259,11 +273,7 @@ async function inspectProjectAnalysisState(connection) {
     return { kind: 'source' };
   }
 
-  if (
-    columnState === 'exact' &&
-    analysisCheckState === 'exact' &&
-    statusCheckState === 'target'
-  ) {
+  if (columnState === 'exact' && analysisCheckState === 'exact' && statusCheckState === 'target') {
     return { kind: 'target' };
   }
 
@@ -428,6 +438,117 @@ async function findCheckClause(connection, tableName, checkName) {
   );
 
   return rows[0]?.CHECK_CLAUSE;
+}
+
+async function inspectViabilityDecisionState(connection) {
+  const [columns] = await connection.query(`
+    SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLLATION_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'proyectos'
+      AND COLUMN_NAME IN ('decision_viabilidad', 'decision_motivo', 'decision_fecha')
+  `);
+  const byName = new Map(columns.map((column) => [column.COLUMN_NAME, column]));
+  const expected = {
+    decision_viabilidad: ['varchar(16)', 'utf8mb4_0900_as_cs'],
+    decision_motivo: ['text', 'utf8mb4_0900_as_cs'],
+    decision_fecha: ['datetime', null],
+  };
+  const columnStates = Object.fromEntries(
+    Object.entries(expected).map(([name, [type, collation]]) => {
+      const column = byName.get(name);
+      const state = !column
+        ? 'absent'
+        : column.COLUMN_TYPE === type &&
+            column.IS_NULLABLE === 'YES' &&
+            column.COLLATION_NAME === collation
+          ? 'exact'
+          : 'incompatible';
+      return [name, state];
+    }),
+  );
+  const clause = await findCheckClause(connection, 'proyectos', viabilityDecisionCheckName);
+  const checkState = !clause
+    ? 'absent'
+    : matchesCheckClause(clause, viabilityDecisionCheckClause)
+      ? 'exact'
+      : 'incompatible';
+  const states = [...Object.values(columnStates), checkState];
+  if (states.includes('incompatible')) return { kind: 'ambiguous', columnStates, checkState };
+  if (states.every((state) => state === 'absent'))
+    return { kind: 'source', columnStates, checkState };
+  if (states.every((state) => state === 'exact')) {
+    const [rows] = await connection.query(
+      "SELECT COUNT(*) AS invalid_count FROM proyectos WHERE estado = 'planificado' AND decision_viabilidad <> 'VIABLE'",
+    );
+    return (rows[0]?.invalid_count ?? 0) === 0
+      ? { kind: 'target', columnStates, checkState }
+      : { kind: 'ambiguous' };
+  }
+  return { kind: 'partial', columnStates, checkState };
+}
+
+async function repairViabilityDecisionTarget(connection, inspection) {
+  const definitions = {
+    decision_viabilidad:
+      'ADD COLUMN decision_viabilidad VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_cs NULL AFTER analisis_ia',
+    decision_motivo:
+      'ADD COLUMN decision_motivo TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_cs NULL AFTER decision_viabilidad',
+    decision_fecha: 'ADD COLUMN decision_fecha DATETIME NULL AFTER decision_motivo',
+  };
+  const clauses = Object.entries(inspection.columnStates)
+    .filter(([, state]) => state === 'absent')
+    .map(([name]) => definitions[name]);
+  if (inspection.checkState === 'absent')
+    clauses.push(
+      `ADD CONSTRAINT ${viabilityDecisionCheckName} CHECK (${viabilityDecisionCheckClause})`,
+    );
+  if (clauses.length > 0)
+    await connection.query(`ALTER TABLE proyectos\n  ${clauses.join(',\n  ')}`);
+  await connection.query(
+    "UPDATE proyectos SET decision_viabilidad = 'VIABLE', decision_fecha = COALESCE(decision_fecha, actualizado_en) WHERE estado = 'planificado' AND decision_viabilidad IS NULL",
+  );
+}
+
+async function applyViabilityDecisionMigration(connection, definition, history) {
+  let record = history.get(definition.name);
+  let inspection = await inspectViabilityDecisionState(connection);
+  if (record?.state === 'applied') {
+    if (inspection.kind !== 'target')
+      throw new Error('Migration 006 applied schema is incompatible');
+    return;
+  }
+  if (record?.state === 'rolling_back') {
+    if (inspection.kind === 'source') {
+      await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+        definition.name,
+      ]);
+      history.delete(definition.name);
+      record = undefined;
+    } else if (inspection.kind === 'target') {
+      await connection.execute(
+        "UPDATE schema_migrations SET state = 'applied' WHERE migration_name = ?",
+        [definition.name],
+      );
+      history.set(definition.name, { ...record, state: 'applied' });
+      return;
+    } else throw new Error('Migration 006 rollback is partial or ambiguous');
+  }
+  if (inspection.kind === 'target') {
+    await connection.execute(
+      "INSERT INTO schema_migrations (migration_name, checksum, state, applied_at) VALUES (?, ?, 'applied', CURRENT_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE state = 'applied', applied_at = CURRENT_TIMESTAMP(6)",
+      [definition.name, definition.checksum],
+    );
+  } else if (inspection.kind === 'source' || inspection.kind === 'partial') {
+    if (!record) await insertApplyingHistory(connection, definition);
+    await repairViabilityDecisionTarget(connection, inspection);
+    inspection = await inspectViabilityDecisionState(connection);
+    if (inspection.kind !== 'target') throw new Error('Migration 006 target verification failed');
+    await connection.execute(
+      "UPDATE schema_migrations SET state = 'applied', applied_at = CURRENT_TIMESTAMP(6) WHERE migration_name = ?",
+      [definition.name],
+    );
+  } else throw new Error('Migration 006 cannot recover an ambiguous schema');
+  history.set(definition.name, { name: definition.name, state: 'applied' });
 }
 
 function classifyBacklogCheck(actualClause, sourceClause, targetClause) {
@@ -693,15 +814,15 @@ async function reconcileHistory(connection, rows, definitionsByName) {
 async function loadHistory(connection, definitions) {
   const rows = await loadHistoryRows(connection);
   const definitionsByName = validateHistory(rows, definitions);
-  const standardDefinitions = definitions.filter(
-    (definition) => !isSpecialMigration(definition),
-  );
+  const standardDefinitions = definitions.filter((definition) => !isSpecialMigration(definition));
   const standardRows = rows.filter(
     (row) => !isSpecialMigration(definitionsByName.get(row.migration_name)),
   );
-  const history = await reconcileHistory(connection, standardRows, new Map(
-    standardDefinitions.map((definition) => [definition.name, definition]),
-  ));
+  const history = await reconcileHistory(
+    connection,
+    standardRows,
+    new Map(standardDefinitions.map((definition) => [definition.name, definition])),
+  );
 
   for (const row of rows) {
     if (isSpecialMigration(definitionsByName.get(row.migration_name))) {
@@ -721,6 +842,11 @@ async function applyPendingMigrations(connection, definitions, history) {
 
     if (isBacklogPlanningMigration(definition)) {
       await applyBacklogPlanningMigration(connection, definition, history);
+      continue;
+    }
+
+    if (isViabilityDecisionMigration(definition)) {
+      await applyViabilityDecisionMigration(connection, definition, history);
       continue;
     }
 
@@ -764,7 +890,9 @@ async function rollbackProjectAnalysisMigration(connection, definition, history)
       await insertVerifiedProjectAnalysisHistory(connection, definition);
       history.set(definition.name, { name: definition.name, state: 'applied' });
     } else {
-      throw new Error(`Migration 004 cannot roll back: ${inspection.reason ?? 'partial schema state'}`);
+      throw new Error(
+        `Migration 004 cannot roll back: ${inspection.reason ?? 'partial schema state'}`,
+      );
     }
   } else if (record.state === 'rolling_back') {
     if (inspection.kind === 'source') {
@@ -805,7 +933,9 @@ async function rollbackProjectAnalysisMigration(connection, definition, history)
 
   await connection.query(definition.downSql);
   await verifyProjectAnalysisState(connection, 'source');
-  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [definition.name]);
+  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+    definition.name,
+  ]);
   history.delete(definition.name);
 
   return true;
@@ -813,7 +943,9 @@ async function rollbackProjectAnalysisMigration(connection, definition, history)
 
 async function assertBacklogRollbackSafe(connection) {
   const [plannedProjects, generatedRoles] = await Promise.all([
-    connection.query("SELECT COUNT(*) AS blocking_count FROM proyectos WHERE estado = 'planificado'"),
+    connection.query(
+      "SELECT COUNT(*) AS blocking_count FROM proyectos WHERE estado = 'planificado'",
+    ),
     connection.query(`
       SELECT COUNT(*) AS blocking_count
       FROM historias
@@ -862,7 +994,9 @@ async function rollbackBacklogPlanningMigration(connection, definition, history)
       await insertVerifiedBacklogPlanningHistory(connection, definition);
       history.set(definition.name, { name: definition.name, state: 'applied' });
     } else {
-      throw new Error(`Migration 005 cannot roll back: ${inspection.reason ?? 'partial schema state'}`);
+      throw new Error(
+        `Migration 005 cannot roll back: ${inspection.reason ?? 'partial schema state'}`,
+      );
     }
   } else if (record.state === 'rolling_back') {
     if (inspection.kind === 'source') {
@@ -894,13 +1028,64 @@ async function rollbackBacklogPlanningMigration(connection, definition, history)
 
   await restoreBacklogPlanningSource(connection, inspection);
   await verifyBacklogPlanningState(connection, 'source');
-  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [definition.name]);
+  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+    definition.name,
+  ]);
   history.delete(definition.name);
 
   return true;
 }
 
+async function rollbackViabilityDecisionMigration(connection, definition, history) {
+  const record = history.get(definition.name);
+  const inspection = await inspectViabilityDecisionState(connection);
+  if (!record) {
+    if (inspection.kind === 'source') return false;
+    throw new Error('Migration 006 schema exists without history');
+  }
+  if (record.state === 'applying') {
+    throw new Error('Migration 006 is applying and must be recovered with an up command first');
+  }
+  if (record.state === 'rolling_back' && inspection.kind === 'source') {
+    await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+      definition.name,
+    ]);
+    history.delete(definition.name);
+    return true;
+  }
+  if (inspection.kind !== 'target')
+    throw new Error('Migration 006 rollback is partial or ambiguous');
+  if (record.state !== 'rolling_back') {
+    await connection.execute(
+      "UPDATE schema_migrations SET state = 'rolling_back' WHERE migration_name = ?",
+      [definition.name],
+    );
+  }
+  await connection.query(definition.downSql);
+  if ((await inspectViabilityDecisionState(connection)).kind !== 'source') {
+    throw new Error('Migration 006 source verification failed');
+  }
+  await connection.execute('DELETE FROM schema_migrations WHERE migration_name = ?', [
+    definition.name,
+  ]);
+  history.delete(definition.name);
+  return true;
+}
+
 async function rollbackLatestMigration(connection, definitions, history) {
+  const viabilityDecisionDefinition = definitions.find(isViabilityDecisionMigration);
+  if (viabilityDecisionDefinition && !history.has(viabilityDecisionDefinition.name)) {
+    const inspection = await inspectViabilityDecisionState(connection);
+    if (inspection.kind === 'target') {
+      await connection.execute(
+        "INSERT INTO schema_migrations (migration_name, checksum, state, applied_at) VALUES (?, ?, 'applied', CURRENT_TIMESTAMP(6))",
+        [viabilityDecisionDefinition.name, viabilityDecisionDefinition.checksum],
+      );
+      history.set(viabilityDecisionDefinition.name, { state: 'applied' });
+    } else if (inspection.kind !== 'source') {
+      throw new Error('Migration 006 cannot roll back an ambiguous schema');
+    }
+  }
   const backlogPlanningDefinition = definitions.find(isBacklogPlanningMigration);
   const projectAnalysisDefinition = definitions.find(isProjectAnalysisMigration);
 
@@ -960,6 +1145,11 @@ async function rollbackLatestMigration(connection, definitions, history) {
 
   if (isBacklogPlanningMigration(latestApplied)) {
     await rollbackBacklogPlanningMigration(connection, latestApplied, history);
+    return;
+  }
+
+  if (isViabilityDecisionMigration(latestApplied)) {
+    await rollbackViabilityDecisionMigration(connection, latestApplied, history);
     return;
   }
 

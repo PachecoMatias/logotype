@@ -9,6 +9,14 @@ export const projectBacklogPhases = [
   'Despliegue',
 ];
 export const projectBacklogPriorities = ['Alta', 'Media', 'Baja'];
+export const storyBoardColumns = [
+  'Backlog',
+  'To Do',
+  'In Progress',
+  'In Code Review',
+  'In QA',
+  'Done',
+];
 export const projectBacklogRoles = [
   'Frontend',
   'Backend',
@@ -44,6 +52,7 @@ export const projectBacklogStorySchema = z.strictObject({
 
 export const persistedProjectBacklogStorySchema = projectBacklogStorySchema.extend({
   id: z.number().int().positive().max(4294967295),
+  columnaTablero: z.enum(storyBoardColumns),
 });
 
 export const projectBacklogSchema = z.array(projectBacklogStorySchema).min(12).max(25);

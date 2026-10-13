@@ -1,42 +1,42 @@
-import { useEffect, useState } from 'react'
-import ProjectCard from './ProjectCard.jsx'
-import { apiRequest } from '../../utils/api.js'
-import '../../styles/panel.css'
+import { useEffect, useState } from "react";
+import ProjectCard from "./ProjectCard.jsx";
+import { apiRequest } from "../../utils/api.js";
+import "../../styles/panel.css";
 
 function PanelSolicitudes({ onSelectProject }) {
-  const [proyectos, setProyectos] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [proyectos, setProyectos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let cancelado = false
+    let cancelado = false;
 
     const cargarProyectos = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       try {
-        const projects = await apiRequest('/api/proyectos')
+        const projects = await apiRequest("/api/proyectos");
 
         if (!cancelado) {
-          setProyectos(Array.isArray(projects) ? projects : [])
+          setProyectos(Array.isArray(projects) ? projects : []);
         }
       } catch (err) {
         if (!cancelado) {
-          setError(err.message || 'Error de red al cargar las solicitudes.')
+          setError(err.message || "Error de red al cargar las solicitudes.");
         }
       } finally {
         if (!cancelado) {
-          setLoading(false)
+          setLoading(false);
         }
       }
-    }
+    };
 
-    cargarProyectos()
+    cargarProyectos();
 
     return () => {
-      cancelado = true
-    }
-  }, [])
+      cancelado = true;
+    };
+  }, []);
 
   return (
     <section className="adm-section">
@@ -44,7 +44,9 @@ function PanelSolicitudes({ onSelectProject }) {
         <div className="adm-page-head">
           <span className="adm-eyebrow">Panel interno</span>
           <h2 className="adm-page-title">Solicitudes recibidas</h2>
-          <p className="adm-page-sub">Proyectos enviados a través del configurador.</p>
+          <p className="adm-page-sub">
+            Proyectos enviados a través del configurador.
+          </p>
         </div>
 
         {loading && (
@@ -65,7 +67,9 @@ function PanelSolicitudes({ onSelectProject }) {
         {!loading && error && (
           <div className="adm-state adm-state--box adm-state--error">
             <div>
-              <p className="adm-state__title">No se pudieron cargar las solicitudes</p>
+              <p className="adm-state__title">
+                No se pudieron cargar las solicitudes
+              </p>
               <p>{error}</p>
             </div>
           </div>
@@ -75,7 +79,10 @@ function PanelSolicitudes({ onSelectProject }) {
           <div className="adm-state adm-state--box">
             <div>
               <p className="adm-state__title">No hay solicitudes todavía</p>
-              <p>Cuando se envíe el configurador, la solicitud va a aparecer en esta lista.</p>
+              <p>
+                Cuando se envíe el configurador, la solicitud va a aparecer en
+                esta lista.
+              </p>
             </div>
           </div>
         )}
@@ -88,7 +95,7 @@ function PanelSolicitudes({ onSelectProject }) {
               <span>Contacto</span>
               <span>Tipo</span>
               <span>Fecha</span>
-              <span>Estado</span>
+              <span>Estado · decisión</span>
             </div>
             {proyectos.map((p) => (
               <ProjectCard key={p.id} project={p} onClick={onSelectProject} />
@@ -97,7 +104,7 @@ function PanelSolicitudes({ onSelectProject }) {
         )}
       </div>
     </section>
-  )
+  );
 }
 
-export default PanelSolicitudes
+export default PanelSolicitudes;
