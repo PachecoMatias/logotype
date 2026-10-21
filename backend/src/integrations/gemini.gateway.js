@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 import { parseGeminiEnvironment } from '../config/env.js';
+import { advisorRoundJsonSchema } from '../schemas/advisor-round.schema.js';
 import { projectAnalysisJsonSchema } from '../schemas/project-analysis.schema.js';
 import { projectBacklogJsonSchema } from '../schemas/project-backlog.schema.js';
 
@@ -130,6 +131,13 @@ export function createGeminiGateway({
   }
 
   return {
+    async generateAdvisorRound(prompt) {
+      return generateStructuredContent(prompt, advisorRoundJsonSchema, {
+        maxOutputTokens: 16384,
+        thinkingConfig: { thinkingBudget: 1024 },
+      });
+    },
+
     async generateProjectAnalysis(prompt) {
       return generateStructuredContent(prompt, projectAnalysisJsonSchema, {
         maxOutputTokens: 16384,
