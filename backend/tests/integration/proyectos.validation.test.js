@@ -4,6 +4,7 @@ import test from 'node:test';
 import { validate } from '../../src/middleware/validate.js';
 import { projectBodySchema, projectIdParamsSchema } from '../../src/schemas/proyectos.schemas.js';
 import {
+  createAdvisorContext,
   createConditionalProjectPayload,
   createValidProjectPayload,
 } from '../fixtures/proyecto-payload.js';
@@ -30,6 +31,19 @@ test('accepts conditional fields and omitted optional information', () => {
 
   assert.equal(projectBodySchema.safeParse(conditionalPayload).success, true);
   assert.equal(projectBodySchema.safeParse(withoutOptionalInformation).success, true);
+});
+
+test('preserves the complete optional advisor context without weakening required fields', () => {
+  const payload = createValidProjectPayload();
+  payload.asesoramiento = createAdvisorContext();
+
+  const result = projectBodySchema.safeParse(payload);
+
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data.asesoramiento, payload.asesoramiento);
+
+  delete payload.problema.procesoActual;
+  assert.equal(projectBodySchema.safeParse(payload).success, false);
 });
 
 test('rejects invalid known fields with safe validation details', () => {

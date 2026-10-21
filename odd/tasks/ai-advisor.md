@@ -166,11 +166,37 @@ Implement pure, testable functions under `backend/src/services/advisor/`:
 - Build to a temporary directory, verify no horizontal scroll at 375/768/1280px, validate a mapped payload, preserve site navigation, and leave the panel unchanged.
 - Commit Unit 2 exactly as `feat(advisor): client advisor screens`; do not push.
 
+### S14 — Unit 3 persistence and admin presentation
+
+- Preserve `payload.asesoramiento` completely through `POST /api/proyectos`, persistence, list, and detail retrieval. Projects without `payload.asesoramiento` must retain their previous behavior exactly.
+- Keep every existing required project field and validation rule. If the optional advisor subtree is validated, add maximums only; do not weaken existing schemas.
+- Present advisor context as a readable section in the existing administrator project detail rather than as raw nested data: original idea, stories and their state/stage/detail flag, answers, accepted/rejected suggestions, completion, rounds, and advisor fallback state.
+- Extend only `frontend/src/styles/panel.css` with `adm-` classes. Use plain CSS without Framer Motion and preserve the existing administrator decision controls.
+
+### S15 — Advisor-aware viability analysis
+
+- Add a concise advisor summary to the viability prompt only when `payload.asesoramiento` exists. Every advisor-derived value remains inside the existing byte-counted untrusted project-payload zone, preserving its delimiters and language rules.
+- Calculate three trusted deterministic signals in code: total advisor stories, stories with `estado='supuesta'`, and stories with `aDetallar=true`.
+- Legacy projects without advisor context must keep the previous prompt and signal behavior exactly.
+
+### S16 — Advisor-aware backlog generation
+
+- When advisor stories exist, instruct backlog generation to use those stories as its base and cover every advised story with at least one detailed backlog story.
+- Keep the provider response schema and the administrator-controlled exact `VIABLE` gate unchanged.
+- Legacy projects without advisor context must keep the previous backlog prompt and generation behavior exactly.
+
+### S17 — Unit 3 focused proof and delivery
+
+- Mock Gemini in every automated test and make no real Gemini calls.
+- Focused tests cover exact advisor passthrough, unchanged required validation, legacy payloads without advisor context, deterministic advisor signals, untrusted prompt placement, advisor-aware backlog instructions, the unchanged `VIABLE` gate, and readable admin presentation data.
+- Run only focused tests, a frontend build into a temporary directory, formatting/lint for touched code, and `git diff --check`; do not run the known hanging full suite or modify `frontend/dist`.
+- Commit Unit 3 exactly as `feat(advisor): admin view and advisor-aware analysis`; do not push.
+
 ## Tasks
 
 - [x] AIADV-1 (S1–S8) — Unit 1 backend round engine, public endpoint, protections, prompt/provider boundary, and focused tests. Route: inline after delegated read-only mapping; writer trigger absent. Commit: this Unit 1 commit, `feat(advisor): requirements advisor rounds endpoint`.
 - [x] AIADV-2 (S9–S13) — Unit 2 frontend advisor flow, pure project payload, fallback, accessibility, responsive UI, and focused proof. Route: inline after delegated read-only mapping; writer trigger absent. Commit: this Unit 2 commit, `feat(advisor): client advisor screens`.
-- [ ] AIADV-3 — Unit 3, to be specified by the user in its own request; must read this contract first. Route: pending. Commit: pending.
+- [x] AIADV-3 (S14–S17) — Unit 3 persistence proof, readable admin advisor detail, advisor-aware viability signals/prompt, and advisor-aware backlog prompt. Route: inline after delegated read-only mapping; writer trigger absent. Commit: this Unit 3 commit, `feat(advisor): admin view and advisor-aware analysis`.
 
 ## Log
 
@@ -496,3 +522,21 @@ y cómo probarlo a mano.
 - Required legacy fields added to final details: `tipoProyecto`, `procesoActual`, at least one `objetivos` value, and any missing required functionality, platform, and user-range values not supplied in the optional start context. Conditional other-industry, other-objective, other-functionality, and other-user-type text remains explicit.
 - Prettier check and `git diff --check` passed. `frontend/src/App.jsx`, panel components, `frontend/src/styles/panel.css`, and `frontend/dist` remained unchanged. No real Gemini call or verification subagent was used.
 - Native assessment for the Unit 2 commit returned `medium` with `review_due=false` and `review_due_reason=under_budget`; no review lifecycle was started.
+
+### L8 — Unit 3 start evidence (2026-10-21)
+
+- Recovered the authorized Unit 3 requirements from the session compaction summary; the original pre-compaction request text was not available verbatim, so this log does not fabricate a verbatim copy.
+- Verified a clean `feat/ai-advisor` at `2c7ae11`, with Unit 1 at `598032e`, before the first Unit 3 write.
+- CodeGraph lazy initialization was attempted and failed because the `codegraph` executable is unavailable; a bounded read-only explorer mapped the admin, persistence, viability, backlog, and focused-test surfaces instead.
+- Existing loose project schemas and repository serialization already preserve the complete advisor payload. Unit 3 will add regression proof rather than unnecessary production transformations.
+- The implementation route is inline because there is one coupled work unit and no writer trigger. No independent verification subagent or real Gemini call is authorized.
+
+### L9 — Unit 3 verification evidence (2026-10-21)
+
+- RED: the advisor signal, viability-summary, and backlog-baseline assertions failed before implementation; the frontend detail test failed with `ERR_MODULE_NOT_FOUND` before `advisorDetail.js` existed.
+- GREEN: focused validation, viability-signal, analysis-prompt, and backlog-contract tests passed 22/22; the advisor-detail test passed 1/1.
+- Focused integration proof passed for exact advisor payload POST/persistence/list/detail round-trip and the unchanged administrator `VIABLE` backlog gate, 2/2.
+- The broader combined focused command timed out after 120 seconds after its first 12 API tests had passed. A separately run pre-existing backlog-diagnostics file still fails 4/4 because its fixture omits `decisionViabilidad: 'VIABLE'` and reaches the unchanged gate with 409 instead of its expected downstream 502; Unit 3 did not modify that fixture or gate.
+- The temporary frontend production build completed with 440 modules transformed at `C:\Users\Susana Horia\AppData\Local\Temp\opencode\logotype-advisor-unit3-build`; `frontend/dist` remained unchanged.
+- Targeted ESLint passed, Prettier check passed, `git diff --check` passed, and `impeccable detect --json` returned no findings.
+- No real Gemini call, independent verification subagent, migration, provider schema change, administrator decision change, `company-context.js` edit, or push was performed.

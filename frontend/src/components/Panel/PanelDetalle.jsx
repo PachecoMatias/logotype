@@ -3,6 +3,7 @@ import StatusBadge from "./StatusBadge.jsx";
 import AnalisisIA from "./AnalisisIA.jsx";
 import DecisionBadge from "./DecisionBadge.jsx";
 import { apiRequest } from "../../utils/api.js";
+import { buildAdvisorDetail } from "../../utils/advisorDetail.js";
 import { adaptarHistorias } from "../../utils/backlog.js";
 import "../../styles/panel.css";
 
@@ -68,6 +69,152 @@ function SeccionPayload({ titulo, datos }) {
     <section className="adm-spec__section">
       <h4 className="adm-spec__label">{formatLabel(titulo)}</h4>
       {lista}
+    </section>
+  );
+}
+
+const advisorStateLabels = {
+  entendida: "Entendida",
+  supuesta: "Supuesta",
+  editada_cliente: "Editada por el cliente",
+  sugerida_ia: "Sugerida por IA",
+};
+
+function AdvisorSuggestions({ title, items }) {
+  return (
+    <div className="adm-advisor__suggestion-group">
+      <h5>{title}</h5>
+      {items.length > 0 ? (
+        <ul className="adm-list-values">
+          {items.map((item, index) => (
+            <li key={`${title}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <span className="adm-empty-field">Ninguna</span>
+      )}
+    </div>
+  );
+}
+
+function AsesoramientoDetalle({ asesoramiento }) {
+  const detail = buildAdvisorDetail(asesoramiento);
+  if (!detail) return null;
+
+  return (
+    <section className="adm-advisor" aria-labelledby="advisor-detail-title">
+      <div className="adm-advisor__head">
+        <div>
+          <span className="adm-eyebrow">Relevamiento guiado</span>
+          <h3 id="advisor-detail-title">Asesoramiento de IA</h3>
+        </div>
+        <dl className="adm-advisor__summary">
+          <div>
+            <dt>Versión</dt>
+            <dd>{detail.version ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Rondas</dt>
+            <dd>{detail.rondas ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd>{detail.completo ? "Completo" : "Incompleto"}</dd>
+          </div>
+          <div>
+            <dt>Modalidad</dt>
+            <dd>{detail.sinAsesor ? "Continuó sin asesor" : "Con asesor"}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="adm-advisor__idea">
+        <h4>Idea original</h4>
+        <p>
+          {detail.ideaOriginal || <span className="adm-empty-field">—</span>}
+        </p>
+      </div>
+
+      <div className="adm-advisor__block">
+        <div className="adm-advisor__block-head">
+          <h4>Historias asesoradas</h4>
+          <span>{detail.historias.length}</span>
+        </div>
+        {detail.historias.length > 0 ? (
+          <ol className="adm-advisor__stories">
+            {detail.historias.map((story, index) => (
+              <li key={story.id || `advisor-story-${index}`}>
+                <div className="adm-advisor__story-head">
+                  <strong>
+                    {story.funcionalidad || `Historia ${index + 1}`}
+                  </strong>
+                  <span>
+                    {advisorStateLabels[story.estado] ||
+                      formatLabel(story.estado || "")}
+                  </span>
+                </div>
+                <p>
+                  {story.texto || (
+                    <span className="adm-empty-field">Sin texto</span>
+                  )}
+                </p>
+                <div className="adm-advisor__meta">
+                  <span>ID: {story.id || "—"}</span>
+                  <span>Etapa: {story.etapa || "—"}</span>
+                  {story.aDetallar && (
+                    <span className="adm-advisor__pending">A detallar</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="adm-empty-field">No se registraron historias.</p>
+        )}
+      </div>
+
+      <div className="adm-advisor__block">
+        <div className="adm-advisor__block-head">
+          <h4>Respuestas relevadas</h4>
+          <span>{detail.respuestas.length}</span>
+        </div>
+        {detail.respuestas.length > 0 ? (
+          <dl className="adm-advisor__answers">
+            {detail.respuestas.map((answer, index) => (
+              <div
+                key={`${answer.historiaId || "answer"}-${answer.aspecto || index}-${index}`}
+              >
+                <dt>
+                  {answer.pregunta ||
+                    formatLabel(answer.aspecto || "Respuesta")}
+                </dt>
+                <dd>
+                  {answer.respuesta || (
+                    <span className="adm-empty-field">—</span>
+                  )}
+                </dd>
+                <span>
+                  {answer.historiaId || "Sin HU"} ·{" "}
+                  {formatLabel(answer.aspecto || "Sin aspecto")}
+                </span>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="adm-empty-field">No se registraron respuestas.</p>
+        )}
+      </div>
+
+      <div className="adm-advisor__suggestions">
+        <AdvisorSuggestions
+          title="Sugerencias aceptadas"
+          items={detail.sugerenciasAceptadas}
+        />
+        <AdvisorSuggestions
+          title="Sugerencias rechazadas"
+          items={detail.sugerenciasRechazadas}
+        />
+      </div>
     </section>
   );
 }
@@ -260,8 +407,10 @@ function PanelDetalle({
             </div>
 
             <div className="adm-spec">
-              {Object.entries(proyecto.payload || {}).map(
-                ([seccion, datos]) => (
+              {Object.entries(proyecto.payload || {}).map(([seccion, datos]) =>
+                seccion === "asesoramiento" ? (
+                  <AsesoramientoDetalle key={seccion} asesoramiento={datos} />
+                ) : (
                   <SeccionPayload
                     key={seccion}
                     titulo={seccion}

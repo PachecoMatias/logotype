@@ -38,6 +38,47 @@ export function createValidProjectPayload() {
   };
 }
 
+export function createAdvisorContext() {
+  return {
+    version: 1,
+    ideaOriginal: 'Una ferretería necesita ordenar ventas y stock.',
+    historias: [
+      {
+        id: 'hu-1',
+        texto: 'Como vendedor, quiero registrar ventas, para actualizar el stock.',
+        estado: 'entendida',
+        etapa: '1',
+        aDetallar: false,
+        funcionalidad: 'Gestión de ventas',
+      },
+      {
+        id: 'hu-2',
+        texto: 'Como encargado, quiero recibir alertas, para reponer productos.',
+        estado: 'supuesta',
+        etapa: '2',
+        aDetallar: true,
+        funcionalidad: 'Gestión de stock',
+      },
+    ],
+    respuestas: [
+      {
+        historiaId: 'hu-1',
+        aspecto: 'volumen',
+        pregunta: '¿Cuántas ventas realizan?',
+        respuesta: 'Cien por día',
+        noSabe: false,
+      },
+    ],
+    sugerencias: {
+      aceptadas: ['Agregar alertas de stock'],
+      rechazadas: ['Agregar pagos en criptomonedas'],
+    },
+    completo: true,
+    rondas: 3,
+    sinAsesor: false,
+  };
+}
+
 export function createConditionalProjectPayload() {
   const payload = createValidProjectPayload();
 

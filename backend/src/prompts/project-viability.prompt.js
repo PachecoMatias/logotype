@@ -15,8 +15,38 @@ const outputFields = [
 const untrustedPayloadStart = 'BEGIN_UNTRUSTED_PROJECT_PAYLOAD_JSON';
 const untrustedPayloadEnd = 'END_UNTRUSTED_PROJECT_PAYLOAD_JSON';
 
+function buildAdvisorSummary(advisor) {
+  if (!advisor || typeof advisor !== 'object') return null;
+
+  const stories = Array.isArray(advisor.historias) ? advisor.historias : [];
+  const answers = Array.isArray(advisor.respuestas) ? advisor.respuestas : [];
+
+  return {
+    ideaOriginal: advisor.ideaOriginal,
+    historias: stories.map(({ id, texto, estado, etapa, aDetallar, funcionalidad }) => ({
+      id,
+      texto,
+      estado,
+      etapa,
+      aDetallar,
+      funcionalidad,
+    })),
+    respuestasRelevadas: answers.length,
+    sugerenciasAceptadas: Array.isArray(advisor.sugerencias?.aceptadas)
+      ? advisor.sugerencias.aceptadas
+      : [],
+    completo: advisor.completo,
+    rondas: advisor.rondas,
+    sinAsesor: advisor.sinAsesor,
+  };
+}
+
 export function buildProjectViabilityPrompt(payload, companyContext, signals) {
-  const serializedPayload = JSON.stringify(payload);
+  const advisorSummary = buildAdvisorSummary(payload?.asesoramiento);
+  const promptPayload = advisorSummary
+    ? { ...payload, resumenAsesoramiento: advisorSummary }
+    : payload;
+  const serializedPayload = JSON.stringify(promptPayload);
   const payloadLength = Buffer.byteLength(serializedPayload, 'utf8');
 
   return [

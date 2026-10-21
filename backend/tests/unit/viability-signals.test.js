@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { companyContext } from '../../src/config/company-context.js';
 import { calcularSenales } from '../../src/services/viability-signals.js';
+import { createAdvisorContext } from '../fixtures/proyecto-payload.js';
 
 function payload(overrides = {}) {
   return {
@@ -147,4 +148,17 @@ test('does not infer deadline compatibility without a duration reference', () =>
   assert.deepEqual(result.plazo_solicitado_semanas, [4, 13]);
   assert.deepEqual(result.duracion_referencia_semanas, [0, 0]);
   assert.equal(result.plazo_compatible, null);
+});
+
+test('adds deterministic advisor-story totals only when advisor context exists', () => {
+  const legacySignals = calcularSenales(payload(), companyContext);
+  const advisorSignals = calcularSenales(
+    payload({ asesoramiento: createAdvisorContext() }),
+    companyContext,
+  );
+
+  assert.equal(Object.hasOwn(legacySignals, 'historias_asesor_total'), false);
+  assert.equal(advisorSignals.historias_asesor_total, 2);
+  assert.equal(advisorSignals.historias_asesor_supuesta, 1);
+  assert.equal(advisorSignals.historias_asesor_a_detallar, 1);
 });

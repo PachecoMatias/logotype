@@ -17,6 +17,7 @@ import {
   runMigration,
 } from '../helpers/test-database.js';
 import {
+  createAdvisorContext,
   createConditionalProjectPayload,
   createValidProjectPayload,
 } from '../fixtures/proyecto-payload.js';
@@ -119,6 +120,7 @@ test.beforeEach(async () => {
 
 test('POST /api/proyectos persists the exact accepted payload with server-owned estado', async () => {
   const payload = createValidProjectPayload();
+  payload.asesoramiento = createAdvisorContext();
   const response = await request(app).post('/api/proyectos').send(payload);
 
   assert.equal(response.status, 201);
@@ -131,6 +133,11 @@ test('POST /api/proyectos persists the exact accepted payload with server-owned 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].estado, 'nuevo');
   assert.deepEqual(rows[0].payload, payload);
+
+  const detail = await request(app).get(`/api/proyectos/${response.body.data.id}`).expect(200);
+  const list = await request(app).get('/api/proyectos').expect(200);
+  assert.deepEqual(detail.body.data.payload.asesoramiento, payload.asesoramiento);
+  assert.deepEqual(list.body.data[0].payload.asesoramiento, payload.asesoramiento);
 });
 
 test('POST /api/proyectos rejects invalid input without inserting a project', async () => {

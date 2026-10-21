@@ -93,7 +93,7 @@ export function calcularSenales(payload, contexto) {
     emptyFields.push('infoAdicional');
   }
 
-  return {
+  const signals = {
     cantidad_funcionalidades: features.length,
     cantidad_plataformas: platforms.length,
     escala_usuarios:
@@ -113,4 +113,17 @@ export function calcularSenales(payload, contexto) {
     ),
     campos_vacios: emptyFields,
   };
+
+  if (source.asesoramiento && typeof source.asesoramiento === 'object') {
+    const advisorStories = asArray(source.asesoramiento.historias);
+    signals.historias_asesor_total = advisorStories.length;
+    signals.historias_asesor_supuesta = advisorStories.filter(
+      (story) => story?.estado === 'supuesta',
+    ).length;
+    signals.historias_asesor_a_detallar = advisorStories.filter(
+      (story) => story?.aDetallar === true,
+    ).length;
+  }
+
+  return signals;
 }
