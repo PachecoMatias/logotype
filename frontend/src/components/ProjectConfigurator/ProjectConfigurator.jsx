@@ -1,111 +1,283 @@
-import { useState, useRef, useEffect } from 'react'
-import ProgressBar from './ProgressBar.jsx'
-import StepCompany from './StepCompany.jsx'
-import StepProject from './StepProject.jsx'
-import StepProblem from './StepProblem.jsx'
-import StepFeatures from './StepFeatures.jsx'
-import StepScope from './StepScope.jsx'
-import { Stagger } from '../../motion/Reveal.jsx'
-import StepBudget from './StepBudget.jsx'
-import ProjectSummary from './ProjectSummary.jsx'
-import SuccessMessage from './SuccessMessage.jsx'
-import { configuratorSteps, initialProjectData } from '../../data/projectOptions.js'
+import { useEffect, useMemo, useState } from 'react'
+import { featuresList, initialProjectData } from '../../data/projectOptions.js'
+import { createProject, requestAdvisorRound } from '../../utils/api.js'
+import { buildAdvisorProjectPayload } from '../../utils/asesorPayload.js'
 import {
-  validateEmpresa,
-  validateProyecto,
-  validateProblema,
-  validateFuncionalidades,
-  validateAlcance,
-  validatePresupuesto,
-} from './validation.js'
-import { apiRequest } from '../../utils/api.js'
+  addFeatureStory,
+  addManualStory,
+  addSuggestedStory,
+  deleteStory,
+  editStory,
+  getRelatedFeatures,
+} from '../../utils/advisorState.js'
+import AdvisorConfirmation from './AdvisorConfirmation.jsx'
+import AdvisorFinalDetails from './AdvisorFinalDetails.jsx'
+import AdvisorStart from './AdvisorStart.jsx'
+import AdvisorWorkspace from './AdvisorWorkspace.jsx'
+import SuccessMessage from './SuccessMessage.jsx'
 
-const stepKeys = ['empresa', 'proyecto', 'problema', 'funcionalidades', 'alcance', 'presupuesto']
-const validators = [
-  validateEmpresa,
-  validateProyecto,
-  validateProblema,
-  validateFuncionalidades,
-  validateAlcance,
-  validatePresupuesto,
-]
+const emptyInitialData = {
+  funcionalidades: [],
+  otraFuncionalidad: '',
+  otrasFuncionalidades: [],
+  plataformas: [],
+  tiposUsuario: [],
+  tiposUsuarioOtro: '',
+  cantidadUsuarios: '',
+}
 
-function ProjectConfigurator({ onBack }) {
-  const [stepIndex, setStepIndex] = useState(0)
-  const [projectData, setProjectData] = useState(initialProjectData)
-  const [errors, setErrors] = useState({})
-  const [direction, setDirection] = useState(1)
+const emptyRound = {
+  foco: null,
+  preguntas: [],
+  sugerencias: [],
+  progreso: { detalladas: 0, total: 0, completas: 0, tope: 6 },
+  completo: false,
+  motivoCierre: null,
+}
+
+const emptyFinalData = {
+  empresa: { ...initialProjectData.empresa },
+  proyecto: { ...initialProjectData.proyecto },
+  problema: {
+    procesoActual: '',
+    objetivos: [],
+    objetivosOtro: '',
+  },
+  presupuesto: { ...initialProjectData.presupuesto },
+}
+
+function createSessionId() {
+  return (
+    globalThis.crypto?.randomUUID?.() ||
+    `asesor-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  )
+}
+
+function createLocalId(prefix = 'hu') {
+  return `${prefix}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`
+}
+
+function isAdvisorFallback(error) {
+  return (
+    error.isNetworkError ||
+    error.status === 429 ||
+    error.status === 503 ||
+    error.code === 'ADVISOR_UNAVAILABLE'
+  )
+}
+
+function ProjectConfigurator() {
+  const [screen, setScreen] = useState('start')
+  const [sessionId, setSessionId] = useState(createSessionId)
+  const [idea, setIdea] = useState('')
+  const [initialData, setInitialData] = useState(emptyInitialData)
+  const [histories, setHistories] = useState([])
+  const [answers, setAnswers] = useState([])
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState([])
+  const [rejectedSuggestions, setRejectedSuggestions] = useState([])
+  const [round, setRound] = useState(emptyRound)
+  const [rounds, setRounds] = useState(0)
+  const [withoutAdvisor, setWithoutAdvisor] = useState(false)
+  const [ideaError, setIdeaError] = useState('')
+  const [advisorError, setAdvisorError] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [finalData, setFinalData] = useState(emptyFinalData)
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [submitError, setSubmitError] = useState(null)
-  const workspaceRef = useRef(null)
-  const isFirstRender = useRef(true)
-  const isSummaryStep = stepIndex === configuratorSteps.length - 1
 
-  const goToStep = (index, dir) => {
-    setDirection(dir)
-    setStepIndex(index)
-    setErrors({})
-  }
+  const selectedCatalogFeatures = initialData.funcionalidades.filter(
+    (item) => item !== 'Otra'
+  )
+  const relatedFeatures = useMemo(() => {
+    const related = getRelatedFeatures(selectedCatalogFeatures)
+    if (related.length) return related
+    return featuresList
+      .filter(
+        (item) => item !== 'Otra' && !selectedCatalogFeatures.includes(item)
+      )
+      .slice(0, 6)
+  }, [selectedCatalogFeatures])
 
-  const handleStepDataChange = (key, value) => {
-    setProjectData((prev) => ({ ...prev, [key]: value }))
-  }
-// Cada vez que cambia el stepIndex, scrolleamos hacia arriba (excepto la primera vez)
+  const hasProgress = Boolean(idea.trim() || histories.length || rounds)
+
   useEffect(() => {
-    // Si es la primera vez que carga, cambiamos la bandera a falso y cortamos la ejecución
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return 
+    const warnBeforeLeaving = (event) => {
+      if (!hasProgress || submitted) return
+      event.preventDefault()
+      event.returnValue = ''
     }
 
-    // Si NO es la primera vez, hacemos el scroll normal
-    if (workspaceRef.current) {
-      const offsetTop = workspaceRef.current.getBoundingClientRect().top + window.scrollY - 100
-      window.scrollTo({
-        top: offsetTop,
-        behavior: 'smooth'
-      })
-    }
-  }, [stepIndex])
-  const handleNext = () => {
-    if (isSummaryStep) {
-      handleSubmit()
-      return
-    }
+    window.addEventListener('beforeunload', warnBeforeLeaving)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
+  }, [hasProgress, submitted])
 
-    const key = stepKeys[stepIndex]
-    const validate = validators[stepIndex]
-    const stepErrors = validate(projectData[key])
+  const buildRoundState = (
+    stateAnswers = answers,
+    stateHistories = histories
+  ) => ({
+    idea: idea.trim(),
+    datosIniciales: {
+      funcionalidades: [
+        ...selectedCatalogFeatures,
+        ...initialData.otrasFuncionalidades,
+        ...(initialData.otraFuncionalidad.trim()
+          ? [initialData.otraFuncionalidad.trim()]
+          : []),
+      ],
+      plataformas: initialData.plataformas,
+      tiposUsuario: initialData.tiposUsuario,
+      cantidadUsuarios: initialData.cantidadUsuarios,
+    },
+    historias: stateHistories,
+    respuestas: stateAnswers,
+    sugerenciasRechazadas: rejectedSuggestions,
+  })
 
-    if (Object.keys(stepErrors).length > 0) {
-      setErrors(stepErrors)
-      return
-    }
-
-    goToStep(stepIndex + 1, 1)
-  }
-
-  const handleBack = () => {
-    if (stepIndex === 0) return
-    goToStep(stepIndex - 1, -1)
-  }
-
-  const handleEditStep = (index) => {
-    goToStep(index, -1)
-  }
-
-  const handleSubmit = async () => {
-    setSubmitting(true)
-    setSubmitError(null)
+  const runRound = async ({
+    closing = false,
+    stateAnswers = answers,
+    stateHistories = histories,
+  } = {}) => {
+    setLoading(true)
+    setAdvisorError(null)
 
     try {
-      await apiRequest('/api/proyectos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(projectData),
-      }, 201)
+      const data = await requestAdvisorRound({
+        sesionId: sessionId,
+        cerrar: closing,
+        estado: buildRoundState(stateAnswers, stateHistories),
+      })
+      setAnswers(stateAnswers.map((answer) => ({ ...answer, integrada: true })))
+      setHistories(data.historias)
+      setRound(data)
+      setRounds((current) => current + 1)
+      setScreen(data.completo ? 'confirmation' : 'advisor')
+    } catch (error) {
+      setAdvisorError({
+        message: error.message,
+        canFallback: isAdvisorFallback(error),
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const start = (event) => {
+    event.preventDefault()
+    if (!idea.trim()) {
+      setIdeaError('Contanos brevemente qué querés resolver.')
+      return
+    }
+    setIdeaError('')
+    runRound()
+  }
+
+  const submitAnswers = (newAnswers) => {
+    const nextAnswers = [...answers, ...newAnswers]
+    setAnswers(nextAnswers)
+    runRound({ stateAnswers: nextAnswers })
+  }
+
+  const updateRoundSuggestions = (suggestionId) => {
+    setRound((current) => ({
+      ...current,
+      sugerencias: current.sugerencias.filter(
+        (suggestion) => suggestion.id !== suggestionId
+      ),
+    }))
+  }
+
+  const acceptSuggestion = (suggestion) => {
+    const result = addSuggestedStory(histories, suggestion.texto, () =>
+      createLocalId('hu')
+    )
+    setHistories(result.histories)
+    setAcceptedSuggestions((current) => [...current, suggestion.texto])
+    setRound((current) => ({ ...current, completo: false }))
+    updateRoundSuggestions(suggestion.id)
+  }
+
+  const rejectSuggestion = (suggestion) => {
+    setRejectedSuggestions((current) => [...current, suggestion.texto])
+    updateRoundSuggestions(suggestion.id)
+  }
+
+  const addStory = (text) => {
+    const result = addManualStory(histories, text, () => createLocalId('hu'))
+    setHistories(result.histories)
+    setRound((current) => ({ ...current, completo: false }))
+  }
+
+  const addFeature = (feature, isCustom) => {
+    const result = addFeatureStory(histories, feature, () =>
+      createLocalId('hu')
+    )
+    setHistories(result.histories)
+    setInitialData((current) => ({
+      ...current,
+      funcionalidades: isCustom
+        ? [...new Set([...current.funcionalidades, 'Otra'])]
+        : [...new Set([...current.funcionalidades, feature])],
+      otraFuncionalidad:
+        isCustom && !current.otraFuncionalidad.trim()
+          ? feature
+          : current.otraFuncionalidad,
+      otrasFuncionalidades: isCustom
+        ? current.otraFuncionalidad.trim()
+          ? [...new Set([...current.otrasFuncionalidades, feature])]
+          : current.otrasFuncionalidades
+        : current.otrasFuncionalidades,
+    }))
+    setRound((current) => ({ ...current, completo: false }))
+  }
+
+  const updateStory = (storyId, text) => {
+    const result = editStory(histories, answers, storyId, text)
+    setHistories(result.histories)
+    setAnswers(result.answers)
+    setRound((current) => ({ ...current, completo: false }))
+  }
+
+  const removeStory = (storyId) => {
+    if (
+      !window.confirm(
+        '¿Querés eliminar esta historia? Esta acción no se puede deshacer.'
+      )
+    )
+      return
+    const result = deleteStory(histories, answers, storyId)
+    setHistories(result.histories)
+    setAnswers(result.answers)
+    setRound((current) => ({ ...current, completo: false }))
+  }
+
+  const continueWithoutAdvisor = () => {
+    setWithoutAdvisor(true)
+    setAdvisorError(null)
+    setScreen('details')
+  }
+
+  const submitProject = async () => {
+    setSubmitting(true)
+    setSubmitError('')
+
+    try {
+      const payload = buildAdvisorProjectPayload({
+        idea,
+        initialData,
+        histories,
+        answers,
+        acceptedSuggestions,
+        rejectedSuggestions,
+        complete: round.completo,
+        rounds,
+        withoutAdvisor,
+        finalData,
+      })
+      await createProject(payload)
       setSubmitted(true)
+      setScreen('success')
     } catch (error) {
       setSubmitError(error.message)
     } finally {
@@ -113,102 +285,81 @@ function ProjectConfigurator({ onBack }) {
     }
   }
 
-  const handleRestart = () => {
-    setProjectData(initialProjectData)
-    setStepIndex(0)
-    setErrors({})
+  const restart = () => {
+    setScreen('start')
+    setSessionId(createSessionId())
+    setIdea('')
+    setInitialData(emptyInitialData)
+    setHistories([])
+    setAnswers([])
+    setAcceptedSuggestions([])
+    setRejectedSuggestions([])
+    setRound(emptyRound)
+    setRounds(0)
+    setWithoutAdvisor(false)
+    setIdeaError('')
+    setAdvisorError(null)
+    setFinalData(emptyFinalData)
+    setSubmitError('')
     setSubmitted(false)
-    setSubmitError(null)
-  }
-
-  const renderStep = () => {
-    switch (stepKeys[stepIndex]) {
-      case 'empresa': return <StepCompany data={projectData.empresa} errors={errors} onChange={(v) => handleStepDataChange('empresa', v)} />
-      case 'proyecto': return <StepProject data={projectData.proyecto} errors={errors} onChange={(v) => handleStepDataChange('proyecto', v)} />
-      case 'problema': return <StepProblem data={projectData.problema} errors={errors} onChange={(v) => handleStepDataChange('problema', v)} />
-      case 'funcionalidades': return <StepFeatures data={projectData.funcionalidades} errors={errors} onChange={(v) => handleStepDataChange('funcionalidades', v)} />
-      case 'alcance': return <StepScope data={projectData.alcance} errors={errors} onChange={(v) => handleStepDataChange('alcance', v)} />
-      case 'presupuesto': return <StepBudget data={projectData.presupuesto} errors={errors} onChange={(v) => handleStepDataChange('presupuesto', v)} />
-      default: return <ProjectSummary projectData={projectData} onEditStep={handleEditStep} />
-    }
   }
 
   return (
-    <main id="configurador" className="cfg-main">
-      {/* 1. Usamos Stagger para detectar el scroll de toda la sección */}
-      <Stagger className="cfg-container">
-        
-        <div className="cfg-intro">
-          {/* 2. Clases css-motion con delay secuencial */}
-          <h1 className="css-motion mode-rise" style={{ transitionDelay: '0.1s' }}>
-            Contanos tu proyecto
-          </h1>
-          <p className="css-motion mode-rise" style={{ transitionDelay: '0.2s' }}>
-            Vamos a registrar cada decisión para entender qué necesitás y preparar una solución de software a medida.
-          </p>
-          <div className="cfg-intro__register css-motion mode-rise" style={{ transitionDelay: '0.3s' }} aria-hidden="true">
-            <span />
-            <span>Brief en construcción</span>
-          </div>
-        </div>
-
-        {/* 3. El contenedor entero del formulario entra último */}
-        <div ref={workspaceRef} className="cfg-workspace css-motion mode-rise" style={{ transitionDelay: '0.4s' }}>
-          {submitted ? (
-            <SuccessMessage onRestart={handleRestart} />
-          ) : (
-            <>
-              <ProgressBar currentStepIndex={stepIndex} />
-
-              <div className="cfg-step-stage" style={{ overflow: 'hidden' }}>
-                <div
-                  key={submitting ? 'submitting' : stepIndex}
-                  className={`cfg-transition ${direction > 0 ? 'animate-step-forward' : 'animate-step-backward'}`}
-                >
-                  {submitting ? (
-                    <div className="cfg-loading" role="status" aria-live="polite">
-                      <span className="cfg-loading__line-native" aria-hidden="true" />
-                      <strong>Registrando tu proyecto</strong>
-                      <br/>
-                      <span>Estamos enviando la información de forma segura.</span>
-                    </div>
-                  ) : (
-                    renderStep()
-                  )}
-                </div>
-              </div>
-
-              {!submitting && (
-                <>
-                  {submitError && (
-                    <p className="cfg-submit-error" role="alert" style={{ color: 'red', marginBottom: '10px' }}>
-                      {submitError}
-                    </p>
-                  )}
-                  <div className="cfg-actions">
-                    <button
-                      className="cfg-button cfg-button--secondary"
-                      onClick={handleBack}
-                      disabled={stepIndex === 0}
-                      style={{ cursor: stepIndex === 0 ? 'not-allowed' : 'pointer' }}
-                    >
-                      <span aria-hidden="true">←</span> Anterior
-                    </button>
-
-                    <button
-                      className="cfg-button cfg-button--primary"
-                      onClick={handleNext}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {isSummaryStep ? 'Enviar solicitud' : 'Continuar'} <span aria-hidden="true">→</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </Stagger>
+    <main id="configurador" className="cfg-main adv-main">
+      <div className="cfg-container adv-shell">
+        {screen === 'start' && (
+          <AdvisorStart
+            idea={idea}
+            data={initialData}
+            error={ideaError}
+            advisorError={advisorError}
+            loading={loading}
+            onIdeaChange={setIdea}
+            onDataChange={setInitialData}
+            onStart={start}
+            onRetry={() => runRound()}
+            onFallback={continueWithoutAdvisor}
+          />
+        )}
+        {screen === 'advisor' && (
+          <AdvisorWorkspace
+            histories={histories}
+            round={round}
+            loading={loading}
+            advisorError={advisorError}
+            relatedFeatures={relatedFeatures}
+            onSubmitAnswers={submitAnswers}
+            onRetry={() => runRound()}
+            onFallback={continueWithoutAdvisor}
+            onAcceptSuggestion={acceptSuggestion}
+            onRejectSuggestion={rejectSuggestion}
+            onEditStory={updateStory}
+            onDeleteStory={removeStory}
+            onAddStory={addStory}
+            onAddFeature={addFeature}
+            onClose={() => runRound({ closing: true })}
+          />
+        )}
+        {screen === 'confirmation' && (
+          <AdvisorConfirmation
+            histories={histories}
+            onConfirm={() => setScreen('details')}
+            onAdjust={() => setScreen('advisor')}
+          />
+        )}
+        {screen === 'details' && (
+          <AdvisorFinalDetails
+            finalData={finalData}
+            initialData={initialData}
+            submitting={submitting}
+            submitError={submitError}
+            onFinalDataChange={setFinalData}
+            onInitialDataChange={setInitialData}
+            onSubmit={submitProject}
+          />
+        )}
+        {screen === 'success' && <SuccessMessage onRestart={restart} />}
+      </div>
     </main>
   )
 }

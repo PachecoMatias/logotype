@@ -129,10 +129,47 @@ Implement pure, testable functions under `backend/src/services/advisor/`:
 - No reusable rate limiter or ID helper currently exists, so Unit 1 may add small advisor-local injectable utilities without a dependency or migration.
 - Preserve the exact functionality labels read from `frontend/src/data/projectOptions.js`; do not edit that frontend catalog in Unit 1.
 
+### S9 — Unit 2 frontend flow
+
+- Replace the seven-step configurator behind the existing `configurador` entry with five screens: `INICIO`, `PANTALLA DIVIDIDA`, `CONFIRMACIÓN`, `DATOS FINALES`, and the reused success screen.
+- `INICIO` requires only the free-form idea. Its optional section is titled **"Ayudanos a entender mejor tu idea"** and collects catalog functionalities (including **"Otra"**), platforms, user types, and approximate user quantity. **"Empezar"** sends the initial advisor round.
+- The split screen shows focused questions on the left under **"Sobre: [HU en foco]"**, renders `opcion`, `texto`, and `mixta`, always offers **"No sé"**, and provides **"Enviar respuestas"**, **"Sugerencias"**, **"Agregar a mi idea"**, **"No, gracias"**, and **"Ya está, armá el resumen"**.
+- The right side is titled **"Tu idea, hasta ahora"** and shows only each HU's main text, state badge, stage, inline edit, confirmed deletion, and **"+ Agregar historia"**. Mobile moves HUs to a **"Mi idea (n)"** tab.
+- Show **"Funcionalidad 2 de 4"** and **"3 de 4 completas"** progress. `Agregar funcionalidad` uses a fixed frontend relationship table over the real catalog and supports **"Otra"** free text; it creates a local unlocked base HU for refinement on the next round.
+- Editing or manually creating an HU sets `bloqueada=true` and `estado='editada_cliente'`; accepting a suggestion creates `estado='sugerida_ia'` and remains unlocked. Client changes never call Gemini directly and travel in the next complete round state.
+- On advisor completion, show assumptions and **"Está todo bien, enviar"** / **"Quiero ajustar algo"**. Adjustment reopens only a subsequently added or changed functionality.
+- Final details collect company, contact, email, phone, industry plus other, budget, timeline, and additional information, reusing `validateEmpresa` and `validatePresupuesto`. The current success screen remains unchanged.
+
+### S10 — Failure, state, and accessibility behavior
+
+- On `503 ADVISOR_UNAVAILABLE`, `429`, or network failure, show **"Reintentar"** and **"Continuar sin asesor"**. The fallback reaches final details and submits accumulated idea, selected functionalities, and existing HUs with `asesoramiento.sinAsesor=true`.
+- Keep all advisor state in memory. Successfully sent answers become `integrada=true`; rejected suggestion text is retained. Warn before page abandonment after progress exists.
+- Add an `aria-live` region for new questions, focus the first new question, label every control, keep touch targets at least 44px, meet AA contrast, and design **"La IA está pensando…"** plus error states.
+
+### S11 — Project payload and required legacy fields
+
+- Add pure `frontend/src/utils/asesorPayload.js` and preserve the current `POST /api/proyectos` shape for `empresa`, `proyecto`, `problema`, `funcionalidades`, `alcance`, and `presupuesto`.
+- Map `problemaActual=idea`, catalog selections into `funcionalidades.seleccionadas`, and initial platforms, quantity, and user types into `alcance`, with `necesitaTiposUsuario='Sí'` when user types exist.
+- Add `asesoramiento: { version:1, ideaOriginal, historias, respuestas, sugerencias:{aceptadas[],rechazadas[]}, completo, rondas, sinAsesor }` with only the fields named in the request.
+- Because the real project schema requires data not otherwise gathered, collect `proyecto.tipoProyecto`, `problema.procesoActual`, and at least one `problema.objetivos` value with minimal controls rather than defaults. Keep conditional `rubroOtro`, functionality `otra`, objective `objetivosOtro`, and user-type `tiposUsuarioOtro` valid when their corresponding **"Otro/Otra"** selection is used.
+- Verify a representative mapped payload against the real backend schema with an uncommitted temporary script.
+
+### S12 — Design, motion, and isolation
+
+- Preserve the Engineering Blueprint identity, tokens, and typography from `DESIGN.md`. Put new styles only in `frontend/src/styles/advisor.css` under the `adv-` prefix; do not alter shared tokens/classes or panel styles.
+- Do not use Framer Motion in this flow. CSS-only screen, question, new-HU, and updated-HU motion uses only transform and opacity, remains brief and visible without flicker, respects `prefers-reduced-motion`, and avoids cards nested inside cards.
+- Preserve `App.jsx` navigation behavior and the panel. Never commit `frontend/dist`.
+
+### S13 — Unit 2 proof and delivery
+
+- No real Gemini calls and no independent verification subagent.
+- Build to a temporary directory, verify no horizontal scroll at 375/768/1280px, validate a mapped payload, preserve site navigation, and leave the panel unchanged.
+- Commit Unit 2 exactly as `feat(advisor): client advisor screens`; do not push.
+
 ## Tasks
 
 - [x] AIADV-1 (S1–S8) — Unit 1 backend round engine, public endpoint, protections, prompt/provider boundary, and focused tests. Route: inline after delegated read-only mapping; writer trigger absent. Commit: this Unit 1 commit, `feat(advisor): requirements advisor rounds endpoint`.
-- [ ] AIADV-2 — Unit 2, to be specified by the user in its own request; must read this contract first. Route: pending. Commit: pending.
+- [x] AIADV-2 (S9–S13) — Unit 2 frontend advisor flow, pure project payload, fallback, accessibility, responsive UI, and focused proof. Route: inline after delegated read-only mapping; writer trigger absent. Commit: this Unit 2 commit, `feat(advisor): client advisor screens`.
 - [ ] AIADV-3 — Unit 3, to be specified by the user in its own request; must read this contract first. Route: pending. Commit: pending.
 
 ## Log
@@ -326,3 +363,136 @@ valores de advisor-config.
 - `R3-nonfocus-rewrite`: provider output may update only the server-selected `focusId`; other existing unlocked HUs remain unchanged.
 - RED: both regression tests failed against `d3753a5`; GREEN: the focused unit file passed 13/13 after the bounded correction.
 - Final focused backend proof passed 27/27; targeted ESLint, Prettier check, and `git diff --check` also passed.
+
+### L5 — Original Unit 2 request (2026-10-20, verbatim)
+
+```text
+Usá ODD (no SDD). Avanzá directo y gastá la menor cuota posible.
+UNIDAD 2 de 3: frontend del asesor. Verificá que la unidad 1 esté
+commiteada (rama feat/ai-advisor); si no, frená. Sin push. No
+commitear frontend/dist. No lances subagentes de verificación. No hagas
+llamadas reales a Gemini en esta unidad: yo lo pruebo a mano.
+
+Leé primero: odd/tasks/ai-advisor.md (contrato), el endpoint de ronda,
+el ProjectConfigurator actual y sus componentes, utils/api.js,
+validation.js, data/projectOptions.js, App.jsx, DESIGN.md, PRODUCT.md,
+y los estilos del sitio público y del configurador.
+
+OBJETIVO
+Reemplazar el configurador de 7 pasos por el flujo con asesor. App.jsx
+debe seguir navegando igual (mismo punto de entrada).
+
+PANTALLAS
+A) INICIO. Solo la descripción libre de la idea es obligatoria. Cuadros
+   opcionales con el título "Ayudanos a entender mejor tu idea":
+   funcionalidades (el catálogo existente, con "Otra"), plataformas,
+   tipo de usuarios del sistema y cantidad aproximada. Botón
+   "Empezar": primera ronda (INICIAL).
+B) PANTALLA DIVIDIDA. Izquierda: preguntas de la ronda (rótulo "Sobre:
+   [HU en foco]"), cada una según su tipo (opciones, texto o mixta),
+   con "No sé" siempre disponible; botón "Enviar respuestas"; bloque
+   "Sugerencias" debajo, con "Agregar a mi idea" y "No, gracias". Debajo,
+   "Ya está, armá el resumen". Derecha: "Tu idea, hasta ahora": solo
+   el texto principal de cada HU (nunca criterios ni alcance), badge de
+   estado (entendida, supuesta, editada por vos, sugerida por la IA,
+   "a detallar con el equipo"), etapa, editar en el lugar, eliminar
+   (con confirmación) y "+ Agregar historia" (texto libre).
+   Progreso visible: "Funcionalidad 2 de 4" y "3 de 4 completas".
+   Botón "Agregar funcionalidad": selector con sugeridas por relación
+   (tabla fija en el frontend, sin llamar a Gemini; por ejemplo Gestión
+   de stock → Gestión de proveedores, Gestión de compras, Reportes y
+   estadísticas; Gestión de ventas → Facturación, Gestión de clientes,
+   Reportes y estadísticas; Gestión de pedidos → Notificaciones,
+   Gestión de clientes; Login y autenticación → Roles y permisos,
+   Gestión de usuarios; completá el resto con ese criterio sobre el
+   catálogo real) y "Otra" con texto libre. Al agregar, se crea una HU
+   local con un texto base simple, sin bloquear, y la IA la refina en
+   la ronda siguiente.
+   Reglas: editar o crear una HU la marca bloqueada y 'editada_cliente'
+   (aceptar una sugerencia la crea como 'sugerida_ia', no bloqueada);
+   NINGÚN cambio del cliente dispara una llamada; todo viaja en el
+   estado de la ronda siguiente; marcar integrada=true en las
+   respuestas ya enviadas; guardar sugerencias rechazadas. En mobile,
+   las HU pasan a una pestaña "Mi idea (n)".
+C) CONFIRMACIÓN (cuando completo=true): lista de HU con los supuestos
+   resaltados y dos botones: "Está todo bien, enviar" y "Quiero ajustar
+   algo" (vuelve a B; si el cliente agrega o cambia algo, solo se
+   reabre esa funcionalidad).
+D) DATOS FINALES: empresa, contacto, email, teléfono, rubro (+otro),
+   presupuesto, plazo e información adicional. REUTILIZÁ las
+   validaciones existentes (validateEmpresa, validatePresupuesto).
+E) ÉXITO: reutilizá la pantalla actual.
+
+FALLBACK SIN ASESOR: ante 503 ADVISOR_UNAVAILABLE, 429 o error de red,
+mostrar un aviso claro con "Reintentar" y "Continuar sin asesor", que
+lleva a D y envía el pedido con lo que haya (idea, funcionalidades
+elegidas y las HU existentes), marcando asesoramiento.sinAsesor=true.
+
+PAYLOAD (puro, en utils/asesorPayload.js)
+Construí el payload de POST /api/proyectos con el mismo shape que hoy
+(empresa, proyecto, problema, funcionalidades, alcance, presupuesto):
+problemaActual = idea; funcionalidades.seleccionadas = funcionalidades
+del catálogo elegidas o agregadas; alcance.plataformas, cantidadUsuarios
+y tiposUsuario (necesitaTiposUsuario 'Sí' si hay tipos); presupuesto y
+empresa desde D. Agregá la clave nueva "asesoramiento": { version:1,
+ideaOriginal, historias[{id,texto,estado,etapa,aDetallar,
+funcionalidad}], respuestas[{historiaId,aspecto,pregunta,respuesta,
+noSabe}], sugerencias:{aceptadas[],rechazadas[]}, completo, rondas,
+sinAsesor }. Leé el schema real de POST /api/proyectos: NO debilites
+ninguna validación ni inventes contenido para campos que el backend
+exija y el nuevo flujo no recoja (por ejemplo tipoProyecto, objetivos
+o procesoActual): pedilos con un control mínimo en la pantalla A o D y
+decime exactamente qué agregaste. Verificá con un script temporal (no
+lo commitees) que un payload mapeado pasa el schema del backend.
+
+DISEÑO
+Mantené la identidad del sitio público (tokens y tipografías de
+DESIGN.md). Estilos nuevos en frontend/src/styles/advisor.css con
+prefijo adv-; no modifiques tokens ni clases compartidas ni el panel.
+
+NO usar Framer Motion.
+Las animaciones de este flujo deben hacerse con CSS puro:
+- transición breve entre pantallas;
+- entrada suave de preguntas;
+- entrada suave de HU nuevas;
+- resaltado breve cuando una HU se actualiza;
+- solo transform y opacity;
+- sin ocultar contenido de forma prolongada;
+- respetar prefers-reduced-motion.
+
+El contenido debe permanecer visible y no debe haber flicker.
+Sin cards dentro de cards.
+
+Accesibilidad:
+- región con aria-live que anuncie las preguntas nuevas;
+- mover el foco a la primera pregunta nueva;
+- labels en todos los controles;
+- objetivos táctiles de al menos 44px;
+- contraste AA;
+- estados de carga ("La IA está pensando…") y de error diseñados;
+- avisar antes de abandonar la página si hay progreso.
+
+El estado vive en memoria.
+VERIFICACIÓN: build a un directorio temporal, sin scroll horizontal a
+375/768/1280px, payload válido, la navegación del sitio intacta y el
+panel sin cambios. Commit: "feat(advisor): client advisor screens".
+Reporte corto: archivos, campos que agregaste por exigencia del backend
+y cómo probarlo a mano.
+```
+
+### L6 — Unit 2 start evidence (2026-10-20)
+
+- Verified clean `feat/ai-advisor` at Unit 1 commit `598032e` before any Unit 2 write.
+- CodeGraph lazy initialization failed because the `codegraph` executable is unavailable; a bounded read-only explorer mapped the frontend, API contracts, and project schema instead.
+- The implementation route is inline after mapping because no writer trigger applies. The established `exception-ok` strategy and one-commit-per-unit constraint remain in force.
+
+### L7 — Unit 2 verification evidence (2026-10-20)
+
+- RED: the focused frontend tests failed with `ERR_MODULE_NOT_FOUND` before `asesorPayload.js` and `advisorState.js` existed, and the API test failed before `ApiRequestError` was exported. GREEN: `node --test tests/api.test.js tests/asesorPayload.test.js tests/advisorState.test.js` passed 4/4.
+- A representative payload produced by `buildAdvisorProjectPayload` passed the real backend `projectBodySchema` with `asesoramiento.version=1`.
+- `npm run build -- --outDir C:\Users\Susana Horia\AppData\Local\Temp\opencode\logotype-advisor-build --emptyOutDir` completed successfully with 439 modules transformed; no `frontend/dist` output was created or changed.
+- A temporary Edge/CDP harness with a mocked advisor response opened the existing `configurador` navigation entry and exercised start, workspace, confirmation, and final-details screens at 375, 768, and 1280 px. Every measured screen reported `scrollWidth <= innerWidth`.
+- Visual readback confirmed the mobile questions/`Mi idea (n)` tabs, desktop split workspace, readable state/progress hierarchy, and the corrected final-details heading contrast. `impeccable detect --json` returned no findings.
+- Required legacy fields added to final details: `tipoProyecto`, `procesoActual`, at least one `objetivos` value, and any missing required functionality, platform, and user-range values not supplied in the optional start context. Conditional other-industry, other-objective, other-functionality, and other-user-type text remains explicit.
+- Prettier check and `git diff --check` passed. `frontend/src/App.jsx`, panel components, `frontend/src/styles/panel.css`, and `frontend/dist` remained unchanged. No real Gemini call or verification subagent was used.
+- Native assessment for the Unit 2 commit returned `medium` with `review_due=false` and `review_due_reason=under_budget`; no review lifecycle was started.
