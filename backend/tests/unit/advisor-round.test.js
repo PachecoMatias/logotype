@@ -21,6 +21,7 @@ import {
   postprocessAdvisorOutput,
 } from '../../src/services/advisor/advisor-engine.js';
 import { createAdvisorRateLimiter } from '../../src/services/advisor/advisor-rate-limiter.js';
+import { createAdvisorService } from '../../src/services/advisor/advisor-service.js';
 
 function story(overrides = {}) {
   return {
@@ -228,6 +229,49 @@ test('postprocessing limits the complete story list to maxHistorias', () => {
   });
 
   assert.equal(result.historias.length, maxHistorias);
+});
+
+test('development diagnostics expose the exact initial postprocessing failure only to the server log', async () => {
+  const diagnostics = [];
+  const service = createAdvisorService({
+    gateway: {
+      async generateAdvisorRound() {
+        return JSON.stringify({
+          historias: [],
+          preguntas: [],
+          sugerencias: [],
+          duda_critica: '',
+        });
+      },
+    },
+    limiter: { consume: () => ({ sessionCalls: 1 }) },
+    logFailure: (diagnostic) => diagnostics.push(diagnostic),
+    environment: 'development',
+  });
+  const payload = {
+    sesionId: 'diagnostic-fixture',
+    cerrar: false,
+    estado: {
+      idea: 'Una ferretería necesita registrar ventas.',
+      datosIniciales: {
+        funcionalidades: ['Gestión de ventas'],
+        plataformas: ['Web'],
+        tiposUsuario: ['Vendedor'],
+        cantidadUsuarios: '10',
+      },
+      historias: [],
+      respuestas: [],
+      sugerenciasRechazadas: [],
+    },
+  };
+
+  await assert.rejects(service.round(payload, { ip: 'fixture' }), {
+    status: 503,
+    code: 'ADVISOR_UNAVAILABLE',
+    message: 'Requirements advisor is unavailable',
+  });
+  assert.equal(diagnostics[0].message, 'Initial round returned no stories');
+  assert.match(diagnostics[0].stack, /advisor-service\.js/);
 });
 
 test('critical clarification is returned alone once for its focused story', () => {

@@ -109,6 +109,31 @@ test('POST /api/asesor/ronda is public and runs an INICIAL round', async () => {
   }
 });
 
+test('INICIAL recovers a provider-authored state for a new story', async () => {
+  const restore = test.mock.method(geminiGateway, 'generateAdvisorRound', async () =>
+    providerResult({
+      historias: [
+        {
+          id: 'hu-1',
+          texto: 'Como vendedor, quiero registrar ventas, para mantener el stock actualizado',
+          estado: 'sugerida',
+          etapa: '1',
+        },
+      ],
+    }),
+  );
+
+  try {
+    const response = await request(app).post('/api/asesor/ronda').send(body());
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.data.historias.length, 1);
+    assert.equal(response.body.data.historias[0].estado, 'sugerida_ia');
+  } finally {
+    restore.mock.restore();
+  }
+});
+
 test('CONTINUAR integrates pending answers and keeps questions on one focused story', async () => {
   const restore = test.mock.method(geminiGateway, 'generateAdvisorRound', async () =>
     providerResult({

@@ -57,15 +57,31 @@ function nextUniqueId(prefix, createId, usedIds) {
   return candidate;
 }
 
+function parseProviderStory(candidate, existingIds) {
+  const result = providerStorySchema.safeParse(candidate);
+  if (result.success) return result.data;
+
+  if (!candidate || typeof candidate !== 'object' || existingIds.has(candidate.id)) return null;
+
+  const recovered = providerStorySchema.safeParse({
+    id: typeof candidate.id === 'string' ? candidate.id : '',
+    texto: candidate.texto,
+    estado: 'sugerida_ia',
+    etapa: candidate.etapa,
+  });
+  return recovered.success ? recovered.data : null;
+}
+
 function mergeStories(rawStories, stories, answers, focusId, createId) {
+  const existingIds = new Set(stories.map(({ id }) => id));
   const validProviderStories = rawStories.flatMap((candidate) => {
-    const result = providerStorySchema.safeParse(candidate);
-    return result.success ? [result.data] : [];
+    const parsed = parseProviderStory(candidate, existingIds);
+    return parsed ? [parsed] : [];
   });
   const providerById = new Map(
     validProviderStories.filter(({ id }) => id).map((story) => [story.id, story]),
   );
-  const usedIds = new Set(stories.map(({ id }) => id));
+  const usedIds = new Set(existingIds);
   const merged = stories.map((story) => {
     const generated = providerById.get(story.id);
 

@@ -24,7 +24,7 @@ function safeToken(value, pattern, fallback) {
   return typeof value === 'string' && pattern.test(value) ? value : fallback;
 }
 
-function createFailureDiagnostic(error, stage) {
+function createFailureDiagnostic(error, stage, environment) {
   const diagnostic = {
     stage,
     errorName: safeToken(error?.name, /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/, 'Error'),
@@ -40,6 +40,10 @@ function createFailureDiagnostic(error, stage) {
   if (providerStatus) diagnostic.providerStatus = providerStatus;
   if (providerReason) diagnostic.providerReason = providerReason;
   if (model) diagnostic.model = model;
+  if (environment === 'development') {
+    if (typeof error?.message === 'string') diagnostic.message = error.message;
+    if (typeof error?.stack === 'string') diagnostic.stack = error.stack;
+  }
 
   return diagnostic;
 }
@@ -84,6 +88,7 @@ export function createAdvisorService({
   buildPrompt = buildRequirementsAdvisorPrompt,
   createId = defaultCreateId,
   logFailure = defaultFailureLogger,
+  environment = process.env.NODE_ENV ?? 'development',
 } = {}) {
   async function round(payload, { ip }) {
     const { sessionCalls } = limiter.consume(ip, payload.sesionId);
@@ -157,6 +162,7 @@ export function createAdvisorService({
         createFailureDiagnostic(
           error,
           error?.advisorFailureStage ?? error?.backlogFailureStage ?? 'provider',
+          environment,
         ),
       );
       throw unavailableError();
