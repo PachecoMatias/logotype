@@ -8,6 +8,7 @@ import { historiasRepository } from '../repositories/historias.repository.js';
 import { proyectosRepository } from '../repositories/proyectos.repository.js';
 import { projectAnalysisSchema } from '../schemas/project-analysis.schema.js';
 import { projectBacklogSchema } from '../schemas/project-backlog.schema.js';
+import { validateProjectBacklogSemantics } from './backlog-semantics.js';
 import { calcularSenales } from './viability-signals.js';
 
 function createInternalError() {
@@ -15,7 +16,11 @@ function createInternalError() {
 }
 
 function createAnalysisFailure() {
-  return new AppError(502, 'AI_ANALYSIS_FAILED', 'AI analysis failed');
+  return new AppError(
+    502,
+    'AI_ANALYSIS_FAILED',
+    'El servicio de IA no está disponible temporalmente. Intentá nuevamente más tarde.',
+  );
 }
 
 const backlogFailureStages = new Set([
@@ -24,6 +29,7 @@ const backlogFailureStages = new Set([
   'response_text',
   'json_parse',
   'schema_validation',
+  'semantic_validation',
   'prompt_construction',
 ]);
 const providerReasons = new Set([
@@ -33,6 +39,25 @@ const providerReasons = new Set([
   'invalid_api_key',
   'other_invalid_argument',
 ]);
+const semanticCardTypes = new Set(['historia_usuario', 'tarea_tecnica', 'spike']);
+const semanticOrigins = new Set(['cliente', 'derivada_ia', 'tecnica']);
+const semanticFields = new Set(['historia_usuario', 'descripcion', 'backlog']);
+const semanticRules = new Set([
+  'duplicate_title',
+  'invalid_metadata',
+  'unknown_parent',
+  'unconfirmed_approved_scope',
+  'functional_origin_required',
+  'functional_user_story_required',
+  'client_story_changed',
+  'technical_origin_required',
+  'technical_title_required',
+  'technical_user_story_forbidden',
+  'proposal_client_origin_forbidden',
+  'confirmed_story_uncovered',
+  'approved_technical_task_required',
+]);
+const semanticDiagnosticValueMaxLength = 240;
 
 function sanitizeErrorName(name) {
   return typeof name === 'string' && /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(name) ? name : 'Error';
@@ -50,6 +75,62 @@ function sanitizeModel(model) {
   return typeof model === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$/.test(model)
     ? model
     : undefined;
+}
+
+function replaceControlCharacters(value) {
+  return Array.from(value, (character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? ' ' : character;
+  }).join('');
+}
+
+function sanitizeSemanticValue(value) {
+  if (typeof value !== 'string') return null;
+  const sanitized = replaceControlCharacters(value)
+    .replace(
+      /(["']?)(api[_-]?key|authorization|token|secret|password)\1\s*[:=]\s*(["'])[^"']*\3/giu,
+      '$1$2$1:$3[REDACTED]$3',
+    )
+    .replace(
+      /\bauthorization\b\s*[:=]\s*(?:basic|bearer)\s+[^\s,;]+/giu,
+      'Authorization=[REDACTED]',
+    )
+    .replace(/\bbearer\s+[A-Za-z0-9._~-]+/giu, 'Bearer [REDACTED]')
+    .replace(
+      /\b(api[_-]?key|authorization|token|secret|password)\b\s*[:=]\s*[^\s,;]+/giu,
+      '$1=[REDACTED]',
+    )
+    .trim();
+  if (!sanitized) return null;
+  if (sanitized.length <= semanticDiagnosticValueMaxLength) return sanitized;
+  return `${sanitized.slice(0, semanticDiagnosticValueMaxLength - 1)}…`;
+}
+
+function sanitizeSemanticIssue(issue) {
+  const semantic = issue?.semantic;
+  if (!semantic || !semanticRules.has(semantic.rule)) return null;
+
+  const sanitized = {
+    index: Number.isInteger(semantic.index) && semantic.index >= 0 ? semantic.index : null,
+    cardType: semanticCardTypes.has(semantic.cardType) ? semantic.cardType : null,
+    rule: semantic.rule,
+    origin: semanticOrigins.has(semantic.origin) ? semantic.origin : null,
+    parent:
+      typeof semantic.parent === 'string' &&
+      /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(semantic.parent)
+        ? semantic.parent
+        : null,
+    field: semanticFields.has(semantic.field) ? semantic.field : null,
+  };
+  const receivedValue = sanitizeSemanticValue(semantic.receivedValue);
+  const normalizedValue = sanitizeSemanticValue(semantic.normalizedValue);
+
+  if (receivedValue) sanitized.receivedValue = receivedValue;
+  if (normalizedValue && normalizedValue !== receivedValue) {
+    sanitized.normalizedValue = normalizedValue;
+  }
+
+  return sanitized;
 }
 
 function createBacklogDiagnostic({ stage, error, issues, projectId }) {
@@ -84,6 +165,9 @@ function createBacklogDiagnostic({ stage, error, issues, projectId }) {
 
   if (issues) {
     diagnostic.zodIssues = issues.map((issue) => ({ code: issue.code, path: issue.path }));
+    if (diagnostic.stage === 'semantic_validation') {
+      diagnostic.semanticIssues = issues.map(sanitizeSemanticIssue).filter(Boolean);
+    }
   }
 
   if (model) {
@@ -261,6 +345,15 @@ export function createProyectosService({
     }
 
     const stories = result.data;
+    const semanticResult = validateProjectBacklogSemantics(stories, project.payload, {
+      rawBacklog: parsed,
+    });
+
+    if (!semanticResult.success) {
+      const error = new Error('Generated backlog violates advisor semantics');
+      error.name = 'BacklogSemanticError';
+      failBacklog('semantic_validation', error, semanticResult.issues);
+    }
 
     const persisted = await storyRepository.persistGeneratedBacklog(configuration, id, stories);
 

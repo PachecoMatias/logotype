@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  formatBacklogMetadataBadges,
+  splitBacklogDescription,
+} from '../../utils/backlogMetadata.js'
 import HistoriaEditor from './HistoriaEditor.jsx'
 
 function clasePrioridad(prioridad) {
@@ -8,22 +12,39 @@ function clasePrioridad(prioridad) {
 }
 
 export function HistoriaContenido({ historia, numero }) {
-  const titulo = historia.titulo || (numero ? `Historia ${numero}` : 'Historia de usuario')
+  const titulo =
+    historia.titulo || (numero ? `Historia ${numero}` : 'Historia de usuario')
+  const descripcion = splitBacklogDescription(historia.descripcion)
+  const metadataBadges = formatBacklogMetadataBadges(descripcion.metadata)
 
   return (
     <div className="historia-contenido">
       <div className="adm-story__head">
         <h3 className="adm-story__title">{titulo}</h3>
         <div className="adm-story__badges">
-          <span className={clasePrioridad(historia.prioridad)}>{historia.prioridad}</span>
-          <span className="adm-badge adm-badge--points">{historia.estimacion_fibonacci} pts</span>
+          <span className={clasePrioridad(historia.prioridad)}>
+            {historia.prioridad}
+          </span>
+          <span className="adm-badge adm-badge--points">
+            {historia.estimacion_fibonacci} pts
+          </span>
           <span className="adm-badge adm-badge--phase">{historia.fase}</span>
+          {metadataBadges.map((badge) => (
+            <span
+              className={`adm-badge adm-badge--metadata adm-badge--metadata-${badge.key}`}
+              key={badge.key}
+            >
+              {badge.label}
+            </span>
+          ))}
         </div>
       </div>
 
       <p className="adm-story__text">{historia.historia_usuario}</p>
 
-      {historia.descripcion && <p className="adm-story__desc">{historia.descripcion}</p>}
+      {descripcion.description && (
+        <p className="adm-story__desc">{descripcion.description}</p>
+      )}
 
       {historia.criterios_aceptacion?.length > 0 && (
         <div className="adm-story__group">
@@ -45,7 +66,8 @@ export function HistoriaContenido({ historia, numero }) {
 
       {historia.rol_sugerido && (
         <p className="adm-story__rol">
-          <span className="adm-story__sub">Rol sugerido</span> {historia.rol_sugerido}
+          <span className="adm-story__sub">Rol sugerido</span>{' '}
+          {historia.rol_sugerido}
         </p>
       )}
     </div>

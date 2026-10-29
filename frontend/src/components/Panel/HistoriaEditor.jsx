@@ -1,5 +1,10 @@
 import { useState } from 'react'
 import { actualizarHistoria } from '../../utils/api.js'
+import {
+  formatBacklogMetadataBadges,
+  joinBacklogDescription,
+  splitBacklogDescription,
+} from '../../utils/backlogMetadata.js'
 
 const ESTIMACIONES = [1, 2, 3, 5, 8, 13, 21]
 const PRIORIDADES = ['Alta', 'Media', 'Baja']
@@ -13,9 +18,13 @@ const ROLES = [
 ]
 
 function valoresIniciales(historia) {
+  const descripcion = splitBacklogDescription(historia.descripcion)
+
   return {
     historia_usuario: historia.historia_usuario || '',
-    descripcion: historia.descripcion || '',
+    descripcion: descripcion.description,
+    metadata: descripcion.metadata,
+    metadataPrefix: descripcion.prefix,
     criterios_aceptacion: (historia.criterios_aceptacion || []).join('\n'),
     alcance_tecnico: historia.alcance_tecnico || '',
     estimacion_fibonacci: historia.estimacion_fibonacci || 1,
@@ -29,6 +38,7 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const fieldId = (nombre) => `historia-${historia.id}-${nombre}`
+  const metadataBadges = formatBacklogMetadataBadges(valores.metadata)
 
   const cambiar = (campo) => (event) => {
     setValores((actuales) => ({ ...actuales, [campo]: event.target.value }))
@@ -43,12 +53,19 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
 
     try {
       const actualizada = await actualizarHistoria(historia.id, {
-        ...valores,
+        historia_usuario: valores.historia_usuario,
+        descripcion: joinBacklogDescription(
+          valores.metadataPrefix,
+          valores.descripcion,
+        ),
         criterios_aceptacion: valores.criterios_aceptacion
           .split('\n')
           .map((criterio) => criterio.trim())
           .filter(Boolean),
+        alcance_tecnico: valores.alcance_tecnico,
         estimacion_fibonacci: Number(valores.estimacion_fibonacci),
+        prioridad: valores.prioridad,
+        rol_sugerido: valores.rol_sugerido,
       })
       onSaved(actualizada)
     } catch (err) {
@@ -75,7 +92,21 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
       </div>
 
       <div className="adm-field">
-        <label className="adm-label" htmlFor={fieldId('descripcion')}>Descripción</label>
+        <label className="adm-label" htmlFor={fieldId('descripcion')}>
+          Descripción
+        </label>
+        {metadataBadges.length > 0 && (
+          <div className="adm-story__badges" aria-label="Metadata del backlog">
+            {metadataBadges.map((badge) => (
+              <span
+                className={`adm-badge adm-badge--metadata adm-badge--metadata-${badge.key}`}
+                key={badge.key}
+              >
+                {badge.label}
+              </span>
+            ))}
+          </div>
+        )}
         <textarea
           id={fieldId('descripcion')}
           className="adm-control"
@@ -105,7 +136,9 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
       </div>
 
       <div className="adm-field">
-        <label className="adm-label" htmlFor={fieldId('alcance_tecnico')}>Alcance técnico</label>
+        <label className="adm-label" htmlFor={fieldId('alcance_tecnico')}>
+          Alcance técnico
+        </label>
         <textarea
           id={fieldId('alcance_tecnico')}
           className="adm-control"
@@ -118,7 +151,10 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
 
       <div className="adm-selects">
         <div className="adm-field">
-          <label className="adm-label" htmlFor={fieldId('estimacion_fibonacci')}>
+          <label
+            className="adm-label"
+            htmlFor={fieldId('estimacion_fibonacci')}
+          >
             Estimación Fibonacci
           </label>
           <select
@@ -129,13 +165,17 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
             disabled={guardando}
           >
             {ESTIMACIONES.map((estimacion) => (
-              <option key={estimacion} value={estimacion}>{estimacion}</option>
+              <option key={estimacion} value={estimacion}>
+                {estimacion}
+              </option>
             ))}
           </select>
         </div>
 
         <div className="adm-field">
-          <label className="adm-label" htmlFor={fieldId('prioridad')}>Prioridad</label>
+          <label className="adm-label" htmlFor={fieldId('prioridad')}>
+            Prioridad
+          </label>
           <select
             id={fieldId('prioridad')}
             className="adm-control"
@@ -144,13 +184,17 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
             disabled={guardando}
           >
             {PRIORIDADES.map((prioridad) => (
-              <option key={prioridad} value={prioridad}>{prioridad}</option>
+              <option key={prioridad} value={prioridad}>
+                {prioridad}
+              </option>
             ))}
           </select>
         </div>
 
         <div className="adm-field">
-          <label className="adm-label" htmlFor={fieldId('rol_sugerido')}>Rol sugerido</label>
+          <label className="adm-label" htmlFor={fieldId('rol_sugerido')}>
+            Rol sugerido
+          </label>
           <select
             id={fieldId('rol_sugerido')}
             className="adm-control"
@@ -159,19 +203,34 @@ function HistoriaEditor({ historia, onSaved, onCancel }) {
             disabled={guardando}
           >
             {ROLES.map((rol) => (
-              <option key={rol} value={rol}>{rol}</option>
+              <option key={rol} value={rol}>
+                {rol}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
-      {error && <p className="adm-alert adm-alert--error" role="alert">{error}</p>}
+      {error && (
+        <p className="adm-alert adm-alert--error" role="alert">
+          {error}
+        </p>
+      )}
 
       <div className="adm-form__actions">
-        <button className="adm-btn adm-btn--primary" type="submit" disabled={guardando}>
+        <button
+          className="adm-btn adm-btn--primary"
+          type="submit"
+          disabled={guardando}
+        >
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </button>
-        <button className="adm-btn adm-btn--ghost" type="button" onClick={onCancel} disabled={guardando}>
+        <button
+          className="adm-btn adm-btn--ghost"
+          type="button"
+          onClick={onCancel}
+          disabled={guardando}
+        >
           Cancelar
         </button>
       </div>

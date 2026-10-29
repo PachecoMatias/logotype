@@ -1,0 +1,42 @@
+{
+  "historias": [
+    {
+      "id": "HU01",
+      "texto": "Como vendedor, quiero registrar las ventas de libros en el sistema, para mantener actualizado el total cobrado y los comprobantes emitidos.",
+      "estado": "pendiente",
+      "etapa": "inicial"
+    },
+    {
+      "id": "HU02",
+      "texto": "Como encargado de stock, quiero actualizar las existencias de libros disponibles, para evitar faltantes y controlar el inventario con precisión.",
+      "estado": "pendiente",
+      "etapa": "inicial"
+    }
+  ],
+  "refinadas": [],
+  "preguntas": [
+    {
+      "aspecto": "quien_la_usa",
+      "tipo": "opcion_simple",
+      "texto": "Para comenzar con la gestión de ventas, ¿quién se encargará principalmente de registrar cada venta en el local?",
+      "opciones": ["Solo el vendedor", "Vendedor y encargado", "Cualquier empleado disponible"]
+    },
+    {
+      "aspecto": "comportamiento",
+      "tipo": "opcion_simple",
+      "texto": "¿Qué información básica necesitás ingresar al momento de registrar la venta de un libro?",
+      "opciones": [
+        "Título y cantidad",
+        "Código de barras o ISBN",
+        "Título, cantidad y medio de pago"
+      ]
+    }
+  ],
+  "sugerencias": [
+    {
+      "tipo": "mejora",
+      "texto": "Podrías descontar automáticamente los libros del inventario cada vez que confirmes una venta en el mostrador."
+    }
+  ],
+  "duda_critica": ""
+}

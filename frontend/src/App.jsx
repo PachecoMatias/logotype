@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useLayoutEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Header from './components/Header/Header.jsx'
 import Hero from './components/Hero/Hero.jsx'
@@ -16,6 +16,7 @@ import PanelSolicitudes from './components/Panel/PanelSolicitudes.jsx'
 import PanelDetalle from './components/Panel/PanelDetalle.jsx'
 import PanelHistorias from './components/Panel/PanelHistorias.jsx'
 import PanelTablero from './components/Panel/PanelTablero.jsx'
+import PanelAnalisis from './components/Panel/PanelAnalisis.jsx'
 
 function App() {
   // 'home' = página principal | 'configurador' = formulario dedicado
@@ -27,6 +28,12 @@ function App() {
   const selectedBacklog = selectedProjectId
     ? backlogsByProject[selectedProjectId]
     : undefined
+
+  useLayoutEffect(() => {
+    const isPanel = view.startsWith('panel-')
+    document.body.classList.toggle('adm-body', isPanel)
+    return () => document.body.classList.remove('adm-body')
+  }, [view])
 
   const handleBacklogLoaded = useCallback((projectId, stories) => {
     setBacklogsByProject((current) => ({
@@ -115,6 +122,12 @@ function App() {
     window.scrollTo({ top: 0 })
   }
 
+  const handleViewAnalysis = (id) => {
+    setSelectedProjectId(id)
+    setView('panel-analisis')
+    window.scrollTo({ top: 0 })
+  }
+
   if (view === 'configurador') {
     return (
       <div className="cfg-page-shell">
@@ -135,7 +148,7 @@ function App() {
 
   if (view === 'panel-solicitudes') {
     return (
-      <div className="adm-shell">
+      <div className="adm-shell adm-view-enter" key="panel-solicitudes">
         <header className="adm-topbar">
           <div className="adm-container adm-topbar__inner">
             <button type="button" className="adm-wordmark" onClick={handleBackHome}>
@@ -151,13 +164,21 @@ function App() {
           </div>
         </header>
         <PanelSolicitudes onSelectProject={handleSelectProject} />
+        <button
+          type="button"
+          className="adm-fab-back"
+          onClick={handleBackHome}
+          aria-label="Volver al inicio"
+        >
+          ← Volver
+        </button>
       </div>
     )
   }
 
   if (view === 'panel-detalle') {
     return (
-      <div className="adm-shell">
+      <div className="adm-shell adm-view-enter" key={`panel-detalle-${selectedProjectId}`}>
         <header className="adm-topbar">
           <div className="adm-container adm-topbar__inner">
             <button type="button" className="adm-wordmark" onClick={handleBackHome}>
@@ -174,19 +195,28 @@ function App() {
         </header>
         <PanelDetalle
           projectId={selectedProjectId}
-          historias={selectedBacklog}
+          historias={backlogsByProject[selectedProjectId]}
           onBack={handleBackToPanel}
           onBacklogLoaded={handleBacklogLoaded}
           onViewBoard={handleViewBoard}
           onViewStories={handleViewStories}
+          onViewAnalysis={handleViewAnalysis}
         />
+        <button
+          type="button"
+          className="adm-fab-back"
+          onClick={handleBackToPanel}
+          aria-label="Volver al listado"
+        >
+          ← Volver
+        </button>
       </div>
     )
   }
 
   if (view === 'panel-historias') {
     return (
-      <div className="adm-shell">
+      <div className="adm-shell adm-view-enter" key={`panel-historias-${selectedProjectId}`}>
         <header className="adm-topbar">
           <div className="adm-container adm-topbar__inner">
             <button type="button" className="adm-wordmark" onClick={handleBackHome}>
@@ -202,19 +232,63 @@ function App() {
           </div>
         </header>
         <PanelHistorias
-          historias={selectedBacklog}
+          historias={backlogsByProject[selectedProjectId]}
           onHistoriaActualizada={(historia) =>
             handleHistoriaActualizada(selectedProjectId, historia)
           }
           onBack={() => setView('panel-detalle')}
         />
+        <button
+          type="button"
+          className="adm-fab-back"
+          onClick={() => setView('panel-detalle')}
+          aria-label="Volver al detalle"
+        >
+          ← Volver
+        </button>
+      </div>
+    )
+  }
+
+  if (view === 'panel-analisis') {
+    return (
+      <div className="adm-shell adm-view-enter" key={`panel-analisis-${selectedProjectId}`}>
+        <header className="adm-topbar">
+          <div className="adm-container adm-topbar__inner">
+            <button type="button" className="adm-wordmark" onClick={handleBackHome}>
+              LOGO<span>TYPE</span>
+            </button>
+            <button
+              type="button"
+              className="adm-btn adm-btn--ghost adm-btn--sm adm-topbar__exit"
+              onClick={handleBackHome}
+            >
+              ✕ Cerrar
+            </button>
+          </div>
+        </header>
+        <PanelAnalisis
+          projectId={selectedProjectId}
+          onBack={() => setView('panel-detalle')}
+        />
+        <button
+          type="button"
+          className="adm-fab-back"
+          onClick={() => setView('panel-detalle')}
+          aria-label="Volver al detalle"
+        >
+          ← Volver
+        </button>
       </div>
     )
   }
 
   if (view === 'panel-tablero') {
     return (
-      <div className="adm-shell adm-shell--board">
+      <div
+        className="adm-shell adm-shell--board adm-view-enter"
+        key={`panel-tablero-${selectedProjectId}`}
+      >
         <PanelTablero
           projectId={selectedProjectId}
           historias={selectedBacklog}
@@ -223,6 +297,14 @@ function App() {
           }
           onBack={() => setView('panel-detalle')}
         />
+        <button
+          type="button"
+          className="adm-fab-back"
+          onClick={() => setView('panel-detalle')}
+          aria-label="Volver al detalle"
+        >
+          ← Volver
+        </button>
       </div>
     )
   }

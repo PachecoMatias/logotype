@@ -1,11 +1,17 @@
 const configuredBaseUrl = import.meta.env?.VITE_API_URL || ''
 
 export const API_BASE_URL = configuredBaseUrl.replace(/\/$/, '')
+export const AI_SERVICE_UNAVAILABLE_MESSAGE =
+  'El servicio de IA no está disponible temporalmente. Intentá nuevamente más tarde.'
+
+function isProjectAiOperation(path) {
+  return /^\/api\/proyectos\/[^/]+\/(?:analizar|backlog)\/?$/.test(path)
+}
 
 export class ApiRequestError extends Error {
   constructor(
     message,
-    { status = null, code = null, isNetworkError = false } = {}
+    { status = null, code = null, isNetworkError = false } = {},
   ) {
     super(message)
     this.name = 'ApiRequestError'
@@ -21,9 +27,12 @@ export async function apiRequest(path, options = {}, expectedStatus) {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, options)
   } catch {
-    throw new ApiRequestError('No se pudo conectar con el servidor.', {
-      isNetworkError: true,
-    })
+    throw new ApiRequestError(
+      isProjectAiOperation(path)
+        ? AI_SERVICE_UNAVAILABLE_MESSAGE
+        : 'No se pudo conectar con el servidor.',
+      { isNetworkError: true },
+    )
   }
 
   const rawBody = await response.text()
@@ -37,7 +46,7 @@ export async function apiRequest(path, options = {}, expectedStatus) {
         'El servidor devolvió una respuesta inválida.',
         {
           status: response.status,
-        }
+        },
       )
     }
   }
@@ -47,12 +56,19 @@ export async function apiRequest(path, options = {}, expectedStatus) {
     : response.ok
 
   if (!hasExpectedStatus || body?.success !== true) {
+    const shouldNormalizeAiFailure =
+      isProjectAiOperation(path) &&
+      (body?.error?.code === 'AI_ANALYSIS_FAILED' ||
+        body?.error?.message === 'AI analysis failed')
+
     throw new ApiRequestError(
-      body?.error?.message || 'La solicitud no pudo completarse.',
+      shouldNormalizeAiFailure
+        ? AI_SERVICE_UNAVAILABLE_MESSAGE
+        : body?.error?.message || 'La solicitud no pudo completarse.',
       {
         status: response.status,
         code: body?.error?.code || null,
-      }
+      },
     )
   }
 
@@ -83,7 +99,7 @@ export function createProject(payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     },
-    201
+    201,
   )
 }
 

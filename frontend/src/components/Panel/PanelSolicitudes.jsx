@@ -41,7 +41,10 @@ function PanelSolicitudes({ onSelectProject }) {
   return (
     <section className="adm-section">
       <div className="adm-container">
-        <div className="adm-page-head">
+        <div
+          className="adm-page-head adm-enter-item"
+          style={{ "--adm-enter-order": 0 }}
+        >
           <span className="adm-eyebrow">Panel interno</span>
           <h2 className="adm-page-title">Solicitudes recibidas</h2>
           <p className="adm-page-sub">
@@ -89,7 +92,11 @@ function PanelSolicitudes({ onSelectProject }) {
 
         {!loading && !error && proyectos.length > 0 && (
           <div className="adm-list">
-            <div className="adm-list__head" aria-hidden="true">
+            <div
+              className="adm-list__head adm-enter-item"
+              style={{ "--adm-enter-order": 1 }}
+              aria-hidden="true"
+            >
               <span>Código</span>
               <span>Empresa</span>
               <span>Contacto</span>
@@ -97,8 +104,13 @@ function PanelSolicitudes({ onSelectProject }) {
               <span>Fecha</span>
               <span>Estado · decisión</span>
             </div>
-            {proyectos.map((p) => (
-              <ProjectCard key={p.id} project={p} onClick={onSelectProject} />
+            {proyectos.map((p, index) => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                onClick={onSelectProject}
+                enterOrder={index + 2}
+              />
             ))}
           </div>
         )}

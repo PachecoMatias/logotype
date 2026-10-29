@@ -140,7 +140,7 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
 
   if (!Array.isArray(historias) || historias.length === 0) {
     return (
-      <section className="adm-section">
+      <section className="adm-section adm-enter-item" style={{ '--adm-enter-order': 0 }}>
         <div className="adm-container">
           <div className="adm-state adm-state--box">
             <div>
@@ -158,12 +158,21 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
 
   return (
     <>
-      <header className="adm-topbar">
+      <header
+        className="adm-topbar adm-enter-item"
+        style={{ '--adm-enter-order': 0 }}
+      >
         <div className="adm-topbar__inner adm-topbar__inner--board">
           <button type="button" className="adm-btn adm-btn--ghost adm-btn--sm" onClick={onBack}>
             ← Volver
           </button>
-          <span className="adm-topbar__crumb">Tablero del proyecto</span>
+          <div className="adm-board-heading">
+            <span className="adm-eyebrow">Flujo de trabajo</span>
+            <div>
+              <h1>Tablero del proyecto</h1>
+              <p>Historias organizadas por estado de avance.</p>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -176,7 +185,7 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
       <div className="adm-board">
         <div className="adm-board__scroll">
           <div className="adm-board__cols">
-            {COLUMNAS.map((col) => (
+            {COLUMNAS.map((col, index) => (
               <KanbanColumn
                 key={col}
                 nombre={col}
@@ -185,6 +194,7 @@ function PanelTablero({ historias, onHistoriaActualizada, onBack }) {
                 onVerDetalle={(historia, trigger) => setDetalleAbierto({ historia, trigger })}
                 esPrimera={col === COLUMNAS[0]}
                 esUltima={col === COLUMNAS[COLUMNAS.length - 1]}
+                enterOrder={index + 1}
               />
             ))}
           </div>

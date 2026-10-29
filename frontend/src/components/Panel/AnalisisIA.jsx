@@ -144,19 +144,28 @@ function LegacyAnalysis({ analisis, canReanalyze, reanalyzing, onReanalyze }) {
       className="adm-ai adm-ai--legacy"
       aria-labelledby="legacy-analysis-title"
     >
-      <div className="adm-ai__head">
+      <div
+        className="adm-ai__head adm-enter-item"
+        style={{ "--adm-enter-order": 1 }}
+      >
         <h3 className="adm-ai__title" id="legacy-analysis-title">
           Análisis anterior
         </h3>
       </div>
-      <div className="adm-ai__section">
+      <div
+        className="adm-ai__section adm-enter-item"
+        style={{ "--adm-enter-order": 2 }}
+      >
         <p className="adm-alert adm-alert--warning">
           Análisis anterior: no incluye las señales ni los criterios nuevos
         </p>
         <h4>Observaciones</h4>
         <SentenceParagraphs value={analisis.observaciones} />
       </div>
-      <div className="adm-ai__section adm-ai__legacy-grid">
+      <div
+        className="adm-ai__section adm-ai__legacy-grid adm-enter-item"
+        style={{ "--adm-enter-order": 3 }}
+      >
         <div>
           <h4>Completitud</h4>
           <p className="adm-ai__prose">{formatValue(analisis.completitud)}</p>
@@ -166,18 +175,27 @@ function LegacyAnalysis({ analisis, canReanalyze, reanalyzing, onReanalyze }) {
           <TextList items={analisis.campos_faltantes} />
         </div>
       </div>
-      <div className="adm-ai__section">
+      <div
+        className="adm-ai__section adm-enter-item"
+        style={{ "--adm-enter-order": 4 }}
+      >
         <h4>Mensaje para el cliente</h4>
         <p className="adm-ai__prose">
           {formatValue(analisis.mensaje_para_cliente)}
         </p>
       </div>
-      <div className="adm-ai__section adm-ai__legacy-verdict">
+      <div
+        className="adm-ai__section adm-ai__legacy-verdict adm-enter-item"
+        style={{ "--adm-enter-order": 5 }}
+      >
         <h4>Veredicto anterior de la IA (ya no se usa para decidir)</h4>
         <p>{analisis.viable ? "Afirmativo" : "Negativo"}</p>
       </div>
       {canReanalyze && (
-        <div className="adm-ai__legacy-action">
+        <div
+          className="adm-ai__legacy-action adm-enter-item"
+          style={{ "--adm-enter-order": 6 }}
+        >
           <button
             type="button"
             className="adm-btn adm-btn--primary"
@@ -223,7 +241,11 @@ function AnalisisIA({
 
   return (
     <article className="adm-ai" aria-labelledby="analysis-title">
-      <header className="adm-ai__head">
+      <header
+        className="adm-ai__head adm-enter-item"
+        style={{ "--adm-enter-order": 1 }}
+      >
+        <span className="adm-eyebrow">Lectura del proyecto</span>
         <div className="adm-ai__head-top">
           <h3 className="adm-ai__title" id="analysis-title">
             Opinión de la IA · orientativa
@@ -238,7 +260,8 @@ function AnalisisIA({
       </header>
 
       <section
-        className="adm-ai__section adm-ai__reading"
+        className="adm-ai__section adm-ai__reading adm-enter-item"
+        style={{ "--adm-enter-order": 2 }}
         aria-labelledby="summary-title"
       >
         <h4 id="summary-title">Resumen</h4>
@@ -251,7 +274,8 @@ function AnalisisIA({
 
       {analisis.claves_para_decidir?.length > 0 && (
         <section
-          className="adm-ai__section"
+          className="adm-ai__section adm-enter-item"
+          style={{ "--adm-enter-order": 3 }}
           aria-labelledby="decision-keys-title"
         >
           <h4 id="decision-keys-title">Claves para decidir</h4>
@@ -259,7 +283,11 @@ function AnalisisIA({
         </section>
       )}
 
-      <section className="adm-ai__section" aria-labelledby="signals-title">
+      <section
+        className="adm-ai__section adm-enter-item"
+        style={{ "--adm-enter-order": 4 }}
+        aria-labelledby="signals-title"
+      >
         <div className="adm-ai__section-head">
           <h4 id="signals-title">Señales objetivas</h4>
           <span className="adm-ai__calculated">calculado por reglas</span>
@@ -274,7 +302,11 @@ function AnalisisIA({
         </dl>
       </section>
 
-      <section className="adm-ai__section" aria-labelledby="criteria-title">
+      <section
+        className="adm-ai__section adm-enter-item"
+        style={{ "--adm-enter-order": 5 }}
+        aria-labelledby="criteria-title"
+      >
         <div className="adm-ai__section-head">
           <h4 id="criteria-title">Criterios</h4>
           <p className="adm-ai__counter">
@@ -300,7 +332,8 @@ function AnalisisIA({
       </section>
 
       <section
-        className="adm-ai__section adm-ai__two-columns"
+        className="adm-ai__section adm-ai__two-columns adm-enter-item"
+        style={{ "--adm-enter-order": 6 }}
         aria-label="Fortalezas y debilidades"
       >
         <div className="adm-ai__column adm-ai__column--strengths">
@@ -323,31 +356,41 @@ function AnalisisIA({
         </div>
       </section>
 
-      <section className="adm-ai__section" aria-labelledby="risks-title">
+      <section
+        className="adm-ai__section adm-enter-item"
+        style={{ "--adm-enter-order": 7 }}
+        aria-labelledby="risks-title"
+      >
         <h4 id="risks-title">Riesgos</h4>
         <div className="adm-ai__risks">
-          {risks.map((risk) => (
-            <div
-              className="adm-ai__risk"
+          {risks.map((risk, index) => (
+            <article
+              className={`adm-ai__risk-block adm-ai__risk adm-ai__risk--${risk.impacto}`}
               key={`${risk.titulo}-${risk.detalle}`}
             >
-              <div className="adm-ai__risk-title">
-                <h5>{risk.titulo}</h5>
+              <div className="adm-ai__risk-head">
+                <span className="adm-ai__risk-index">Riesgo {index + 1}</span>
                 <span className={`adm-ai-badge adm-ai-badge--${risk.impacto}`}>
                   Impacto {risk.impacto}
                 </span>
               </div>
-              <p>{risk.detalle}</p>
-              <p className="adm-ai__mitigation">
-                <strong>Mitigación:</strong> {risk.mitigacion}
-              </p>
-            </div>
+              <h5>{risk.titulo}</h5>
+              <div className="adm-ai__risk-part">
+                <span className="adm-ai__risk-label">Descripción</span>
+                <p>{risk.detalle}</p>
+              </div>
+              <div className="adm-ai__risk-part adm-ai__mitigation">
+                <span className="adm-ai__risk-label">Mitigación</span>
+                <p>{risk.mitigacion}</p>
+              </div>
+            </article>
           ))}
         </div>
       </section>
 
       <section
-        className="adm-ai__section adm-ai__two-columns"
+        className="adm-ai__section adm-ai__two-columns adm-enter-item"
+        style={{ "--adm-enter-order": 8 }}
         aria-label="Información faltante y condiciones para avanzar"
       >
         <div>
@@ -366,7 +409,8 @@ function AnalisisIA({
       </section>
 
       <section
-        className="adm-ai__section adm-ai__secondary"
+        className="adm-ai__section adm-ai__secondary adm-enter-item"
+        style={{ "--adm-enter-order": 9 }}
         aria-label="Preguntas y supuestos"
       >
         <div>
@@ -379,7 +423,10 @@ function AnalisisIA({
         </div>
       </section>
 
-      <footer className="adm-ai__footer">
+      <footer
+        className="adm-ai__footer adm-enter-item"
+        style={{ "--adm-enter-order": 10 }}
+      >
         Opinión de la IA, orientativa. Decide el administrador.
       </footer>
     </article>

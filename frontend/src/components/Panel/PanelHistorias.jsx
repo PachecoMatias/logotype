@@ -25,7 +25,10 @@ function PanelHistorias({ historias, onHistoriaActualizada, onBack }) {
           ← Volver
         </button>
 
-        <div className="adm-page-head">
+        <div
+          className="adm-page-head adm-enter-item"
+          style={{ "--adm-enter-order": 0 }}
+        >
           <span className="adm-eyebrow">Backlog</span>
           <h2 className="adm-page-title">Historias de usuario</h2>
           <p className="adm-page-sub">Backlog real del proyecto, agrupado por fase.</p>
@@ -43,8 +46,12 @@ function PanelHistorias({ historias, onHistoriaActualizada, onBack }) {
           </div>
         ) : (
           <div>
-            {Object.entries(grupos).map(([fase, items]) => (
-              <section key={fase} className="adm-phase">
+            {Object.entries(grupos).map(([fase, items], index) => (
+              <section
+                key={fase}
+                className="adm-phase adm-enter-item"
+                style={{ "--adm-enter-order": index + 1 }}
+              >
                 <div className="adm-phase__head">
                   <h3 className="adm-phase__name">{fase}</h3>
                   <span className="adm-phase__count">{items.length}</span>

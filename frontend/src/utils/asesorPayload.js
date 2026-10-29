@@ -1,3 +1,15 @@
+import { featuresList } from '../data/projectOptions.js'
+
+const projectTypeIds = new Set([
+  'web',
+  'movil',
+  'gestion',
+  'ecommerce',
+  'api',
+  'personalizada',
+])
+const catalogFeatures = new Set(featuresList.filter((item) => item !== 'Otra'))
+
 export function buildAdvisorProjectPayload({
   idea,
   initialData,
@@ -9,8 +21,20 @@ export function buildAdvisorProjectPayload({
   rounds,
   withoutAdvisor,
   finalData,
+  objectives = [],
 }) {
-  const selectedFeatures = [...new Set(initialData.funcionalidades)]
+  const currentStoryFeatures = new Set(
+    histories
+      .map(({ funcionalidad }) => funcionalidad?.trim())
+      .filter(Boolean)
+  )
+  let selectedFeatures = [
+    ...new Set(
+      histories
+        .map(({ funcionalidad }) => funcionalidad?.trim())
+        .filter((feature) => catalogFeatures.has(feature))
+    ),
+  ]
   const customFeatures = [
     initialData.otraFuncionalidad,
     ...(initialData.otrasFuncionalidades || []),
@@ -18,17 +42,39 @@ export function buildAdvisorProjectPayload({
     .map((value) => value?.trim())
     .filter(Boolean)
 
-  if (customFeatures.length && !selectedFeatures.includes('Otra'))
+  for (const feature of initialData.funcionalidades) {
+    if (
+      catalogFeatures.has(feature) &&
+      currentStoryFeatures.has(feature) &&
+      !selectedFeatures.includes(feature)
+    ) {
+      selectedFeatures.push(feature)
+    }
+  }
+  if (
+    initialData.funcionalidades.includes('Otra') &&
+    customFeatures.some((feature) => currentStoryFeatures.has(feature)) &&
+    !selectedFeatures.includes('Otra')
+  ) {
     selectedFeatures.push('Otra')
+  }
+  if (selectedFeatures.length === 0) {
+    selectedFeatures = [...new Set(initialData.funcionalidades)]
+  }
+
+  const tipoInferido = !projectTypeIds.has(initialData.tipoProyecto)
+  const validatedObjectives = withoutAdvisor ? [] : objectives
 
   return {
     empresa: { ...finalData.empresa },
-    proyecto: { ...finalData.proyecto },
+    proyecto: {
+      tipoProyecto: tipoInferido ? 'personalizada' : initialData.tipoProyecto,
+    },
     problema: {
       problemaActual: idea.trim(),
-      procesoActual: finalData.problema.procesoActual,
-      objetivos: [...finalData.problema.objetivos],
-      objetivosOtro: finalData.problema.objetivosOtro,
+      procesoActual: initialData.procesoActual.trim(),
+      objetivos: validatedObjectives.map(({ texto }) => texto),
+      objetivosOtro: '',
     },
     funcionalidades: {
       seleccionadas: selectedFeatures,
@@ -43,8 +89,14 @@ export function buildAdvisorProjectPayload({
     },
     presupuesto: { ...finalData.presupuesto },
     asesoramiento: {
-      version: 1,
+      version: 2,
       ideaOriginal: idea.trim(),
+      procesoActual: initialData.procesoActual.trim(),
+      tipoInferido,
+      objetivos: validatedObjectives.map(({ texto, basadoEn }) => ({
+        texto,
+        basadoEn,
+      })),
       historias: histories.map(
         ({ id, texto, estado, etapa, aDetallar, funcionalidad }) => ({
           id,

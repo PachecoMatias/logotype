@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import StatusBadge from "./StatusBadge.jsx";
-import AnalisisIA from "./AnalisisIA.jsx";
 import DecisionBadge from "./DecisionBadge.jsx";
 import { apiRequest } from "../../utils/api.js";
-import { buildAdvisorDetail } from "../../utils/advisorDetail.js";
+
+import {
+  buildAdvisorDetail,
+  buildAnswerGroups,
+  buildBusinessSummary,
+} from "../../utils/advisorDetail.js";
+
 import { adaptarHistorias } from "../../utils/backlog.js";
+import AdvisorAnswersModal from "./AdvisorAnswersModal.jsx";
+
 import "../../styles/panel.css";
 
 function formatLabel(key) {
@@ -12,65 +20,6 @@ function formatLabel(key) {
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/_/g, " ")
     .replace(/^./, (c) => c.toUpperCase());
-}
-
-function ValorCampo({ valor }) {
-  if (valor === null || valor === undefined || valor === "") {
-    return <span className="adm-empty-field">—</span>;
-  }
-
-  if (Array.isArray(valor)) {
-    if (valor.length === 0) return <span className="adm-empty-field">—</span>;
-    return (
-      <ul className="adm-list-values">
-        {valor.map((item, i) => (
-          <li key={i}>
-            {typeof item === "object" && item !== null ? (
-              <SeccionPayload titulo={null} datos={item} />
-            ) : (
-              String(item)
-            )}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  if (typeof valor === "object") {
-    return <SeccionPayload titulo={null} datos={valor} />;
-  }
-
-  if (typeof valor === "boolean") {
-    return <span>{valor ? "Sí" : "No"}</span>;
-  }
-
-  return <span>{String(valor)}</span>;
-}
-
-function SeccionPayload({ titulo, datos }) {
-  const entradas = Object.entries(datos || {});
-
-  const lista = (
-    <dl className="adm-dl">
-      {entradas.map(([key, value]) => (
-        <div className="adm-dl__row" key={key}>
-          <dt>{formatLabel(key)}</dt>
-          <dd>
-            <ValorCampo valor={value} />
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-
-  if (!titulo) return lista;
-
-  return (
-    <section className="adm-spec__section">
-      <h4 className="adm-spec__label">{formatLabel(titulo)}</h4>
-      {lista}
-    </section>
-  );
 }
 
 const advisorStateLabels = {
@@ -84,6 +33,7 @@ function AdvisorSuggestions({ title, items }) {
   return (
     <div className="adm-advisor__suggestion-group">
       <h5>{title}</h5>
+
       {items.length > 0 ? (
         <ul className="adm-list-values">
           {items.map((item, index) => (
@@ -96,125 +46,191 @@ function AdvisorSuggestions({ title, items }) {
     </div>
   );
 }
-
 function AsesoramientoDetalle({ asesoramiento }) {
+  const [grupoRespuestas, setGrupoRespuestas] = useState(null);
   const detail = buildAdvisorDetail(asesoramiento);
   if (!detail) return null;
+  const answerGroups = buildAnswerGroups(detail.historias, detail.respuestas);
 
   return (
-    <section className="adm-advisor" aria-labelledby="advisor-detail-title">
-      <div className="adm-advisor__head">
-        <div>
-          <span className="adm-eyebrow">Relevamiento guiado</span>
-          <h3 id="advisor-detail-title">Asesoramiento de IA</h3>
-        </div>
-        <dl className="adm-advisor__summary">
+    <>
+      <section
+        className="adm-advisor adm-enter-item"
+        style={{ "--adm-enter-order": 1 }}
+        aria-labelledby="advisor-detail-title"
+      >
+        <div className="adm-advisor__head">
           <div>
-            <dt>Versión</dt>
-            <dd>{detail.version ?? "—"}</dd>
+            <span className="adm-eyebrow">Relevamiento guiado</span>
+            <h3 id="advisor-detail-title">Asesoramiento de IA</h3>
           </div>
-          <div>
-            <dt>Rondas</dt>
-            <dd>{detail.rondas ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Estado</dt>
-            <dd>{detail.completo ? "Completo" : "Incompleto"}</dd>
-          </div>
-          <div>
-            <dt>Modalidad</dt>
-            <dd>{detail.sinAsesor ? "Continuó sin asesor" : "Con asesor"}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <div className="adm-advisor__idea">
-        <h4>Idea original</h4>
-        <p>
-          {detail.ideaOriginal || <span className="adm-empty-field">—</span>}
-        </p>
-      </div>
-
-      <div className="adm-advisor__block">
-        <div className="adm-advisor__block-head">
-          <h4>Historias asesoradas</h4>
-          <span>{detail.historias.length}</span>
-        </div>
-        {detail.historias.length > 0 ? (
-          <ol className="adm-advisor__stories">
-            {detail.historias.map((story, index) => (
-              <li key={story.id || `advisor-story-${index}`}>
-                <div className="adm-advisor__story-head">
-                  <strong>
-                    {story.funcionalidad || `Historia ${index + 1}`}
-                  </strong>
-                  <span>
-                    {advisorStateLabels[story.estado] ||
-                      formatLabel(story.estado || "")}
-                  </span>
-                </div>
-                <p>
-                  {story.texto || (
-                    <span className="adm-empty-field">Sin texto</span>
-                  )}
-                </p>
-                <div className="adm-advisor__meta">
-                  <span>ID: {story.id || "—"}</span>
-                  <span>Etapa: {story.etapa || "—"}</span>
-                  {story.aDetallar && (
-                    <span className="adm-advisor__pending">A detallar</span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="adm-empty-field">No se registraron historias.</p>
-        )}
-      </div>
-
-      <div className="adm-advisor__block">
-        <div className="adm-advisor__block-head">
-          <h4>Respuestas relevadas</h4>
-          <span>{detail.respuestas.length}</span>
-        </div>
-        {detail.respuestas.length > 0 ? (
-          <dl className="adm-advisor__answers">
-            {detail.respuestas.map((answer, index) => (
-              <div
-                key={`${answer.historiaId || "answer"}-${answer.aspecto || index}-${index}`}
-              >
-                <dt>
-                  {answer.pregunta ||
-                    formatLabel(answer.aspecto || "Respuesta")}
-                </dt>
-                <dd>
-                  {answer.respuesta || (
-                    <span className="adm-empty-field">—</span>
-                  )}
-                </dd>
-                <span>
-                  {answer.historiaId || "Sin HU"} ·{" "}
-                  {formatLabel(answer.aspecto || "Sin aspecto")}
-                </span>
-              </div>
-            ))}
+          <dl className="adm-advisor__summary">
+            <div>
+              <dt>Versión</dt>
+              <dd>{detail.version ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Rondas</dt>
+              <dd>{detail.rondas ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Estado</dt>
+              <dd>{detail.completo ? "Completo" : "Incompleto"}</dd>
+            </div>
+            <div>
+              <dt>Modalidad</dt>
+              <dd>{detail.sinAsesor ? "Continuó sin asesor" : "Con asesor"}</dd>
+            </div>
           </dl>
-        ) : (
-          <p className="adm-empty-field">No se registraron respuestas.</p>
-        )}
-      </div>
+        </div>
 
-      <div className="adm-advisor__suggestions">
-        <AdvisorSuggestions
-          title="Sugerencias aceptadas"
-          items={detail.sugerenciasAceptadas}
+        <div className="adm-advisor__idea">
+          <h4>Idea original</h4>
+          <p>
+            {detail.ideaOriginal || <span className="adm-empty-field">—</span>}
+          </p>
+        </div>
+
+        <div className="adm-advisor__block">
+          <div className="adm-advisor__block-head">
+            <h4>Historias asesoradas</h4>
+            <span>{detail.historias.length}</span>
+          </div>
+          {detail.historias.length > 0 ? (
+            <ol className="adm-advisor__stories">
+              {detail.historias.map((story, index) => (
+                <li key={story.id || `advisor-story-${index}`}>
+                  <div className="adm-advisor__story-head">
+                    <strong>
+                      {story.funcionalidad || `Historia ${index + 1}`}
+                    </strong>
+                    <span className="adm-advisor__state">
+                      {advisorStateLabels[story.estado] ||
+                        formatLabel(story.estado || "")}
+                    </span>
+                  </div>
+                  <div className="adm-advisor__story-body">
+                    <span className="adm-advisor__field-label">
+                      Historia de usuario
+                    </span>
+                    <p>
+                      {story.texto || (
+                        <span className="adm-empty-field">Sin texto</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="adm-advisor__meta">
+                    <span>Etapa: {story.etapa || "—"}</span>
+                    {story.aDetallar && (
+                      <span className="adm-advisor__pending">A detallar</span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="adm-empty-field">No se registraron historias.</p>
+          )}
+        </div>
+
+        <div className="adm-advisor__block">
+          <div className="adm-advisor__block-head">
+            <h4>Respuestas relevadas</h4>
+            <span>{detail.respuestas.length}</span>
+          </div>
+          {answerGroups.length > 0 ? (
+            <ul className="adm-advisor__answer-groups">
+              {answerGroups.map((group) => (
+                <li key={group.id}>
+                  <div className="adm-advisor__answer-group-head">
+                    <strong>{group.title}</strong>
+                    <span>
+                      {group.answers.length === 1
+                        ? "1 respuesta"
+                        : `${group.answers.length} respuestas`}
+                    </span>
+                  </div>
+                  {group.unmatched && (
+                    <p className="adm-advisor__answer-group-note">
+                      Respuestas que no pudieron asociarse a una historia.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="adm-btn adm-btn--ghost adm-btn--sm"
+                    onClick={() => setGrupoRespuestas(group)}
+                    disabled={group.answers.length === 0}
+                  >
+                    Ver preguntas y respuestas
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="adm-empty-field">No se registraron respuestas.</p>
+          )}
+        </div>
+
+        <div className="adm-advisor__suggestions">
+          <AdvisorSuggestions
+            title="Sugerencias aceptadas"
+            items={detail.sugerenciasAceptadas}
+          />
+          <AdvisorSuggestions
+            title="Sugerencias rechazadas"
+            items={detail.sugerenciasRechazadas}
+          />
+        </div>
+      </section>
+
+      {grupoRespuestas && (
+        <AdvisorAnswersModal
+          group={grupoRespuestas}
+          onClose={() => setGrupoRespuestas(null)}
         />
-        <AdvisorSuggestions
-          title="Sugerencias rechazadas"
-          items={detail.sugerenciasRechazadas}
-        />
+      )}
+    </>
+  );
+}
+
+export function ResumenProyecto({ payload }) {
+  const items = buildBusinessSummary(payload);
+  if (items.length === 0) return null;
+
+  return (
+    <section
+      className="adm-summary adm-enter-item"
+      style={{ "--adm-enter-order": 2 }}
+      aria-labelledby="project-summary-title"
+    >
+      <div className="adm-summary__head">
+        <span className="adm-eyebrow">Datos del cliente</span>
+        <h3 id="project-summary-title">Resumen del proyecto</h3>
+        <p>Alcance y contexto relevantes para evaluar la solicitud.</p>
       </div>
+      <dl className="adm-summary__grid">
+        {items.map((item) => (
+          <div
+            className={`adm-summary__item${
+              item.wide ? " adm-summary__item--wide" : ""
+            }${item.layout ? ` adm-summary__item--${item.layout}` : ""}`}
+            key={item.label}
+          >
+            <dt>{item.label}</dt>
+            <dd>
+              {item.values ? (
+                <ul className="adm-summary__values">
+                  {item.values.map((value) => (
+                    <li key={value}>{value}</li>
+                  ))}
+                </ul>
+              ) : (
+                item.value
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
@@ -226,6 +242,7 @@ function PanelDetalle({
   onBacklogLoaded,
   onViewBoard,
   onViewStories,
+  onViewAnalysis,
 }) {
   const [proyecto, setProyecto] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -363,6 +380,7 @@ function PanelDetalle({
   }, [handleGenerarBacklog, historias, projectId, proyecto?.estado]);
 
   const tieneBacklog = Array.isArray(historias) && historias.length > 0;
+  const tieneAcciones = Boolean(proyecto?.analisisIa) || tieneBacklog;
   const analisisV2 = proyecto?.analisisIa?.version === 2;
   const puedeDecidir =
     analisisV2 && proyecto?.estado !== "planificado" && !tieneBacklog;
@@ -375,7 +393,7 @@ function PanelDetalle({
     !analisisV2;
 
   return (
-    <section className="adm-section">
+    <section className="adm-section adm-detail-view">
       <div className="adm-container">
         <button
           type="button"
@@ -395,9 +413,12 @@ function PanelDetalle({
 
         {!loading && !error && proyecto && (
           <>
-            <div className="adm-detail-head">
+            <div
+              className="adm-detail-head adm-enter-item"
+              style={{ "--adm-enter-order": 0 }}
+            >
               <div className="adm-page-head">
-                <span className="adm-eyebrow">Detalle de solicitud</span>
+                <span className="adm-eyebrow">Proyecto</span>
                 <h2 className="adm-page-title">
                   {proyecto.payload?.empresa?.nombreEmpresa ||
                     `Solicitud #${proyecto.id}`}
@@ -406,19 +427,13 @@ function PanelDetalle({
               <StatusBadge estado={proyecto.estado} />
             </div>
 
-            <div className="adm-spec">
-              {Object.entries(proyecto.payload || {}).map(([seccion, datos]) =>
-                seccion === "asesoramiento" ? (
-                  <AsesoramientoDetalle key={seccion} asesoramiento={datos} />
-                ) : (
-                  <SeccionPayload
-                    key={seccion}
-                    titulo={seccion}
-                    datos={datos}
-                  />
-                ),
-              )}
-            </div>
+            {proyecto.payload?.asesoramiento && (
+              <AsesoramientoDetalle
+                asesoramiento={proyecto.payload.asesoramiento}
+              />
+            )}
+
+            <ResumenProyecto payload={proyecto.payload} />
 
             {proyecto.estado === "nuevo" && (
               <div className="adm-actions">
@@ -442,22 +457,14 @@ function PanelDetalle({
 
             {(proyecto.estado === "analizado" ||
               proyecto.estado === "planificado") && (
-              <AnalisisIA
-                analisis={proyecto.analisisIa}
-                canReanalyze={proyecto.estado === "analizado" && !tieneBacklog}
-                reanalyzing={analizando}
-                onReanalyze={handleAnalizar}
-              />
-            )}
-
-            {(proyecto.estado === "analizado" ||
-              proyecto.estado === "planificado") && (
               <section
-                className="adm-decision"
+                className="adm-decision adm-enter-item"
+                style={{ "--adm-enter-order": 3 }}
                 aria-labelledby="decision-title"
               >
                 <div className="adm-decision__head">
                   <div>
+                    <span className="adm-eyebrow">Criterio humano</span>
                     <h3 id="decision-title">Decisión del administrador</h3>
                     <p>La IA no decide: la decisión es del administrador</p>
                     {!proyecto.decisionViabilidad && (
@@ -602,22 +609,48 @@ function PanelDetalle({
                 <p className="adm-alert adm-alert--error">{errorBacklog}</p>
               )}
 
-            {tieneBacklog && (
-              <div className="adm-actions">
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--primary"
-                  onClick={() => onViewBoard(projectId)}
-                >
-                  Ver tablero
-                </button>
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--ghost"
-                  onClick={() => onViewStories(projectId)}
-                >
-                  Ver historias de usuario
-                </button>
+            {tieneAcciones && (
+              <div
+                className="adm-view-actions adm-enter-item"
+                style={{ "--adm-enter-order": 4 }}
+                aria-label="Acciones principales del proyecto"
+              >
+                <div className="adm-view-actions__intro">
+                  <span className="adm-eyebrow">Continuar</span>
+                  <p>
+                    Consultá el análisis, el tablero o las historias de este
+                    proyecto.
+                  </p>
+                </div>
+                <div className="adm-view-actions__grid">
+                  {proyecto.analisisIa && (
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn--primary"
+                      onClick={() => onViewAnalysis(projectId)}
+                    >
+                      Ver opinión de la IA
+                    </button>
+                  )}
+                  {tieneBacklog && (
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn--ghost"
+                      onClick={() => onViewBoard(projectId)}
+                    >
+                      Ver tablero
+                    </button>
+                  )}
+                  {tieneBacklog && (
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn--ghost"
+                      onClick={() => onViewStories(projectId)}
+                    >
+                      Ver historias de usuario
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </>

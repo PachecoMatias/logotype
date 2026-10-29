@@ -57,6 +57,9 @@ const validAnalysis = {
   supuestos: ['Se supone disponibilidad del referente.'],
 };
 
+const publicAiFailureMessage =
+  'El servicio de IA no está disponible temporalmente. Intentá nuevamente más tarde.';
+
 const validBacklog = Array.from({ length: 12 }, (_, index) => ({
   fase: 'Desarrollo Backend',
   prioridad: 'Alta',
@@ -67,6 +70,43 @@ const validBacklog = Array.from({ length: 12 }, (_, index) => ({
   estimacion_fibonacci: 3,
   rol_sugerido: 'Backend',
 }));
+
+const validAdvisorBacklog = validBacklog.map((story, index) => {
+  if (index < 3) {
+    return {
+      ...story,
+      historia_usuario: [
+        'Como cajero, quiero registrar productos y cantidades, para completar una venta.',
+        'Como cajero, quiero calcular el total automáticamente, para cobrar correctamente.',
+        'Como cajero, quiero actualizar el stock, para reflejar la venta confirmada.',
+      ][index],
+      descripcion: `[BACKLOG tipo=historia_usuario; origen=derivada_ia; padre=hu-1; aprobacion=aprobada] ${story.descripcion}`,
+    };
+  }
+
+  if (index === 10) {
+    return {
+      ...story,
+      historia_usuario: 'Investigar conciliación de pagos',
+      descripcion: `[BACKLOG tipo=spike; origen=tecnica; padre=hu-1; aprobacion=aprobada] ${story.descripcion}`,
+    };
+  }
+
+  if (index === 11) {
+    return {
+      ...story,
+      historia_usuario:
+        'Como gerente, quiero evaluar alertas automáticas de reposición, para anticipar compras.',
+      descripcion: `[BACKLOG tipo=historia_usuario; origen=derivada_ia; padre=hu-2; aprobacion=propuesta] ${story.descripcion}`,
+    };
+  }
+
+  return {
+    ...story,
+    historia_usuario: `Implementar tarea técnica ${index}`,
+    descripcion: `[BACKLOG tipo=tarea_tecnica; origen=tecnica; padre=hu-1; aprobacion=aprobada] ${story.descripcion}`,
+  };
+});
 
 async function importGeminiGateway() {
   const moduleUrl = new URL('../../src/integrations/gemini.gateway.js', import.meta.url);
@@ -420,7 +460,7 @@ test('analysis normalizes provider and response failures to the same private 502
 
       assert.deepEqual(response.body, {
         success: false,
-        error: { code: 'AI_ANALYSIS_FAILED', message: 'AI analysis failed' },
+        error: { code: 'AI_ANALYSIS_FAILED', message: publicAiFailureMessage },
       });
       assert.deepEqual(rows[0], { estado: 'nuevo', analisis_ia: null });
       assert.doesNotMatch(
@@ -663,6 +703,41 @@ test('backlog persists a strict generated result and returns the stored cache on
   }
 });
 
+test('backlog persists validated advisor decomposition and keeps proposals separated', async () => {
+  const { geminiGateway } = await importGeminiGateway();
+  const payload = createValidProjectPayload();
+  payload.asesoramiento = createAdvisorContext();
+  const project = await createProjectForAnalysis(payload);
+  let providerCalls = 0;
+  await pool.execute(
+    "UPDATE proyectos SET estado = 'analizado', analisis_ia = CAST(? AS JSON), decision_viabilidad = 'VIABLE', decision_fecha = CURRENT_TIMESTAMP WHERE id = ?",
+    [JSON.stringify(storedAnalysis(payload)), project.id],
+  );
+  const restoreGateway = test.mock.method(geminiGateway, 'generateProjectBacklog', async () => {
+    providerCalls += 1;
+    return JSON.stringify(validAdvisorBacklog);
+  });
+
+  try {
+    const first = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    const second = await request(app).post(`/api/proyectos/${project.id}/backlog`);
+    const [rows] = await pool.execute(
+      'SELECT descripcion FROM historias WHERE proyecto_id = ? ORDER BY id ASC',
+      [project.id],
+    );
+
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal(providerCalls, 1);
+    assert.equal(rows.length, 12);
+    assert.ok(rows.every((row) => row.descripcion.startsWith('[BACKLOG tipo=')));
+    assert.equal(rows.filter((row) => row.descripcion.includes('aprobacion=propuesta')).length, 1);
+    assert.deepEqual(second.body.data, first.body.data);
+  } finally {
+    restoreGateway.mock.restore();
+  }
+});
+
 test('backlog rejects a storyless project that has not been analyzed before provider or persistence work', async () => {
   const { geminiGateway } = await importGeminiGateway();
   const project = await createProjectForAnalysis();
@@ -724,7 +799,7 @@ test('backlog normalizes malformed provider JSON without a persistence write', a
     assert.equal(response.status, 502);
     assert.deepEqual(response.body, {
       success: false,
-      error: { code: 'AI_ANALYSIS_FAILED', message: 'AI analysis failed' },
+      error: { code: 'AI_ANALYSIS_FAILED', message: publicAiFailureMessage },
     });
     assert.equal(stories[0].count, 0);
     assert.equal(projects[0].estado, 'analizado');

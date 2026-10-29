@@ -4,6 +4,18 @@ const nonEmptyString = z.string().refine((value) => value.trim().length > 0, {
   message: 'Required value cannot be empty',
 });
 
+const legacyObjectives = [
+  'Reducir tiempos',
+  'Automatizar tareas',
+  'Centralizar información',
+  'Mejorar la atención al cliente',
+  'Obtener estadísticas',
+  'Reducir errores',
+  'Mejorar la seguridad',
+  'Aumentar las ventas',
+  'Otro',
+];
+
 const empresaSchema = z
   .looseObject({
     nombreEmpresa: nonEmptyString,
@@ -40,21 +52,7 @@ const problemaSchema = z
   .looseObject({
     problemaActual: nonEmptyString,
     procesoActual: nonEmptyString,
-    objetivos: z
-      .array(
-        z.enum([
-          'Reducir tiempos',
-          'Automatizar tareas',
-          'Centralizar información',
-          'Mejorar la atención al cliente',
-          'Obtener estadísticas',
-          'Reducir errores',
-          'Mejorar la seguridad',
-          'Aumentar las ventas',
-          'Otro',
-        ]),
-      )
-      .min(1, 'Select at least one objective'),
+    objetivos: z.array(z.string().trim().min(1).max(200)).max(5),
     objetivosOtro: z.string().optional(),
   })
   .superRefine((problema, context) => {
@@ -157,14 +155,40 @@ const presupuestoSchema = z.looseObject({
   infoAdicional: z.string().optional(),
 });
 
-export const projectBodySchema = z.looseObject({
-  empresa: empresaSchema,
-  proyecto: proyectoSchema,
-  problema: problemaSchema,
-  funcionalidades: funcionalidadesSchema,
-  alcance: alcanceSchema,
-  presupuesto: presupuestoSchema,
+const advisorV2ObjectiveSchema = z.looseObject({
+  texto: z.string().trim().min(1).max(200),
+  basadoEn: z.string().trim().min(1).max(1600),
 });
+
+const asesoramientoSchema = z.looseObject({
+  version: z.union([z.literal(1), z.literal(2)]),
+  procesoActual: z.string().trim().min(1).max(2000).optional(),
+  tipoInferido: z.boolean().optional(),
+  objetivos: z.array(advisorV2ObjectiveSchema).max(5).optional(),
+});
+
+export const projectBodySchema = z
+  .looseObject({
+    empresa: empresaSchema,
+    proyecto: proyectoSchema,
+    problema: problemaSchema,
+    funcionalidades: funcionalidadesSchema,
+    alcance: alcanceSchema,
+    presupuesto: presupuestoSchema,
+    asesoramiento: asesoramientoSchema.optional(),
+  })
+  .superRefine((project, context) => {
+    if (project.asesoramiento?.version === 2) return;
+    project.problema.objetivos.forEach((objective, index) => {
+      if (!legacyObjectives.includes(objective)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Unsupported legacy objective',
+          path: ['problema', 'objetivos', index],
+        });
+      }
+    });
+  });
 
 export const projectIdParamsSchema = z.looseObject({
   id: z

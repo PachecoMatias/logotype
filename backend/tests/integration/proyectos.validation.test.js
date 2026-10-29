@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { buildAdvisorProjectPayload } from '../../../frontend/src/utils/asesorPayload.js';
 import { validate } from '../../src/middleware/validate.js';
 import { projectBodySchema, projectIdParamsSchema } from '../../src/schemas/proyectos.schemas.js';
 import {
@@ -44,6 +45,66 @@ test('preserves the complete optional advisor context without weakening required
 
   delete payload.problema.procesoActual;
   assert.equal(projectBodySchema.safeParse(payload).success, false);
+});
+
+test('accepts frontend-built advisor v2 payloads with objectives, without objectives, and without advisor', () => {
+  const base = {
+    idea: 'Una ferretería necesita ordenar las ventas.',
+    initialData: {
+      funcionalidades: ['Gestión de ventas'],
+      otraFuncionalidad: '',
+      otrasFuncionalidades: [],
+      plataformas: ['Web'],
+      tiposUsuario: ['Administrador'],
+      tiposUsuarioOtro: '',
+      cantidadUsuarios: '10 - 50',
+      procesoActual: 'Las ventas se registran manualmente en un cuaderno.',
+      tipoProyecto: 'gestion',
+    },
+    histories: [
+      {
+        id: 'hu-1',
+        texto: 'Como vendedor, quiero registrar ventas, para reducir errores.',
+        estado: 'entendida',
+        etapa: '1',
+        aDetallar: false,
+        funcionalidad: 'Gestión de ventas',
+      },
+    ],
+    answers: [],
+    acceptedSuggestions: [],
+    rejectedSuggestions: [],
+    complete: true,
+    rounds: 2,
+    finalData: {
+      empresa: {
+        nombreEmpresa: 'Ferretería Norte',
+        contacto: 'Ana Pérez',
+        email: 'ana@example.com',
+        telefono: '3810000000',
+        rubro: 'Comercio',
+        rubroOtro: '',
+      },
+      presupuesto: {
+        presupuesto: 'USD 1.000 - 5.000',
+        plazo: '3 - 6 meses',
+        infoAdicional: '',
+      },
+    },
+  };
+  const cases = [
+    {
+      objectives: [{ texto: 'Reducir errores de carga', basadoEn: 'registran manualmente' }],
+      withoutAdvisor: false,
+    },
+    { objectives: [], withoutAdvisor: false },
+    { objectives: [], withoutAdvisor: true },
+  ];
+
+  for (const scenario of cases) {
+    const payload = buildAdvisorProjectPayload({ ...base, ...scenario });
+    assert.equal(projectBodySchema.safeParse(payload).success, true);
+  }
 });
 
 test('rejects invalid known fields with safe validation details', () => {

@@ -3,70 +3,85 @@ import test from 'node:test'
 
 import { buildAdvisorProjectPayload } from '../src/utils/asesorPayload.js'
 
-test('maps advisor state to the existing project contract without inventing legacy fields', () => {
-  const payload = buildAdvisorProjectPayload({
+const finalData = {
+  empresa: {
+    nombreEmpresa: 'Ferretería Norte',
+    contacto: 'Ana Pérez',
+    email: 'ana@example.com',
+    telefono: '3810000000',
+    rubro: 'Comercio',
+    rubroOtro: '',
+  },
+  presupuesto: {
+    presupuesto: 'USD 1.000 - 5.000',
+    plazo: '3 - 6 meses',
+    infoAdicional: 'Integrar lectores de código de barras.',
+  },
+}
+
+const initialData = {
+  funcionalidades: ['Gestión de ventas', 'Gestión de stock'],
+  otraFuncionalidad: '',
+  otrasFuncionalidades: [],
+  plataformas: ['Web'],
+  tiposUsuario: ['Administrador'],
+  tiposUsuarioOtro: '',
+  cantidadUsuarios: '10 - 50',
+  procesoActual: 'Las ventas se registran manualmente en un cuaderno.',
+  tipoProyecto: 'gestion',
+}
+
+const histories = [
+  {
+    id: 'hu-1',
+    texto: 'Como vendedor, quiero registrar ventas, para actualizar el stock.',
+    estado: 'entendida',
+    bloqueada: false,
+    etapa: '1',
+    aDetallar: false,
+    funcionalidad: 'Gestión de ventas',
+  },
+  {
+    id: 'hu-2',
+    texto: 'Como encargado, quiero controlar stock, para evitar faltantes.',
+    estado: 'entendida',
+    bloqueada: false,
+    etapa: '2',
+    aDetallar: false,
+    funcionalidad: 'Gestión de stock',
+  },
+]
+
+function build(overrides = {}) {
+  return buildAdvisorProjectPayload({
     idea: 'Una ferretería necesita ordenar ventas y stock.',
-    initialData: {
-      funcionalidades: ['Gestión de stock', 'Otra'],
-      otraFuncionalidad: 'Control de garantías',
-      plataformas: ['Web'],
-      tiposUsuario: ['Administrador'],
-      cantidadUsuarios: '10 - 50',
-    },
-    histories: [
-      {
-        id: 'hu-1',
-        texto:
-          'Como vendedor, quiero registrar ventas, para actualizar el stock.',
-        estado: 'entendida',
-        bloqueada: false,
-        etapa: '1',
-        aDetallar: false,
-        funcionalidad: 'Gestión de stock',
-      },
-    ],
-    answers: [
-      {
-        preguntaId: 'q-1',
-        historiaId: 'hu-1',
-        aspecto: 'volumen',
-        pregunta: '¿Cuántas ventas realizan?',
-        respuesta: 'Cien por día',
-        noSabe: false,
-        integrada: true,
-      },
-    ],
-    acceptedSuggestions: ['Agregar alertas de stock'],
-    rejectedSuggestions: ['Agregar pagos en criptomonedas'],
+    initialData,
+    histories,
+    answers: [],
+    objectives: [{ texto: 'Reducir errores de carga', basadoEn: 'registran manualmente' }],
+    acceptedSuggestions: [],
+    rejectedSuggestions: [],
     complete: true,
     rounds: 3,
     withoutAdvisor: false,
-    finalData: {
-      empresa: {
-        nombreEmpresa: 'Ferretería Norte',
-        contacto: 'Ana Pérez',
-        email: 'ana@example.com',
-        telefono: '3810000000',
-        rubro: 'Comercio',
-        rubroOtro: '',
-      },
-      proyecto: { tipoProyecto: 'gestion' },
-      problema: {
-        procesoActual: 'Se registra en planillas.',
-        objetivos: ['Reducir errores'],
-        objetivosOtro: '',
-      },
-      presupuesto: {
-        presupuesto: 'USD 1.000 - 5.000',
-        plazo: '3 - 6 meses',
-        infoAdicional: 'Integrar lectores de código de barras.',
-      },
-    },
+    finalData,
+    ...overrides,
   })
+}
 
+test('maps advisor state to the existing project shape with advisor version 2', () => {
+  const payload = build()
+
+  assert.deepEqual(payload.proyecto, { tipoProyecto: 'gestion' })
+  assert.deepEqual(payload.problema, {
+    problemaActual: 'Una ferretería necesita ordenar ventas y stock.',
+    procesoActual: initialData.procesoActual,
+    objetivos: ['Reducir errores de carga'],
+    objetivosOtro: '',
+  })
   assert.deepEqual(payload.funcionalidades, {
-    seleccionadas: ['Gestión de stock', 'Otra'],
-    otra: 'Control de garantías',
+    seleccionadas: ['Gestión de ventas', 'Gestión de stock'],
+    otra: '',
   })
   assert.deepEqual(payload.alcance, {
     plataformas: ['Web'],
@@ -75,39 +90,37 @@ test('maps advisor state to the existing project contract without inventing lega
     tiposUsuario: ['Administrador'],
     tiposUsuarioOtro: '',
   })
-  assert.equal(
-    payload.problema.problemaActual,
-    'Una ferretería necesita ordenar ventas y stock.'
-  )
-  assert.deepEqual(payload.asesoramiento, {
-    version: 1,
-    ideaOriginal: 'Una ferretería necesita ordenar ventas y stock.',
-    historias: [
-      {
-        id: 'hu-1',
-        texto:
-          'Como vendedor, quiero registrar ventas, para actualizar el stock.',
-        estado: 'entendida',
-        etapa: '1',
-        aDetallar: false,
-        funcionalidad: 'Gestión de stock',
-      },
-    ],
-    respuestas: [
-      {
-        historiaId: 'hu-1',
-        aspecto: 'volumen',
-        pregunta: '¿Cuántas ventas realizan?',
-        respuesta: 'Cien por día',
-        noSabe: false,
-      },
-    ],
-    sugerencias: {
-      aceptadas: ['Agregar alertas de stock'],
-      rechazadas: ['Agregar pagos en criptomonedas'],
-    },
-    completo: true,
-    rondas: 3,
-    sinAsesor: false,
+  assert.equal(payload.asesoramiento.version, 2)
+  assert.deepEqual(payload.asesoramiento.objetivos, [
+    { texto: 'Reducir errores de carga', basadoEn: 'registran manualmente' },
+  ])
+  assert.equal(payload.asesoramiento.procesoActual, initialData.procesoActual)
+  assert.equal(payload.asesoramiento.tipoInferido, false)
+})
+
+test('allows an advised payload without inferred objectives', () => {
+  const payload = build({ objectives: [] })
+  assert.deepEqual(payload.problema.objetivos, [])
+  assert.deepEqual(payload.asesoramiento.objetivos, [])
+  assert.equal(payload.asesoramiento.sinAsesor, false)
+})
+
+test('builds the same shape without advisor and infers an unspecified project type', () => {
+  const payload = build({
+    initialData: { ...initialData, tipoProyecto: 'no_estoy_seguro' },
+    histories: [],
+    objectives: [],
+    withoutAdvisor: true,
   })
+
+  assert.equal(payload.proyecto.tipoProyecto, 'personalizada')
+  assert.equal(payload.asesoramiento.tipoInferido, true)
+  assert.equal(payload.asesoramiento.sinAsesor, true)
+  assert.deepEqual(payload.problema.objetivos, [])
+  assert.deepEqual(payload.funcionalidades.seleccionadas, initialData.funcionalidades)
+})
+
+test('removes an initially selected functionality when its current story was deleted', () => {
+  const payload = build({ histories: [histories[0]] })
+  assert.deepEqual(payload.funcionalidades.seleccionadas, ['Gestión de ventas'])
 })

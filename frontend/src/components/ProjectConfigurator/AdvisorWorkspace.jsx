@@ -1,84 +1,100 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from "react";
+
+import {
+  getStoryFunctionalityLabel,
+  getStoryStageLabel,
+  hasAdvisorDraftAnswer,
+  hasAdvisorQuestions,
+  hasAdvisorSuggestions,
+  serializeAdvisorAnswer,
+} from "../../utils/advisorState.js";
+import { AdvisorDegradedNotice } from "./AdvisorDegradedNotice.js";
+import { AdvisorQuestion } from "./AdvisorQuestion.js";
+import { AdvisorStoryText } from "./AdvisorStoryText.js";
 
 const statusLabels = {
-  entendida: 'Entendida',
-  supuesta: 'Supuesta',
-  editada_cliente: 'Editada por vos',
-  sugerida_ia: 'Sugerida por la IA',
+  a_completar: "A completar",
+  en_detalle: "En detalle",
+  entendida: "Entendida",
+  con_pendientes: "Con pendientes",
+  supuesta: "Supuesta",
+};
+
+const originLabels = { cliente: "Cliente", ia: "IA" };
+
+const suggestionTypeLabels = {
+  mejora: "Mejora",
+  complementaria: "Complementaria",
+  etapas: "Etapas",
+  definir: "Definir",
+};
+
+function getMotionDuration(variable, fallback) {
+  if (typeof document === "undefined") return fallback;
+  const root = document.querySelector(".adv-main") || document.documentElement;
+  const value = getComputedStyle(root).getPropertyValue(variable).trim();
+  const duration = Number.parseFloat(value);
+  if (!Number.isFinite(duration)) return fallback;
+  return value.endsWith("ms") ? duration : duration * 1000;
 }
 
-function Question({ question, value, onChange, inputRef }) {
-  const choose = (answer) => onChange({ value: answer, noSabe: false })
+function useChangeFlag(value) {
+  const [changed, setChanged] = useState(false);
+  const initial = useRef(true);
 
-  return (
-    <fieldset className="adv-question adv-enter" ref={inputRef} tabIndex={-1}>
-      <legend>{question.texto}</legend>
+  useEffect(() => {
+    if (initial.current) {
+      initial.current = false;
+      return undefined;
+    }
+    setChanged(true);
+    const timeout = setTimeout(
+      () => setChanged(false),
+      getMotionDuration("--adv-motion-flash", 1600),
+    );
+    return () => clearTimeout(timeout);
+  }, [value]);
 
-      {(question.tipo === 'opcion' || question.tipo === 'mixta') && (
-        <div className="adv-question__options">
-          {question.opciones.map((option) => (
-            <label key={option}>
-              <input
-                type="radio"
-                name={question.id}
-                checked={!value.noSabe && value.value === option}
-                onChange={() => choose(option)}
-              />
-              <span>{option}</span>
-            </label>
-          ))}
-        </div>
-      )}
-
-      {(question.tipo === 'texto' || question.tipo === 'mixta') && (
-        <label className="adv-field">
-          <span>
-            {question.tipo === 'mixta' ? 'Otra respuesta' : 'Tu respuesta'}
-          </span>
-          <textarea
-            value={value.noSabe ? '' : value.value}
-            maxLength={600}
-            onChange={(event) => choose(event.target.value)}
-          />
-        </label>
-      )}
-
-      <button
-        type="button"
-        className={`adv-no-idea${value.noSabe ? ' is-selected' : ''}`}
-        aria-pressed={value.noSabe}
-        onClick={() => onChange({ value: '', noSabe: !value.noSabe })}
-      >
-        No sé
-      </button>
-    </fieldset>
-  )
+  return changed;
 }
 
-function Story({ story, onEdit, onDelete }) {
-  const [editing, setEditing] = useState(false)
-  const [text, setText] = useState(story.texto)
+function Story({ story, index, isFocused, isHighlighted, onEdit, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(story.texto);
+  const textChanged = useChangeFlag(story.texto);
   const label = story.aDetallar
-    ? 'A detallar con el equipo'
-    : statusLabels[story.estado]
+    ? "A detallar con el equipo"
+    : statusLabels[story.estado];
+  const functionality = story.funcionalidad?.trim();
+  const stageLabel = getStoryStageLabel(story.etapa);
 
-  useEffect(() => setText(story.texto), [story.texto])
+  useEffect(() => setText(story.texto), [story.texto]);
 
   const save = () => {
-    if (!text.trim()) return
-    onEdit(story.id, text)
-    setEditing(false)
-  }
+    if (!text.trim()) return;
+    onEdit(story.id, text);
+    setEditing(false);
+  };
 
   return (
-    <article className="adv-story adv-story-enter">
+    <article
+      className={`adv-story adv-story-enter is-status-${story.estado}${isFocused ? " is-focused" : ""}${textChanged || isHighlighted ? " adv-flash" : ""}`}
+    >
+      <div className="adv-story__identity">
+        <strong>
+          HU {index + 1}
+          {functionality ? ` · ${functionality}` : ""}
+        </strong>
+        {isFocused && <span>En detalle ahora</span>}
+      </div>
       <div className="adv-story__meta">
         <span
-          className={`adv-badge adv-badge--${story.aDetallar ? 'deferred' : story.estado}`}
+          className={`adv-badge adv-badge--${story.aDetallar ? "deferred" : story.estado}`}
         >
           {label}
         </span>
-        <span>Etapa {story.etapa}</span>
+        <span>Origen: {originLabels[story.origen] || "Cliente"}</span>
+        {stageLabel && <span>{stageLabel}</span>}
       </div>
 
       {editing ? (
@@ -108,7 +124,7 @@ function Story({ story, onEdit, onDelete }) {
           </div>
         </div>
       ) : (
-        <p>{story.texto}</p>
+        <AdvisorStoryText story={story} />
       )}
 
       {!editing && (
@@ -122,7 +138,7 @@ function Story({ story, onEdit, onDelete }) {
         </div>
       )}
     </article>
-  )
+  );
 }
 
 function AdvisorWorkspace({
@@ -131,6 +147,7 @@ function AdvisorWorkspace({
   loading,
   advisorError,
   relatedFeatures,
+  suggestionFeedback,
   onSubmitAnswers,
   onRetry,
   onFallback,
@@ -142,40 +159,50 @@ function AdvisorWorkspace({
   onAddFeature,
   onClose,
 }) {
-  const [drafts, setDrafts] = useState({})
-  const [questionError, setQuestionError] = useState('')
-  const [manualText, setManualText] = useState('')
-  const [feature, setFeature] = useState('')
-  const [otherFeature, setOtherFeature] = useState('')
-  const [mobileTab, setMobileTab] = useState('questions')
-  const firstQuestionRef = useRef(null)
+  const [drafts, setDrafts] = useState({});
+  const [questionError, setQuestionError] = useState("");
+  const [manualText, setManualText] = useState("");
+  const [feature, setFeature] = useState("");
+  const [otherFeature, setOtherFeature] = useState("");
+  const [mobileTab, setMobileTab] = useState("questions");
+  const firstQuestionRef = useRef(null);
 
   useEffect(() => {
-    setDrafts({})
-    setQuestionError('')
+    setDrafts({});
+    setQuestionError("");
     if (round.preguntas.length)
-      requestAnimationFrame(() => firstQuestionRef.current?.focus())
-  }, [round.preguntas])
+      requestAnimationFrame(() => firstQuestionRef.current?.focus());
+  }, [round.renderId]);
 
   const focusStory = histories.find(
-    (story) => story.id === round.foco?.historiaId
-  )
+    (story) => story.id === round.foco?.historiaId,
+  );
   const focusIndex = Math.max(
     0,
-    histories.findIndex((story) => story.id === round.foco?.historiaId)
-  )
-  const detailedTotal = Math.min(round.progreso.total, round.progreso.tope)
+    histories.findIndex((story) => story.id === round.foco?.historiaId),
+  );
+  const detailedTotal = Math.min(round.progreso.total, round.progreso.tope);
+  const showsQuestions = hasAdvisorQuestions(round);
+  const showsSuggestions = hasAdvisorSuggestions(round);
+  const canSubmit =
+    !showsQuestions ||
+    round.preguntas.every((question) =>
+      hasAdvisorDraftAnswer(question, drafts[question.id]),
+    );
+  const focusFunctionality = focusStory
+    ? getStoryFunctionalityLabel(focusStory)
+    : null;
 
   const submit = (event) => {
-    event.preventDefault()
+    event.preventDefault();
     const missing = round.preguntas.some((question) => {
-      const draft = drafts[question.id]
-      return !draft?.noSabe && !draft?.value?.trim()
-    })
+      const draft = drafts[question.id];
+      return !hasAdvisorDraftAnswer(question, draft);
+    });
 
     if (missing) {
-      setQuestionError('Respondé cada pregunta o elegí “No sé”.')
-      return
+      setQuestionError("Respondé cada pregunta o elegí “No sé”.");
+      return;
     }
 
     onSubmitAnswers(
@@ -184,41 +211,53 @@ function AdvisorWorkspace({
         historiaId: round.foco?.historiaId,
         aspecto: question.aspecto,
         pregunta: question.texto,
-        respuesta: drafts[question.id]?.value?.trim() || '',
+        respuesta: serializeAdvisorAnswer(question, drafts[question.id]),
         noSabe: Boolean(drafts[question.id]?.noSabe),
         integrada: false,
-      }))
-    )
-  }
+      })),
+    );
+  };
 
   const addManual = () => {
-    if (!manualText.trim()) return
-    onAddStory(manualText)
-    setManualText('')
-  }
+    if (!manualText.trim()) return;
+    onAddStory(manualText);
+    setManualText("");
+  };
 
   const addFeature = () => {
-    const value = feature === 'Otra' ? otherFeature.trim() : feature
-    if (!value) return
-    onAddFeature(value, feature === 'Otra')
-    setFeature('')
-    setOtherFeature('')
-  }
+    const value = feature === "Otra" ? otherFeature.trim() : feature;
+    if (!value) return;
+    onAddFeature(value, feature === "Otra");
+    setFeature("");
+    setOtherFeature("");
+  };
 
   return (
-    <section className="adv-screen" aria-labelledby="adv-work-title">
+    <section
+      className="adv-screen adv-screen--workspace"
+      aria-labelledby="adv-work-title"
+    >
       <header className="adv-work-header">
         <div>
-          <h1 id="adv-work-title">Démosle forma a tu proyecto</h1>
-          <p>
-            {focusStory
-              ? `Sobre: ${focusStory.texto}`
-              : 'Revisá tu idea antes de continuar.'}
-          </p>
+          <h1 id="adv-work-title" className="adv-enter-item" style={{ "--adv-enter-order": 0 }}>Démosle forma a tu proyecto</h1>
+          {focusStory ? (
+            <div className="adv-current adv-enter-item" style={{ "--adv-enter-order": 1 }}>
+              <span className="adv-current__label">Funcionalidad actual</span>
+              <strong className="adv-current__name">
+                {focusFunctionality}
+              </strong>
+              <span className="adv-current__story-label">
+                HU {focusIndex + 1} de {histories.length}
+              </span>
+              <p>{focusStory.texto}</p>
+            </div>
+          ) : (
+            <p className="adv-enter-item" style={{ "--adv-enter-order": 1 }}>Revisá tu idea antes de continuar.</p>
+          )}
         </div>
-        <div className="adv-progress" aria-label="Progreso del asesor">
+        <div className="adv-progress adv-enter-item" style={{ "--adv-enter-order": 1 }} aria-label="Progreso del asesor">
           <strong>
-            Funcionalidad {Math.min(focusIndex + 1, detailedTotal || 1)} de{' '}
+            Funcionalidad {Math.min(focusIndex + 1, detailedTotal || 1)} de{" "}
             {detailedTotal || histories.length || 1}
           </strong>
           <span>
@@ -235,31 +274,39 @@ function AdvisorWorkspace({
         <button
           type="button"
           role="tab"
-          aria-selected={mobileTab === 'questions'}
-          onClick={() => setMobileTab('questions')}
+          aria-selected={mobileTab === "questions"}
+          onClick={() => setMobileTab("questions")}
         >
           Preguntas
         </button>
         <button
           type="button"
           role="tab"
-          aria-selected={mobileTab === 'stories'}
-          onClick={() => setMobileTab('stories')}
+          aria-selected={mobileTab === "stories"}
+          onClick={() => setMobileTab("stories")}
         >
           Mi idea ({histories.length})
         </button>
       </div>
 
-      <div className="adv-live" aria-live="polite">
-        {round.preguntas.length
+      <div className="adv-live adv-enter-item" style={{ "--adv-enter-order": 2 }} aria-live="polite">
+        {showsQuestions
           ? `${round.preguntas.length} preguntas nuevas disponibles.`
-          : 'No hay preguntas pendientes.'}
+          : "No hay preguntas pendientes."}
       </div>
 
       <div className="adv-split">
         <div
-          className={`adv-questions${mobileTab !== 'questions' ? ' adv-mobile-hidden' : ''}`}
+          className={`adv-questions${mobileTab !== "questions" ? " adv-mobile-hidden" : ""}`}
         >
+          <AdvisorDegradedNotice
+            degraded={round.degradado}
+            loading={loading}
+            onRetry={onRetry}
+            onFallback={onFallback}
+            onClose={onClose}
+            reason={round.motivoDegradado}
+          />
           {loading ? (
             <div className="adv-thinking" role="status">
               <span aria-hidden="true" />
@@ -271,29 +318,46 @@ function AdvisorWorkspace({
             </div>
           ) : (
             <form onSubmit={submit}>
-              {round.preguntas.map((question, index) => (
-                <Question
-                  key={question.id}
-                  question={question}
-                  value={drafts[question.id] || { value: '', noSabe: false }}
-                  onChange={(value) =>
-                    setDrafts((current) => ({
-                      ...current,
-                      [question.id]: value,
-                    }))
-                  }
-                  inputRef={index === 0 ? firstQuestionRef : undefined}
-                />
-              ))}
+              <div className="adv-question-list" key={round.renderId}>
+                {round.preguntas.map((question, index) => (
+                  <AdvisorQuestion
+                    key={`${round.renderId}-${question.id}`}
+                    question={question}
+                    number={index + 1}
+                    total={round.preguntas.length}
+                    value={
+                      drafts[question.id] || {
+                        value: "",
+                        selected: [],
+                        otherSelected: false,
+                        other: "",
+                        noSabe: false,
+                      }
+                    }
+                    onChange={(value) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [question.id]: value,
+                      }))
+                    }
+                    inputRef={index === 0 ? firstQuestionRef : undefined}
+                  />
+                ))}
+              </div>
               {questionError && (
                 <p className="adv-field-error" role="alert">
                   {questionError}
                 </p>
               )}
-              <button className="adv-button adv-button--primary" type="submit">
-                {round.preguntas.length
-                  ? 'Enviar respuestas'
-                  : 'Continuar con el asesor'}
+              <button
+                className="adv-button adv-button--primary adv-enter-item"
+                style={{ "--adv-enter-order": Math.max(2, round.preguntas.length) }}
+                type="submit"
+                disabled={!canSubmit}
+              >
+                {showsQuestions
+                  ? "Enviar respuestas"
+                  : "Continuar con el asesor"}
               </button>
             </form>
           )}
@@ -323,14 +387,19 @@ function AdvisorWorkspace({
             </div>
           )}
 
-          {round.sugerencias.length > 0 && (
+          {showsSuggestions && (
             <section
               className="adv-suggestions"
               aria-labelledby="adv-suggestions-title"
             >
-              <h2 id="adv-suggestions-title">Sugerencias</h2>
-              {round.sugerencias.map((suggestion) => (
-                <div className="adv-suggestion" key={suggestion.id}>
+              <h2 id="adv-suggestions-title" className="adv-enter-item" style={{ "--adv-enter-order": 0 }}>
+                Sugerencias · {focusFunctionality}
+              </h2>
+              {round.sugerencias.map((suggestion, index) => (
+                <div className="adv-suggestion adv-enter-item" style={{ "--adv-enter-order": index + 1 }} key={suggestion.id}>
+                  <span className="adv-suggestion__type">
+                    {suggestionTypeLabels[suggestion.tipo] || "Sugerencia"}
+                  </span>
                   <p>{suggestion.texto}</p>
                   <div className="adv-inline-actions">
                     <button
@@ -351,21 +420,36 @@ function AdvisorWorkspace({
             </section>
           )}
 
-          <button type="button" className="adv-finish-link" onClick={onClose}>
+          {suggestionFeedback && (
+            <p
+              className="adv-suggestion-feedback adv-feedback-pulse"
+              role="status"
+            >
+              {suggestionFeedback.message}
+            </p>
+          )}
+
+          <button type="button" className="adv-finish-link adv-enter-item" style={{ "--adv-enter-order": Math.max(3, round.preguntas.length + 1) }} onClick={onClose}>
             Ya está, armá el resumen
           </button>
         </div>
 
         <aside
-          className={`adv-stories${mobileTab !== 'stories' ? ' adv-mobile-hidden' : ''}`}
+          className={`adv-stories${mobileTab !== "stories" ? " adv-mobile-hidden" : ""}`}
           aria-labelledby="adv-stories-title"
         >
-          <h2 id="adv-stories-title">Tu idea, hasta ahora</h2>
+          <div className="adv-stories__heading">
+            <h2 id="adv-stories-title">Tu idea, hasta ahora</h2>
+            <strong>{histories.length} HU</strong>
+          </div>
           <div className="adv-story-list">
-            {histories.map((story) => (
+            {histories.map((story, index) => (
               <Story
                 key={story.id}
                 story={story}
+                index={index}
+                isFocused={story.id === focusStory?.id}
+                isHighlighted={story.id === suggestionFeedback?.storyId}
                 onEdit={onEditStory}
                 onDelete={onDeleteStory}
               />
@@ -403,7 +487,7 @@ function AdvisorWorkspace({
               ))}
               <option>Otra</option>
             </select>
-            {feature === 'Otra' && (
+            {feature === "Otra" && (
               <label className="adv-field" htmlFor="adv-custom-feature">
                 <span>Nombre de la funcionalidad</span>
                 <input
@@ -424,7 +508,7 @@ function AdvisorWorkspace({
         </aside>
       </div>
     </section>
-  )
+  );
 }
 
-export default AdvisorWorkspace
+export default AdvisorWorkspace;
