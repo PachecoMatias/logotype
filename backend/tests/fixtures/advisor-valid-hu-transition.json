@@ -1,0 +1,57 @@
+{
+  "historias": [],
+  "refinadas": [
+    {
+      "id": "hu-1",
+      "texto": "Como vendedor o administrador, quiero registrar ventas cobrando con distintos medios, para agilizar la atención y actualizar el stock automáticamente.",
+      "estado": "entendida"
+    }
+  ],
+  "preguntas": [
+    {
+      "aspecto": "quien_la_usa",
+      "tipo": "opcion",
+      "seleccion": "multiple",
+      "texto": "¿Quiénes necesitan consultar o actualizar el stock?",
+      "opciones": ["Vendedor", "Administrador", "No sé", "administrador"]
+    },
+    {
+      "aspecto": "beneficio",
+      "tipo": "opcion",
+      "seleccion": "multiple",
+      "texto": "¿Qué resultados esperás de la gestión de stock?",
+      "opciones": ["Evitar faltantes", "Conocer disponibilidad", "Otra"]
+    },
+    {
+      "aspecto": "comportamiento",
+      "tipo": "opcion",
+      "seleccion": "multiple",
+      "texto": "¿Qué movimientos deberían actualizar el stock?",
+      "opciones": ["Ventas", "Ingresos de mercadería", "Ajustes"]
+    },
+    {
+      "aspecto": "datos_previos",
+      "tipo": "mixta",
+      "seleccion": "multiple",
+      "texto": "¿Qué información de productos ya tenés disponible?",
+      "opciones": ["Catálogo", "Cantidades actuales", "Ninguna"]
+    },
+    {
+      "aspecto": "volumen",
+      "tipo": "texto",
+      "seleccion": "unica",
+      "texto": "¿Cuántos movimientos de stock necesitás registrar habitualmente?",
+      "opciones": []
+    }
+  ],
+  "sugerencias": [
+    {
+      "tipo": "mejora",
+      "texto": "¿Querés recibir alertas cuando el stock llegue a un nivel bajo?",
+      "basado_en": "Gestión de stock",
+      "funcionalidad": "Alertas de stock",
+      "descripcion": "Avisar cuando el stock alcance un nivel bajo."
+    }
+  ],
+  "duda_critica": ""
+}

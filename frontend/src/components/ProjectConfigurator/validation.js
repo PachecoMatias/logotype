@@ -77,3 +77,10 @@ export function validatePresupuesto(data) {
   if (!data.plazo) errors.plazo = 'Seleccioná un plazo esperado.'
   return errors
 }
+
+export function validateAdvisorFinalData(data) {
+  return {
+    empresa: validateEmpresa(data.empresa),
+    presupuesto: validatePresupuesto(data.presupuesto),
+  }
+}

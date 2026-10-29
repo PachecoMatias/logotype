@@ -4,6 +4,7 @@ node_modules/
 # Build
 dist/
 frontend/dist/
+backend/logs/advisor-trace.jsonl
 
 # Carpetas locales de agentes / IA
 .agent/

@@ -1,7 +1,7 @@
 import StatusBadge from "./StatusBadge.jsx";
 import DecisionBadge from "./DecisionBadge.jsx";
 
-function ProjectCard({ project, onClick }) {
+function ProjectCard({ project, onClick, enterOrder }) {
   const empresa = project?.payload?.empresa || {};
   const proyecto = project?.payload?.proyecto || {};
 
@@ -16,7 +16,8 @@ function ProjectCard({ project, onClick }) {
   return (
     <button
       type="button"
-      className="adm-row"
+      className="adm-row adm-enter-item"
+      style={{ "--adm-enter-order": enterOrder }}
       onClick={() => onClick(project.id)}
     >
       <span className="adm-row__code">#{project.id}</span>

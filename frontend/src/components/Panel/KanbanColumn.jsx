@@ -4,11 +4,14 @@ function slugColumna(nombre) {
   return nombre.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
-function KanbanColumn({ nombre, historias, onMover, onVerDetalle, esPrimera, esUltima }) {
+function KanbanColumn({ nombre, historias, onMover, onVerDetalle, esPrimera, esUltima, enterOrder }) {
   const slug = slugColumna(nombre)
 
   return (
-    <div className={`adm-col adm-col--${slug}`}>
+    <div
+      className={`adm-col adm-col--${slug} adm-enter-item`}
+      style={{ '--adm-enter-order': enterOrder }}
+    >
       <div className="adm-col__head">
         <span className="adm-col__name">{nombre}</span>
         <span className="adm-col__count">{historias.length}</span>

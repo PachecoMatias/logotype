@@ -1,0 +1,57 @@
+{
+  "historias": [],
+  "refinadas": [],
+  "preguntas": [
+    {
+      "aspecto": "quien_la_usa",
+      "tipo": "multiple_choice",
+      "texto": "Para esta aplicación de turnos y recordatorios, ¿quién sería el usuario principal?",
+      "opciones": [
+        "Empleados de una empresa",
+        "Clientes de un comercio",
+        "Profesionales independientes",
+        "Público general que busca servicios"
+      ]
+    },
+    {
+      "aspecto": "beneficio",
+      "tipo": "multiple_choice",
+      "texto": "¿Qué beneficio principal le aportaría esta aplicación a las personas usuarias?",
+      "opciones": [
+        "Reducir el tiempo de espera",
+        "Evitar olvidos de citas",
+        "Mejorar la comunicación",
+        "Organizar mejor sus horarios"
+      ]
+    },
+    {
+      "aspecto": "comportamiento",
+      "tipo": "multiple_choice",
+      "texto": "Para la gestión de turnos, ¿cómo espera que el usuario interactúe con la aplicación?",
+      "opciones": [
+        "Solicitar turnos",
+        "Cancelar turnos",
+        "Ver turnos disponibles",
+        "Modificar turnos existentes"
+      ]
+    },
+    {
+      "aspecto": "datos_previos",
+      "tipo": "multiple_choice",
+      "texto": "¿Qué información inicial necesitaría la aplicación para los recordatorios de turnos?",
+      "opciones": [
+        "Datos de contacto del usuario",
+        "Detalles del servicio o cita",
+        "Fecha y hora del turno",
+        "Tipo de recordatorio (email, SMS)"
+      ]
+    }
+  ],
+  "sugerencias": [
+    {
+      "tipo": "funcionalidad",
+      "texto": "¿Te interesaría que los usuarios puedan ver rápidamente un resumen de sus próximos turnos agendados?"
+    }
+  ],
+  "duda_critica": ""
+}

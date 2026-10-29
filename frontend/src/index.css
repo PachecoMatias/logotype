@@ -101,7 +101,7 @@ section {
    HEADER
 ========================== */
 
-header {
+.site-header {
   background: var(--bg-darker);
   color: white;
   position: sticky;
@@ -110,7 +110,7 @@ header {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-header .container {
+.site-header .container {
   max-width: none;
   width: 94%;
 }

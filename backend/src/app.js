@@ -2,12 +2,14 @@ import express from 'express';
 
 import { errorHandler } from './middleware/error-handler.js';
 import { notFound } from './middleware/not-found.js';
+import { advisorRouter } from './routes/advisor.routes.js';
 import { historiasRouter } from './routes/historias.routes.js';
 import { proyectosRouter } from './routes/proyectos.routes.js';
 
 export const app = express();
 
 app.use(express.json({ limit: '256kb' }));
+app.use('/api/asesor', advisorRouter);
 app.use('/api/proyectos', proyectosRouter);
 app.use('/api/historias', historiasRouter);
 app.use(notFound);

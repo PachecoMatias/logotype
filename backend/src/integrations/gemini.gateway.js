@@ -1,10 +1,85 @@
 import { GoogleGenAI } from '@google/genai';
 
+import { advisorMaxOutputTokens, advisorThinkingBudget } from '../config/advisor-config.js';
 import { parseGeminiEnvironment } from '../config/env.js';
+import { advisorRoundJsonSchema } from '../schemas/advisor-round.schema.js';
 import { projectAnalysisJsonSchema } from '../schemas/project-analysis.schema.js';
 import { projectBacklogJsonSchema } from '../schemas/project-backlog.schema.js';
 
 const providerStatusPattern = /^[A-Z][A-Z0-9_]{1,63}$/;
+const diagnosticNamePattern = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/;
+const diagnosticCodePattern = /^[A-Za-z][A-Za-z0-9_]{1,63}$/;
+const networkErrorCodes = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'ESOCKETTIMEDOUT',
+  'EAI_AGAIN',
+  'ENOTFOUND',
+  'EPIPE',
+  'UND_ERR_SOCKET',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_BODY_TIMEOUT',
+]);
+const networkMessagePattern =
+  /fetch failed|failed to fetch|network error|socket hang up|terminated/i;
+
+function safeDiagnosticName(value) {
+  return typeof value === 'string' && diagnosticNamePattern.test(value) ? value : null;
+}
+
+function safeDiagnosticCode(value) {
+  return typeof value === 'string' && diagnosticCodePattern.test(value) ? value : null;
+}
+
+function collectErrorChain(error) {
+  const chain = [];
+  const seen = new Set();
+  let current = error;
+
+  while (current && typeof current === 'object' && chain.length < 3 && !seen.has(current)) {
+    seen.add(current);
+    chain.push(current);
+    current = current.cause;
+  }
+
+  return chain;
+}
+
+function detectNetworkCause(error) {
+  for (const entry of collectErrorChain(error)) {
+    const code = safeDiagnosticCode(entry?.code);
+
+    if (code && networkErrorCodes.has(code)) return { name: safeDiagnosticName(entry?.name), code };
+    if (entry?.name === 'AbortError' || entry?.name === 'TimeoutError') {
+      return { name: entry.name, code };
+    }
+    if (
+      entry?.name === 'TypeError' &&
+      typeof entry.message === 'string' &&
+      networkMessagePattern.test(entry.message)
+    ) {
+      return { name: 'TypeError', code };
+    }
+  }
+
+  return null;
+}
+
+function isProviderApiError(error) {
+  const status = error?.status ?? error?.statusCode;
+  return error?.name === 'ApiError' || (Number.isInteger(status) && status >= 100 && status <= 599);
+}
+
+function classifyErrorOrigin(error, stage, networkCause) {
+  if (stage === 'configuration') return 'configuration';
+  if (stage === 'response_text') return 'response_shape';
+  if (networkCause) return 'network';
+  if (isProviderApiError(error)) return 'provider_api';
+  if (error?.name === 'TypeError') return 'sdk_type_error';
+  return 'provider_sdk';
+}
 
 function classifyProviderReason(status, message) {
   const normalizedMessage = message.slice(0, 2048).toLowerCase();
@@ -64,17 +139,48 @@ function parseApiErrorDetails(error) {
   }
 }
 
-function createGatewayFailure(error, stage, model) {
+function createGatewayFailure(error, stage, model, responseMetadata = {}) {
   const providerDetails = stage === 'provider' ? parseApiErrorDetails(error) : {};
+  const errorChain = collectErrorChain(error);
+  const cause = errorChain[1] ?? null;
+  const networkCause = detectNetworkCause(error);
   const failure = new Error('Gemini gateway failed');
-  failure.name = error?.name;
+  failure.name = error?.name ?? 'GeminiGatewayError';
   failure.backlogFailureStage = stage;
   failure.providerStatus = error?.status ?? error?.statusCode;
   failure.providerSymbolicStatus = providerDetails.symbolicStatus;
   failure.providerReason = providerDetails.reason;
-  failure.networkCode = error?.code;
+  failure.errorOrigin = responseMetadata.origin ?? classifyErrorOrigin(error, stage, networkCause);
+  failure.networkCode = safeDiagnosticCode(error?.code);
+  failure.causeName = safeDiagnosticName(cause?.name);
+  failure.causeCode = safeDiagnosticCode(cause?.code) ?? networkCause?.code ?? null;
+  failure.rawErrorName = error?.name ?? null;
+  failure.finishReason = responseMetadata.finishReason ?? null;
+  failure.hasResponseText = responseMetadata.hasResponseText ?? null;
+  failure.hasCandidates = responseMetadata.hasCandidates ?? null;
   failure.configuredModel = model;
   return failure;
+}
+
+function readResponseShape(response) {
+  if (response === null || response === undefined || typeof response !== 'object') {
+    return {
+      readable: false,
+      hasCandidates: false,
+      candidateCount: 0,
+      finishReason: null,
+    };
+  }
+
+  const candidates = Array.isArray(response.candidates) ? response.candidates : null;
+  const finishReason = candidates?.[0]?.finishReason;
+
+  return {
+    readable: true,
+    hasCandidates: Boolean(candidates && candidates.length > 0),
+    candidateCount: candidates?.length ?? 0,
+    finishReason: typeof finishReason === 'string' ? finishReason : null,
+  };
 }
 
 export function createGeminiGateway({
@@ -112,11 +218,48 @@ export function createGeminiGateway({
     }
 
     let rawProviderText;
+    let shape;
+
+    try {
+      shape = readResponseShape(response);
+    } catch (error) {
+      throw createGatewayFailure(error, 'response_text', model, {
+        origin: 'response_access',
+        hasResponseText: false,
+      });
+    }
+
+    if (!shape.readable) {
+      const error = new Error('Provider response was missing or not an object');
+      error.name = 'ProviderResponseError';
+      throw createGatewayFailure(error, 'response_text', model, {
+        origin: 'response_shape',
+        finishReason: shape.finishReason,
+        hasResponseText: false,
+        hasCandidates: shape.hasCandidates,
+      });
+    }
 
     try {
       rawProviderText = response.text;
     } catch (error) {
-      throw createGatewayFailure(error, 'response_text', model);
+      throw createGatewayFailure(error, 'response_text', model, {
+        origin: 'response_access',
+        finishReason: shape.finishReason,
+        hasResponseText: false,
+        hasCandidates: shape.hasCandidates,
+      });
+    }
+
+    if (typeof rawProviderText !== 'string' || rawProviderText.trim().length === 0) {
+      const error = new Error('Provider response did not contain text');
+      error.name = 'ProviderResponseError';
+      throw createGatewayFailure(error, 'response_text', model, {
+        origin: 'response_shape',
+        finishReason: shape.finishReason,
+        hasResponseText: false,
+        hasCandidates: shape.hasCandidates,
+      });
     }
 
     if (captureExchange) {
@@ -130,6 +273,13 @@ export function createGeminiGateway({
   }
 
   return {
+    async generateAdvisorRound(prompt) {
+      return generateStructuredContent(prompt, advisorRoundJsonSchema, {
+        maxOutputTokens: advisorMaxOutputTokens,
+        thinkingConfig: { thinkingBudget: advisorThinkingBudget },
+      });
+    },
+
     async generateProjectAnalysis(prompt) {
       return generateStructuredContent(prompt, projectAnalysisJsonSchema, {
         maxOutputTokens: 16384,

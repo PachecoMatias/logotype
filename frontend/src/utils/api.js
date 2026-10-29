@@ -1,6 +1,25 @@
 const configuredBaseUrl = import.meta.env?.VITE_API_URL || ''
 
 export const API_BASE_URL = configuredBaseUrl.replace(/\/$/, '')
+export const AI_SERVICE_UNAVAILABLE_MESSAGE =
+  'El servicio de IA no está disponible temporalmente. Intentá nuevamente más tarde.'
+
+function isProjectAiOperation(path) {
+  return /^\/api\/proyectos\/[^/]+\/(?:analizar|backlog)\/?$/.test(path)
+}
+
+export class ApiRequestError extends Error {
+  constructor(
+    message,
+    { status = null, code = null, isNetworkError = false } = {},
+  ) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = status
+    this.code = code
+    this.isNetworkError = isNetworkError
+  }
+}
 
 export async function apiRequest(path, options = {}, expectedStatus) {
   let response
@@ -8,7 +27,12 @@ export async function apiRequest(path, options = {}, expectedStatus) {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, options)
   } catch {
-    throw new Error('No se pudo conectar con el servidor.')
+    throw new ApiRequestError(
+      isProjectAiOperation(path)
+        ? AI_SERVICE_UNAVAILABLE_MESSAGE
+        : 'No se pudo conectar con el servidor.',
+      { isNetworkError: true },
+    )
   }
 
   const rawBody = await response.text()
@@ -18,7 +42,12 @@ export async function apiRequest(path, options = {}, expectedStatus) {
     try {
       body = JSON.parse(rawBody)
     } catch {
-      throw new Error('El servidor devolvió una respuesta inválida.')
+      throw new ApiRequestError(
+        'El servidor devolvió una respuesta inválida.',
+        {
+          status: response.status,
+        },
+      )
     }
   }
 
@@ -27,7 +56,20 @@ export async function apiRequest(path, options = {}, expectedStatus) {
     : response.ok
 
   if (!hasExpectedStatus || body?.success !== true) {
-    throw new Error(body?.error?.message || 'La solicitud no pudo completarse.')
+    const shouldNormalizeAiFailure =
+      isProjectAiOperation(path) &&
+      (body?.error?.code === 'AI_ANALYSIS_FAILED' ||
+        body?.error?.message === 'AI analysis failed')
+
+    throw new ApiRequestError(
+      shouldNormalizeAiFailure
+        ? AI_SERVICE_UNAVAILABLE_MESSAGE
+        : body?.error?.message || 'La solicitud no pudo completarse.',
+      {
+        status: response.status,
+        code: body?.error?.code || null,
+      },
+    )
   }
 
   return body.data
@@ -39,6 +81,26 @@ export function actualizarHistoria(id, cambios) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cambios),
   })
+}
+
+export function requestAdvisorRound(payload) {
+  return apiRequest('/api/asesor/ronda', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function createProject(payload) {
+  return apiRequest(
+    '/api/proyectos',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+    201,
+  )
 }
 
 export function actualizarColumnaHistoria(id, columnaTablero) {

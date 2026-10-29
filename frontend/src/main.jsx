@@ -5,11 +5,13 @@ import App from './App.jsx'
 import './index.css'
 import './styles/site.css'
 import './styles/configurator.css'
+import './styles/advisor.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  
-    <MotionConfig reducedMotion="user" transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}>
-      <App />
-    </MotionConfig>
-  
+  <MotionConfig
+    reducedMotion="user"
+    transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+  >
+    <App />
+  </MotionConfig>
 )
